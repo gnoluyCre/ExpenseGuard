@@ -1,0 +1,56 @@
+# ExpenseGuard 核心依赖栈
+#
+# 这里只放日常开发必需的服务。可选服务拆在独立文件，按需启动：
+#   docker-compose.models.yml         embedding / rerank（模型权重数 GB）
+#   docker-compose.observability.yml  Langfuse trace 面板
+# 拆文件而非用 profiles，是为了让「删掉可观测栈」＝「删一个文件」——
+# 与「脱敏＝删目录」是同一种设计语汇。
+#
+# 注意：Compose v2 已废弃顶层 version 键，写了会告警。
+
+name: ${COMPOSE_PROJECT_NAME:-expenseguard}
+
+services:
+  postgres:
+    # 用 pgvector 镜像而非官方 postgres：TechDesign 写明 VectorStore 可退回 PGVector，
+    # 现在用它，将来走退路时不必换镜像重建数据卷 —— 零成本买的保险。
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-expenseguard}
+    ports:
+      # 绑 loopback。默认的 "5432:5432" 会绑 0.0.0.0，
+      # 等于把无密码保护面暴露给整个网段 —— 与私有化硬约束冲突。
+      - "127.0.0.1:5432:5432"
+    volumes:
+      # 命名卷，不用 bind mount：Windows/NTFS 下 bind postgres 数据目录
+      # 是典型的权限与性能故障源。
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  qdrant:
+    # 锁次版本 —— AGENTS.md 的依赖治理条款同样适用于镜像 tag
+    image: qdrant/qdrant:v1.16.1
+    ports:
+      - "127.0.0.1:6333:6333"
+      - "127.0.0.1:6334:6334"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    # 刻意不配 healthcheck：Qdrant 官方镜像不含 curl / wget，
+    # `test: ["CMD", "curl", ...]` 会直接失败。
+    # 健康语义集中到后端的 /api/health/ready，由它探测 Qdrant 的 /readyz。
+
+volumes:
+  pgdata:
+  qdrant_storage:
+
+networks:
+  default:
+    name: expenseguard
