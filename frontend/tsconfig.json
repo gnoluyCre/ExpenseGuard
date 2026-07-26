@@ -1,0 +1,14 @@
+{
+  "files": [],
+  "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }],
+  "compilerOptions": {
+    // 这份根配置只做 project references，本身不编译任何文件。
+    // 但 shadcn CLI 读的是**这里**的 paths —— 缺了它，`shadcn add`
+    // 会把组件写进一个名叫 `@` 的真实目录（不报错，只是位置全错）。
+    // 实际生效的别名在 tsconfig.app.json 与 vite.config.ts，三处必须一致。
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}

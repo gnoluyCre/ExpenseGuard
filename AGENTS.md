@@ -26,8 +26,10 @@
   > ProactorEventLoop，而 psycopg 异步模式无法在其上运行（不带 `--reload` 时
   > 数据库调用会全部挂起至超时）。详见 `app/asyncio_compat.py`。
 - **测试:** 后端 `pytest` · 前端 `npm run test`
-- **代码检查与格式化:** 后端 `ruff check . && ruff format .` · 前端 `npm run lint`
-- **构建:** 前端 `npm run build` · 全栈 `docker compose build`
+- **代码检查与格式化:** 后端 `ruff check . && ruff format .` · 前端 `npm run lint && npm run format`
+- **类型检查:** 后端 `mypy app scripts` · 前端 `npm run typecheck`
+- **契约同步:** 后端 `python scripts/export_openapi.py` → 前端 `npm run gen:api`(改了 Pydantic 模型必做,否则 CI 的 contract job 会红)
+- **构建:** 前端 `npm run build`(阶段 1 尚无 Dockerfile,`docker compose build` 待阶段 4 部署时补)
 
 > 具体命令名以脚手架落地时的 `pyproject.toml` / `package.json` 为准;上表为约定基线,不要发明新的包管理器命令。
 
@@ -40,7 +42,8 @@
 - **幂等与审计:** `row_result`、`sampling_audit`、`audit_log` 的唯一约束与追加写语义不得弱化。
 
 ## 编码约定
-- **格式化:** 后端 Ruff(lint + format) · 前端 ESLint + Prettier —— 新代码不得有告警。
+- **格式化:** 后端 Ruff(lint + format) · 前端 **oxlint + Prettier** —— 新代码不得有告警(`npm run lint` 带 `--max-warnings=0`,告警即失败)。
+  > 前端 lint 器在 CP4 由 ESLint 改为 oxlint:create-vite 9 的官方模板已改用它,而 ESLint 需要额外拉一整套 typescript-eslint 依赖。格式化仍由 Prettier 负责(oxlint 不做格式化)。
 - **架构:** 分层 / 面向服务 —— `core/`(通用框架层)与 `tenants/`、`data/private/`(客户数据层)物理隔离;传输层(FastAPI 路由 / React 组件)不含业务逻辑。
 - **测试:** 所有新工具函数都要写单元测试。核心用户流程要写集成测试。幂等性与中断恢复是最高优先级测试项。
 - **类型安全:** 严格类型。Python 全量 type hints + Pydantic 校验外部输入;前端禁用 `any`,用精确 interface 或 `unknown` + type guard。
@@ -77,19 +80,20 @@
 
 ## 当前状态 📍
 **最近更新:** 2026-07-27
-**正在进行:** 阶段 1 CP4 —— 前端垂直切片 + OpenAPI 契约 + CI
-**最近完成:** CP0 仓库重置 / CP1 后端地基与 18 张表 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离（34 个测试全绿）
+**正在进行:** 阶段 1 已完成,准备进入阶段 2 F1(Excel 导入与文件版本管理)
+**最近完成:** CP0 仓库重置 / CP1 后端地基与 18 张表 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离 / **CP4 前端垂直切片 + OpenAPI 契约 + CI**(后端 49 passed + 1 skipped,前端 8 passed)
 **受阻于:** 无(W0 阻塞项:真实报销数据脱敏审批、制度文档到位 —— 见 `MEMORY.md`)
+**已知缺口:** W0 spike 未做 —— `docker-compose.models.yml` 的 embedding 镜像**未实测**,离线模型供给路径未验证。见 `specs/001-phase1-foundation.md`。
 
 ## 路线图 🗺️
 
-### 阶段 1:地基
-- [ ] 初始化 monorepo 结构(`backend/core|api|db|synth`、`frontend/`、`tenants/`、`data/`);`.gitignore` 从第一次 commit 即排除 `tenants/`、`data/private/`、`.env`
-- [ ] Docker Compose 起 postgres / qdrant / embedding / trace(Langfuse 或 Phoenix)
-- [ ] 数据库 schema + Alembic 迁移(核心实体见 `agent_docs/tech_stack.md`);**行级幂等结果表 `row_result` 是 W1 最高优先级**
-- [ ] 自建账号密码 + server-side session + RBAC 三角色(auditor / configurator / viewer)
-- [ ] Pre-commit(format / lint / secret 扫描)+ CI 骨架(install → lint → typecheck → test → 评测门禁 → build)
-- [ ] 合成数据生成器骨架(`backend/synth/`,一等交付物)
+### 阶段 1:地基 ✅
+- [x] 初始化 monorepo 结构(`backend/app/{core,api,db,synth}`、`frontend/`、`tenants/`、`data/`);`.gitignore` 从第一次 commit 即排除 `tenants/`、`data/private/`、`.env`
+- [x] Docker Compose 起 postgres / qdrant;embedding 与 trace(Langfuse)拆为可选文件,不进默认 `up`
+- [x] 数据库 schema + Alembic 迁移(18 张表,两个迁移);**行级幂等结果表 `row_result` 的唯一约束已落地并做过反向验证**
+- [x] 自建账号密码 + server-side session + RBAC 三角色(auditor / configurator / viewer)
+- [x] Pre-commit(ruff / gitleaks / 大文件与私有路径拦截)+ CI(backend / frontend / contract / secrets / eval-gate)
+- [x] 合成数据生成器骨架(`backend/app/synth/`,一等交付物;只实现超限额一类,其余七类显式 `NotImplementedError`)
 
 ### 阶段 2:核心功能(P0 —— 串行依赖链)
 - [ ] **F1 · Excel 导入与文件版本管理** —— .xlsx 500–5000 行;内容哈希去重生成 `file_version_id`;同文件重复导入幂等

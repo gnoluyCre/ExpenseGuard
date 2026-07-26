@@ -1,0 +1,49 @@
+# ExpenseGuard 可观测栈 —— Langfuse trace 面板
+#
+# ⚠️ **不进默认 `up`。** 阶段 1 没有任何 LLM 调用，trace 的消费者为 0；
+# 后端的 `TRACING_ENABLED=false` 时启动不得产生任何网络调用。
+#
+# 启动：
+#   docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d
+#
+# ---------------------------------------------------------------------------
+# 版本选择：v2（单容器）
+#
+# Langfuse v2 只需要一个应用容器 + 一个 PostgreSQL 数据库，而
+# `docker/postgres-init/01-create-databases.sql` 已经预建了 `langfuse` 库
+# ——独立 database 意味着 Alembic 天然管不到它的表，不必额外配排除规则。
+#
+# ⚠️ **升 v3 不要手写。** v3 的服务集变成了 web + worker + ClickHouse +
+# Redis + MinIO，手写必然与上游漂移（且漂移症状往往是「能起来但某类数据
+# 丢失」）。届时的正确做法是从上游固定 tag 复制官方 compose，只改三处：
+# 端口绑 `127.0.0.1`、密钥换成 `${VAR}`、network 挂到 `expenseguard`。
+#
+# ⚠️ 若真的升到 v3，必须在 MEMORY.md 里写明一句：
+# **Redis 是可观测基础设施，应用层仍然不依赖 Redis（session 走 PG）。**
+# 否则后续 agent 看到 compose 里有 Redis，很自然就会把 session 挪过去，
+# 而那会破坏「session 与 audit_log 同库同事务」这个刻意的设计。
+
+services:
+  langfuse:
+    image: langfuse/langfuse:2.95.10
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      # 连的是 compose 内部的 postgres 服务名，走 langfuse 独立 database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/langfuse
+      NEXTAUTH_URL: http://localhost:3000
+      # ⚠️ 这两个必须由 .env 提供，绝不写默认值 —— 有默认值的密钥
+      # 等于没有密钥，而且一旦有人照抄就再也改不回来了。
+      # 生成：openssl rand -base64 32
+      NEXTAUTH_SECRET: ${LANGFUSE_NEXTAUTH_SECRET:?请在 .env 里设置 LANGFUSE_NEXTAUTH_SECRET}
+      SALT: ${LANGFUSE_SALT:?请在 .env 里设置 LANGFUSE_SALT}
+      # 单一客户内部交付，不开放注册
+      AUTH_DISABLE_SIGNUP: ${LANGFUSE_DISABLE_SIGNUP:-false}
+      TELEMETRY_ENABLED: "false"
+      LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES: "false"
+    restart: unless-stopped
+# 刻意不声明 networks：本文件永远与 docker-compose.yml 叠加使用，
+# 合并后直接复用它定义的 `expenseguard` 默认网络。

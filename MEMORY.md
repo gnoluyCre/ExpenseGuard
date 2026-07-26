@@ -5,22 +5,22 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 -->
 
 ## 🏗️ 当前阶段与目标
-**当前任务:** 阶段 1 —— 地基。**CP0–CP3 已完成**,34 个测试全绿(ruff / ruff format / mypy strict / alembic check 同样全绿)。完整落地记录与踩坑清单见 `specs/001-phase1-foundation.md`。
+**当前任务:阶段 1 已完成(CP0–CP4)。** 后端 `49 passed, 1 skipped`,前端 `8 passed`;ruff / mypy strict(`app scripts`)/ alembic check / oxlint / tsc / prettier / `pre-commit run --all-files` 全绿。完整落地记录与踩坑清单见 `specs/001-phase1-foundation.md`。
 
 - CP0 仓库重置(干净历史、`.gitignore` 脱敏排除)
 - CP1 后端地基(uv + 18 张表 + Alembic 三层隔离)
 - CP2 幂等原语与恢复测试(项目 #1 优先级,含反向验证)
 - CP3 认证、RBAC、租户隔离(含反向验证)
+- CP4 前端垂直切片 + OpenAPI 契约门禁 + pre-commit/CI + 合成数据生成器(含反向验证)
 
-**下一步 —— CP4(阶段 1 最后一个检查点):**
-1. 前端垂直切片:Vite + React18 + TS strict + Tailwind v4 + shadcn/ui 脚手架;登录页 / `RequireAuth` 路由守卫 / 三角色 `AppShell` / `HealthPage`;≥3 个 Vitest 测试。**不做任何 F1–F8 业务页。**
-2. OpenAPI → `openapi-typescript` + `openapi-fetch` 类型化客户端;`export_openapi.py` 用 `sort_keys=True` 保证稳定输出;CI 加 `git diff --exit-code` 漂移门禁。
-3. pre-commit(ruff + ruff-format + gitleaks + 大文件拦截 + `tenants/`/`data/private/` 路径拦截)。
-4. GitHub Actions CI:backend / frontend / contract / secrets / eval-gate / build。评测门禁做成**数据驱动常驻 job**(`backend/evals/baseline.json` 的 thresholds 为空则 skip),⚠️ 必须真实存在一个带 `@pytest.mark.eval` 的用例——`pytest -m eval` 选中 0 个用例时退出码是 5,会让 job 假红。
-5. 合成数据生成器骨架 `backend/app/synth/`:`random.Random(seed)` 显式实例(绝不用全局 `random`);只实现 1 类违规,其余 7 个 `ViolationKind` 显式 `raise NotImplementedError`;标签与数据**物理分离**(`batch.xlsx` / `batch.labels.jsonl` / `batch.manifest.json`)。
-6. 可选服务:`docker-compose.models.yml`(embedding/rerank)与 `docker-compose.observability.yml`(Langfuse),均不进默认 `up`。
+**下一步:阶段 2 F1 · Excel 导入与文件版本管理。** 串行依赖链 F1→F2→F3→F4→F5,不得跳步。
+`process_row_once` 至今**一个生产调用方都没有** —— 第一个是 F3,刻意如此。
 
-完整方案见批准过的计划:`C:\Users\IGR\.claude\plans\gentle-mixing-toast.md`(CP4 章节)。
+**开工前必读的两件事:**
+1. 契约同步是硬要求:改了 Pydantic 模型 → `cd backend && uv run python scripts/export_openapi.py` + `cd frontend && npm run gen:api`,两个生成物都要提交,否则 CI 的 contract job 直接红。
+2. 评测门禁已就位但处于待命:`backend/evals/baseline.json` 的 `thresholds` 一填数值就自动开始阻断,**不需要改任何 workflow YAML**。
+
+**遗留缺口（不阻塞 F1，但别忘）:** W0 spike 未做 —— `docker-compose.models.yml` 的 embedding 镜像未实测、离线模型供给路径未验证;CI 尚未在 GitHub 上真实跑过（仓库未 push）。
 
 ## 📂 架构决策
 *(把构建过程中做出的具体选择记录在此,便于后续 agent 遵循)*
@@ -38,6 +38,13 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - 2026-07-27 — **所有业务表必须继承 `TenantScopedMixin`,而不是自己写一个同样的 `tenant_id` 列。** 租户过滤靠 `issubclass(Model, TenantScopedMixin)` 匹配实体,匹配不上就**静默不过滤**。CP3 时 `FileVersion`/`AppUser`/`UserSession` 就栽在这里——三张表列写得完全正确、DDL 无误、改继承后 `alembic check` 仍零漂移,但跨租户数据一直在泄漏。
 - 2026-07-27 — 租户过滤的绕过做成**显式 execution option**(`skip_tenant_filter_options()`),而非「守卫在某些情况下自动放行」。全系统只用于两处(按 tenant_slug+username 查用户、按 token 哈希查会话)。目的是让绕过行为可 `grep`、可评审。
 - 2026-07-27 — **Windows 上后端必须用 `uv run python -m app` 启动**,不能直接 `uvicorn app.main:app`。见下方已知问题。
+- 2026-07-27（CP4）— **前端定为 React 19 + Vite 8 + TS 5.9 + oxlint + Prettier**,与批准过的计划书写的「React 18 + ESLint」不同。计划书锁 18 的理由是「shadcn CLI 按 19 生成会有 peer dep 冲突」,而 create-vite 9 与 shadcn 现在默认就是 19 —— 锁 18 反而**制造**那个冲突,前提已失效。lint 器同理:官方模板已换 oxlint。**AGENTS.md 的编码约定已同步修改** —— 偏离要落到事实来源里,不能留成「文档说 A、代码是 B」。
+- 2026-07-27（CP4）— **前端 TypeScript 锁 `~5.9`,不跟 create-vite 升 TS 6。** `openapi-typescript` 的 peer 是 `^5.x`;用 `--legacy-peer-deps` 硬装的话,codegen 会在运行时撞上 TS 6 的 API 变更 —— 那正是契约门禁最不该出问题的地方。上游放行后再抬。
+- 2026-07-27（CP4）— 路由用 **`react-router` v8**,不用 `react-router-dom`。后者最新版落在 CVE 区间(7.12.0–8.2.0,RSC CSRF),且 v8 已把它并入主包。
+- 2026-07-27（CP4）— **契约（`openapi.json` + `frontend/src/api/schema.d.ts`）两个生成物都进仓库**,CI 重新生成后 `git diff --exit-code`。生成物进仓库通常是坏味道,这里是刻意的:它把「后端改了字段、前端没跟」从运行时错误变成流水线错误。导出脚本必须 `sort_keys=True`,否则 dict 顺序抖动会制造满屏噪音 diff,门禁随即被当成噪音关掉。
+- 2026-07-27（CP4）— **前端菜单由权限驱动,不由角色 if-else 驱动。** 后端 `ROLE_PERMISSIONS` 已经是数据,前端再抄一份 `if (role === "configurator")` 就制造了第二份事实来源。前端只认 `/api/auth/me` 返回的 `permissions`,且这只是**体验**层——真正的鉴权在服务端每个端点上。
+- 2026-07-27（CP4）— **评测门禁做成数据驱动的常驻 job**,不是 `if: false` 也不是注释掉。`backend/evals/baseline.json` 的 `thresholds` 为空则测试 `skip`,填了就自动阻断。⚠️ `pytest -m eval` 选中 0 个用例时退出码是 **5**,job 会假红 —— 所以 `tests/eval/test_eval_gate.py` 里必须始终有一个**真实存在**的 `@pytest.mark.eval` 用例。
+- 2026-07-27（CP4）— **不装 `mixed-line-ending` 钩子**:`.gitattributes` 的 `* text=auto eol=lf` 已在入库时统一行尾,两者管的不是同一层(一个管仓库内容,一个管本地工作区),叠加只会制造大片无意义 diff。
 
 ## 🐛 已知问题与坑点
 *(把当前 bug 或临时绕过方案记录在此)*
@@ -57,11 +64,27 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - **uvicorn 在 Windows 硬编码 `ProactorEventLoop`**(`uvicorn/loops/asyncio.py`),psycopg 异步在其上无法工作。且 uvicorn 0.36+ 用 `asyncio.run(..., loop_factory=...)`,**`set_event_loop_policy` 对它完全无效**。这个坑只在**不带 `--reload`** 时出现(reload 走子进程 → SelectorEventLoop),是典型的「开发正常、生产挂死」。修法是 `app/__main__.py` 显式传循环工厂。
 - **`get_db` 在异常传播时会 rollback**,所以任何「失败路径上的审计日志」都必须在抛异常前单独 `commit()`,否则最该留痕的场景反而一条都不留。
 
+### 前端环境特有的坑（CP4 实测,详见 `specs/001-phase1-foundation.md`）
+
+- **路径别名要配三处**:`vite.config.ts` 的 `resolve.alias`、`tsconfig.app.json` 的 `paths`、以及**根 `tsconfig.json` 的 `paths`**。前两处缺一会「tsc 过但 build 挂」或反之;第三处是 shadcn CLI 读的 —— 缺了它 `npx shadcn add` 会把组件写进一个名叫 `@` 的真实目录,且**不报任何错**。
+- **Tailwind v4 没有 `tailwind.config.js`**,主题在 CSS 里用 `@theme` 声明。照 v3 教程建那个文件不会报错,只会静默不生效。
+- **openapi-fetch 的 `createClient()` 在模块导入时就抓走 `globalThis.fetch`。** 后果极其隐蔽:测试里 `vi.stubGlobal("fetch", ...)` 完全不生效,请求真发出去、真失败,于是「未登录应跳转」这类断言**因为网络错误而通过** —— 一个什么都没测到的测试和一个测对了的测试，绿灯长得一模一样。修法是客户端延迟解析 fetch。
+- **openapi-fetch 传给 fetch 的是 `Request` 对象**,不是 `(url, init)` 二元组。测试桩当字符串处理会得到 `"[object Request]"`。
+- **`baseUrl` 不要拼 `/api`** —— schema 里的路径本身已含它,会变成 `/api/api/...`;但也不能留空 —— undici 的 `Request` 不接受相对 URL,jsdom 下全部报 `Failed to parse URL`。取 `window.location.origin`。
+- **`js-yaml` 的 npm override 必须锁 `4.3.0`**,不能升 `^5`:`@redocly/openapi-core`(openapi-typescript 的依赖)用的是 v4 的 `types.merge` API。
+- **`npm run test` 必须写成 `vitest run`**,不带 `run` 会在 CI 里进 watch 模式挂死。
+
 ### 已完成阶段的测试统计(便于新会话快速判断状态)
 
-`cd backend && uv run pytest` 应为 **34 passed**。若数量对不上,说明环境或代码有问题,先排查再继续。
+- `cd backend && uv run pytest` 应为 **49 passed, 1 skipped**（skip 的是常驻待命的评测门禁）
+- `cd frontend && npm run test` 应为 **8 passed**
+
+若数量对不上,说明环境或代码有问题,先排查再继续。
 
 ## 📜 已完成阶段
-- [ ] 初始脚手架
-- [ ] 数据库 schema 创建(含 `row_result` 幂等表)
-- [ ] 认证集成(session + RBAC 三角色)
+- [x] 初始脚手架（monorepo + uv + Vite）
+- [x] 数据库 schema 创建（18 张表,含 `row_result` 幂等表与 `audit_log` 追加写触发器）
+- [x] 认证集成（server-side session + RBAC 三角色 + 租户过滤 fail-closed）
+- [x] 前端垂直切片（登录 / 路由守卫 / 三角色外壳 / 系统状态页）
+- [x] OpenAPI 契约门禁 + pre-commit + GitHub Actions CI
+- [x] 合成数据生成器骨架（确定性 + 标签物理分离）

@@ -1,0 +1,20 @@
+{
+  "_readme": [
+    "评测门禁的基线阈值。CI 的 eval-gate job 读的就是本文件。",
+    "Phase 1 没有评测集，thresholds 因此为空对象，门禁自动 skip。",
+    "Phase 2 有了标注数据后，只需在这里填数值 —— 不改任何 workflow YAML，",
+    "门禁会自动开始阻断。做成数据驱动而不是 `if: false`，是因为被注释掉的",
+    "job 在 Phase 2 必然被遗忘，而一个常驻 skip 的 job 每次 CI 都在提醒它存在。",
+    "填阈值时必须同时产出 metrics.json（见 metrics_path），否则门禁会以",
+    "「声明了阈值却没有实测值」失败 —— 这是刻意的，静默放行比红更危险。"
+  ],
+  "version": 1,
+  "metrics_path": "evals/metrics.json",
+  "thresholds": {},
+  "_threshold_shape": {
+    "_readme": "Phase 2 填 thresholds 时的形状示例，键为指标名，值为下界/上界。",
+    "recall": { "min": 0.95 },
+    "false_positive_rate": { "max": 0.2 },
+    "citation_verbatim_pass_rate": { "min": 1.0 }
+  }
+}

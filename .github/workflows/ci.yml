@@ -1,0 +1,224 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# 同一分支上新推送会取消上一次尚未跑完的 CI。
+# 不加这条的话，连续 push 会排出一串注定作废的运行，把并发额度耗光。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # 后端跑在 3.13（pyproject 里 requires-python 已锁 >=3.13,<3.14）
+  UV_PYTHON: "3.13"
+
+jobs:
+  # =====================================================================
+  # 后端：lint / 类型 / 测试
+  # =====================================================================
+  backend:
+    name: backend
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        # 与 docker-compose.yml 用同一镜像。若这里用官方 postgres 而本地用
+        # pgvector，将来启用 PGVector 退路时会出现「CI 过、本地挂」。
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: expenseguard
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # 测试库与本地一致，避免夹具在两处走不同分支。
+      # 服务容器无法执行 docker/postgres-init 的脚本（仓库尚未 checkout），
+      # 因此下面用一步显式 CREATE DATABASE 补上。
+      TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/expenseguard_test
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: 建测试库
+        run: psql "postgresql://postgres:postgres@127.0.0.1:5432/postgres" -c "CREATE DATABASE expenseguard_test"
+        env:
+          PGPASSWORD: postgres
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: 安装依赖
+        working-directory: backend
+        run: uv sync --frozen
+
+      - name: ruff check
+        working-directory: backend
+        run: uv run ruff check .
+
+      - name: ruff format
+        working-directory: backend
+        run: uv run ruff format --check .
+
+      # mypy 覆盖 scripts/ 而不只是 app/：export_openapi.py 是契约门禁的
+      # 一部分，它挂了整条前后端类型链就断了。
+      - name: mypy strict
+        working-directory: backend
+        run: uv run mypy app scripts
+
+      - name: pytest
+        working-directory: backend
+        run: uv run pytest
+
+      # 迁移与模型的零漂移。放在 pytest 之后：此时测试库已被夹具迁到 head。
+      # env.py 没有命令行注入连接串的口子（凭据只从环境变量来，
+      # 好让 alembic.ini 能安全进仓库），所以这里直接设 DATABASE_URL。
+      - name: alembic check
+        working-directory: backend
+        run: uv run alembic check
+        env:
+          DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/expenseguard_test
+
+  # =====================================================================
+  # 前端：lint / 格式 / 类型 / 测试 / 构建
+  # =====================================================================
+  frontend:
+    name: frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # npm ci 而非 npm install：前者严格按 lock 文件安装，
+      # 且 lock 与 package.json 不一致时直接失败——正是 CI 该有的行为。
+      - run: npm ci
+
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run build
+
+  # =====================================================================
+  # 契约漂移门禁
+  #
+  # 后端改了 Pydantic 模型却没重新导出 openapi.json / 重新生成前端类型时，
+  # 这个 job 变红。没有它，字段不一致会一路溜到运行时才暴露。
+  # =====================================================================
+  contract:
+    name: contract
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 安装依赖
+        run: |
+          cd backend && uv sync --frozen
+          cd ../frontend && npm ci
+
+      # 导出脚本只 import 应用、不连数据库（引擎在 lifespan 里才创建），
+      # 因此这个 job 不需要任何服务容器。
+      - name: 重新导出 OpenAPI
+        working-directory: backend
+        run: uv run python scripts/export_openapi.py
+
+      - name: 重新生成前端类型
+        working-directory: frontend
+        run: npm run gen:api
+
+      - name: 检查漂移
+        run: |
+          if ! git diff --exit-code -- openapi.json frontend/src/api/schema.d.ts; then
+            echo "::error::OpenAPI 契约与代码不一致。请在本地运行:" >&2
+            echo "  cd backend && uv run python scripts/export_openapi.py" >&2
+            echo "  cd frontend && npm run gen:api" >&2
+            echo "然后提交生成结果。" >&2
+            exit 1
+          fi
+
+  # =====================================================================
+  # 密钥扫描（全历史）
+  # =====================================================================
+  secrets:
+    name: secrets
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # 扫全历史，不只是本次改动。密钥一旦进过历史，
+          # 后续 commit 删掉它并不能让它消失。
+          fetch-depth: 0
+
+      - name: gitleaks
+        run: |
+          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.30.1 \
+            git /repo --redact --no-banner --exit-code 1
+
+  # =====================================================================
+  # 评测门禁
+  #
+  # ⚠️ 这个 job 现在是**常驻 skip**，不是被注释掉、也不是 `if: false`。
+  # 被注释掉的门禁在阶段 2 必然被遗忘；常驻 job 每次 CI 都在提醒它存在。
+  # backend/evals/baseline.json 的 thresholds 一填，它自动开始阻断，
+  # **不需要改本文件一个字**。
+  #
+  # ⚠️ `pytest -m eval` 若选中 0 个用例，退出码是 5，job 会假红。
+  # 所以 tests/eval/test_eval_gate.py 里有一个真实存在、主动 skip 的用例。
+  # 删它之前请先想清楚这一点。
+  # =====================================================================
+  eval-gate:
+    name: eval-gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: 安装依赖
+        working-directory: backend
+        run: uv sync --frozen
+
+      # 评测用例不碰数据库（夹具是惰性的），因此不需要服务容器。
+      - name: 评测门禁
+        working-directory: backend
+        run: uv run pytest -m eval

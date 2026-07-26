@@ -19,7 +19,7 @@
 
 | 层 | 选型 |
 |---|---|
-| 前端 | React + Vite + TypeScript(strict) + Tailwind + shadcn/ui — **仅桌面浏览器端** |
+| 前端 | React 19 + Vite 8 + TypeScript 5.9(strict) + Tailwind v4 + shadcn/ui — **仅桌面浏览器端** |
 | 后端 | Python 3.13 + FastAPI + Pydantic v2 |
 | 编排 | LangGraph + PostgresSaver(checkpoint) |
 | 数据库 | PostgreSQL(业务 / checkpoint / 审计) |
@@ -51,9 +51,13 @@ npm run dev
 可选服务(不随默认 `up` 启动):
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.models.yml up -d        # embedding / rerank
-docker compose -f docker-compose.observability.yml up -d                        # Langfuse trace 面板
+docker compose -f docker-compose.yml -f docker-compose.models.yml up -d          # embedding / rerank
+docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d   # Langfuse trace 面板
 ```
+
+> 这两个文件都必须与 `docker-compose.yml` **叠加**使用（它们不自带
+> postgres，也不重复声明网络）。可观测栈还要求 `.env` 里有
+> `LANGFUSE_NEXTAUTH_SECRET` 与 `LANGFUSE_SALT`，缺了会直接拒绝启动。
 
 > **Windows 注意:** 后端必须用 `python -m app` 启动，不能直接
 > `uvicorn app.main:app`。uvicorn 在 Windows 硬编码 ProactorEventLoop，
@@ -66,9 +70,27 @@ docker compose -f docker-compose.observability.yml up -d                        
 |---|---|---|
 | 测试 | `uv run pytest` | `npm run test` |
 | 代码检查 | `uv run ruff check .` | `npm run lint` |
-| 类型检查 | `uv run mypy app` | `npm run typecheck` |
+| 类型检查 | `uv run mypy app scripts` | `npm run typecheck` |
 | 格式化 | `uv run ruff format .` | `npm run format` |
 | 构建 | — | `npm run build` |
+
+跨前后端的契约与提交前检查：
+
+```bash
+cd backend && uv run python scripts/export_openapi.py   # 重新导出 openapi.json
+cd frontend && npm run gen:api                          # 重新生成 src/api/schema.d.ts
+uv tool install pre-commit && pre-commit install        # 一次性
+pre-commit run --all-files
+```
+
+改了后端的 Pydantic 模型就要重跑上面两条并提交结果，否则 CI 的
+`contract` job 会红。
+
+生成一批合成数据（同 seed 必然重放出同一批逻辑行）：
+
+```bash
+cd backend && uv run python -m app.synth --seed 20260727 --rows 50 --out ../data/synthetic --stem baseline-50
+```
 
 ## 目录结构
 

@@ -1,0 +1,40 @@
+{
+  "anchor_date": "2026-06-30",
+  "columns": [
+    "报销单号",
+    "员工工号",
+    "员工姓名",
+    "部门",
+    "费用类型",
+    "费用发生日期",
+    "提交日期",
+    "金额",
+    "币种",
+    "发票号码",
+    "发票类型",
+    "发票抬头",
+    "商户名称",
+    "发生地点",
+    "事由"
+  ],
+  "generator_version": "1",
+  "kinds_implemented": [
+    "over_limit"
+  ],
+  "kinds_not_implemented": [
+    "duplicate_invoice",
+    "sequential_invoice",
+    "spacetime_conflict",
+    "split_claim",
+    "stale_claim",
+    "wrong_invoice_type",
+    "wrong_title"
+  ],
+  "kinds_requested": [
+    "over_limit"
+  ],
+  "row_count": 50,
+  "rows_digest": "0022eb2e5df116f29ec75c934d0978ddf2cb2849425943fd8a0015c64335a7de",
+  "seed": 20260727,
+  "violation_rate": 0.2
+}

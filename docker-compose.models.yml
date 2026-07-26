@@ -1,0 +1,92 @@
+# ExpenseGuard 本地模型层 —— embedding + rerank
+#
+# ⚠️ **不进默认 `up`。** 权重数 GB，日常开发用不到；后端在没有它时走
+# `FakeEmbeddingProvider`（hashlib 确定性伪向量），检索链路照样能开发。
+#
+# 启动：
+#   docker compose -f docker-compose.yml -f docker-compose.models.yml up -d
+#
+# ---------------------------------------------------------------------------
+# 为什么这一层必须真自托管
+#
+# 「检索层数据不出内网」是硬承诺。制度条款与报销行文本会整段进 embedding，
+# 走云 API 就等于把最敏感的原文送出去。强模型那一层是**有条件**的私有化
+# （依赖脱敏 + 合成数据），这一层没有条件——它必须在内网里跑。
+#
+# ---------------------------------------------------------------------------
+# ⚠️ 状态：**未实测**（W0 spike 待办）
+#
+# 下面的镜像与参数是按文档写的，尚未拉起来验证过。选 Infinity 而非
+# HF TEI 的理由是它单容器同时提供 embed 与 rerank，正好对上本项目的双需求
+# （TEI 要两个容器，且需确认 pinned tag 是否支持 Qwen3 的 last-token pooling）。
+# **这个结论必须靠实测确认，不能靠文档定**——spike 后把结论写进
+# `specs/001-phase1-foundation.md`，若 Infinity 不合用就换成本文件末尾的
+# TEI 方案。
+#
+# ⚠️ 另一个必须在 spike 里一并验证的私有化坑：客户内网大概率访问不了
+# HuggingFace。要确认离线模型供给路径（预下载权重挂载 / 权重烤进自建镜像），
+# 结论同样写进 specs。这个问题留到上线周才发现会很贵。
+
+services:
+  embedding:
+    # Infinity：单容器同时挂 embedding 与 rerank 模型
+    image: michaelf34/infinity:0.0.77
+    command:
+      - v2
+      - --model-id
+      - ${EMBEDDING_MODEL:-BAAI/bge-m3}
+      - --model-id
+      - ${RERANK_MODEL:-BAAI/bge-reranker-v2-m3}
+      - --port
+      - "7997"
+    ports:
+      # 与其余服务一致地绑 loopback —— 默认的 0.0.0.0 等于把模型端点
+      # 暴露给整个网段。
+      - "127.0.0.1:7997:7997"
+    volumes:
+      # 权重缓存用命名卷。挂宿主目录在 Windows/NTFS 下是权限故障源，
+      # 且重建容器时不必重新下载数 GB。
+      - model_cache:/app/.cache
+    environment:
+      # 内网无法访问 HuggingFace 时改用镜像站或离线目录，
+      # 具体路径待 W0 spike 确认后回填。
+      HF_HOME: /app/.cache/huggingface
+      HF_HUB_OFFLINE: ${HF_HUB_OFFLINE:-0}
+    healthcheck:
+      # Infinity 镜像自带 python，用它而不是 curl —— 与 qdrant 那边
+      # 踩过的坑同源:镜像里没有的命令写进 healthcheck 会直接失败。
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request;urllib.request.urlopen('http://127.0.0.1:7997/health')",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 300s # 首次启动要下载权重，给足时间
+
+volumes:
+  model_cache:
+# 刻意不声明 networks：本文件永远与 docker-compose.yml 叠加使用，
+# 合并后直接复用它定义的 `expenseguard` 默认网络。若在这里写
+# `external: true`，首次启动会因为网络尚不存在而直接失败。
+
+# ---------------------------------------------------------------------------
+# 备选方案：HuggingFace TEI（生产成熟度更高，但要两个容器）
+#
+#  embedding:
+#    image: ghcr.io/huggingface/text-embeddings-inference:1.8
+#    command: ["--model-id", "${EMBEDDING_MODEL}", "--port", "80"]
+#    ports: ["127.0.0.1:7997:80"]
+#    volumes: ["model_cache:/data"]
+#
+#  rerank:
+#    image: ghcr.io/huggingface/text-embeddings-inference:1.8
+#    command: ["--model-id", "${RERANK_MODEL}", "--port", "80"]
+#    ports: ["127.0.0.1:7998:80"]
+#    volumes: ["model_cache:/data"]
+#
+# 选它的前提是先确认 pinned tag 支持目标模型的 pooling 方式；
+# 不支持时表现为「服务起得来、向量质量悄悄劣化」，比启动失败更难发现。

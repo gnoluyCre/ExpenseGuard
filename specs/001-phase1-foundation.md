@@ -1,7 +1,10 @@
 # Spec 001 · Phase 1 地基
 
-**状态:** 进行中（CP0–CP3 已完成，CP4 待做）
+**状态:** 已完成（CP0–CP4）。遗留 W0 spike 未做，见文末「已知问题」。
 **最近更新:** 2026-07-27
+**验收:** 后端 `49 passed, 1 skipped`；前端 `8 passed`；
+`ruff` / `mypy app scripts` / `alembic check` / `oxlint` / `tsc` / `prettier --check`
+/ `pre-commit run --all-files` 全绿。
 
 ---
 
@@ -87,6 +90,64 @@
 跟着异常一起消失 —— 结果是暴力破解尝试一条都不留痕，而这恰恰是
 最需要留痕的场景。修法是在抛异常前立即 `commit()`（此刻事务里
 只有那一条审计记录，单独提交是安全的）。
+
+### CP4 · 前端垂直切片 + OpenAPI 契约 + CI
+
+后端 49 passed + 1 skipped（较 CP3 的 34 增加 15 条合成数据测试 + 1 条
+baseline 守门 + 1 条常驻 skip 的评测门禁），前端 8 passed。核心资产:
+
+| 文件 | 作用 |
+|---|---|
+| `backend/scripts/export_openapi.py` | 稳定序列化的契约导出（`sort_keys=True`）+ `--check` 门禁模式 |
+| `openapi.json` / `frontend/src/api/schema.d.ts` | 前后端契约，**两个生成物都进仓库**，供 CI 做漂移比对 |
+| `frontend/src/api/client.ts` | openapi-fetch 类型化客户端 |
+| `frontend/src/auth/useAuth.ts` | 身份的唯一事实来源是服务端会话，不做本地副本 |
+| `frontend/src/auth/RequireAuth.tsx` | 路由守卫（体验层，非安全边界） |
+| `frontend/src/components/AppShell.tsx` | 三角色外壳，菜单由**权限**驱动而非角色 if-else |
+| `backend/app/synth/` | 合成数据生成器:确定性、八类登记、标签物理分离 |
+| `backend/evals/baseline.json` + `tests/eval/test_eval_gate.py` | 数据驱动的评测门禁占位 |
+| `.pre-commit-config.yaml` / `.github/workflows/ci.yml` | 提交前与 CI 双层门禁 |
+
+#### 与计划书的三处偏离（生态已变，计划书前提失效）
+
+| 项 | 计划书 | 实际 | 原因 |
+|---|---|---|---|
+| React | 18 | **19** | 计划书锁 18 的理由是「shadcn CLI 按 19 生成会有 peer dep 冲突」。如今 create-vite 9 默认就是 19、shadcn 也原生面向 19，锁 18 反而**制造**了那个冲突 |
+| 前端 lint | ESLint + Prettier | **oxlint + Prettier** | create-vite 9 官方模板已改用 oxlint；ESLint 需额外拉一整套 typescript-eslint。AGENTS.md 的编码约定已同步修改 |
+| 路由 | `react-router-dom` | **`react-router` v8** | `react-router-dom` 最新版落在 CVE 区间（7.12.0–8.2.0，RSC CSRF），且 v8 已把它并入主包 |
+
+两处偏离都已回写 AGENTS.md / MEMORY.md —— **偏离要落到事实来源里，
+而不是留成「文档说 A、代码是 B」**。
+
+#### 反向验证（已实测 2026-07-27）
+
+前端守卫与菜单过滤各改一行制造缺陷:
+
+- `RequireAuth` 的 `if (isError || !user)` → `if (false)`
+- `AppShell` 的 `MENU.filter(...)` → `MENU`
+
+结果 3 条测试立刻变红（`未登录时跳转到登录页`、`auditor 看不到规则配置`、
+`viewer 只看到只读入口`），随后完整复原。
+
+私有路径拦截也实测过:`git add -f data/private/2026-06.csv` 后
+`pre-commit run --all-files` 报 `block-private-paths` 失败。
+这条很重要——**`.gitignore` 挡不住 `git add -f`**。
+
+#### 这一轮真正花时间的地方:测试桩没生效，测试却是绿的
+
+前端测试第一版里 `RequireAuth` 的「未登录应跳转」是**通过**的，但它
+通过的原因不是守卫工作正常，而是 `vi.stubGlobal("fetch", ...)` 根本没
+生效——`createClient()` 在模块导入时就把 `globalThis.fetch` 抓走了，
+测试里的替换来得太晚。于是请求真的发了出去、真的失败，query 进入
+`isError`，守卫跳转，断言通过。
+
+**一个什么都没测到的测试，和一个测对了的测试，绿灯长得一模一样。**
+是「已登录应放行」那条同时红了才暴露出来——它无法靠网络错误蒙混过关。
+修法是让客户端延迟解析 fetch（`fetch: (request) => globalThis.fetch(request)`）。
+
+同类问题还有一处:测试桩把 `fetch` 的入参当字符串处理，而 openapi-fetch
+传的是 **Request 对象**，`String(request)` 得到 `"[object Request]"`，
+匹配不上任何 handler。症状是「登录失败」，很容易被误判成业务代码的 bug。
 
 ---
 
@@ -176,6 +237,14 @@ ALTER TABLE row_result ADD CONSTRAINT uq_row_result_file_version_id_row_no
 | 8 | 健康检查 postgres 探针 3 秒超时,但直连只要 0.03 秒 | **uvicorn 在 Windows 硬编码 `ProactorEventLoop`**(`uvicorn/loops/asyncio.py`),而 psycopg 异步无法在其上运行。且 uvicorn 0.36+ 用 `asyncio.run(loop_factory=...)`,**完全绕过事件循环策略** | 新增 `app/__main__.py`,把循环工厂显式传给 uvicorn |
 | 9 | 登录失败的审计日志消失 | `get_db` 在异常传播时 rollback,把审计记录一起回滚 | 抛异常前立即 commit |
 | 10 | cookie 名两处不一致 | 写用 `settings.session_cookie_name`,读硬编码 `"eg_session"`(FastAPI 的 `Cookie(alias=)` 在导入时求值,拿不到运行时配置) | 改为模块常量 `SESSION_COOKIE_NAME`,删掉该配置项 |
+| 11 | `npx shadcn add` 把组件写进一个名叫 `@` 的**真实目录**,不报任何错 | shadcn CLI 读的是根 `tsconfig.json` 的 `paths`,而 create-vite 的根配置只做 project references、没有 `paths` | 根 `tsconfig.json` 也加一份 `paths`(于是别名共三处:vite / tsconfig.app / tsconfig 根) |
+| 12 | `openapi-typescript` 装不上 | 它的 peer 是 `typescript@^5.x`,而 create-vite 9 默认给 TS 6 | 前端 TS 锁 `~5.9`。用 `--legacy-peer-deps` 硬装的话,codegen 会在运行时撞上 TS 6 的 API 变更 |
+| 13 | 加了 `js-yaml: ^5` 的 override 后,`openapi-typescript` 启动即 TypeError | `@redocly/openapi-core` 用的是 v4 的 `types.merge` API | override 锁 `4.3.0`(仍在 CVE 修复版本内) |
+| 14 | 所有 API 请求都是 `/api/api/...` | schema 里的路径本身已含 `/api`,客户端又配了 `baseUrl: "/api"` | baseUrl 只放 origin |
+| 15 | jsdom 下所有请求报 `Failed to parse URL` | undici 的 `Request` 不接受相对 URL,而空 baseUrl 产出的正是相对 URL | baseUrl 默认取 `window.location.origin` |
+| 16 | **测试桩完全没生效,测试却是绿的** | `createClient()` 在模块导入时抓走 `globalThis.fetch`,`vi.stubGlobal` 来得太晚;请求真发出去、真失败,于是「未登录应跳转」靠网络错误蒙混通过 | 客户端改为延迟解析 `fetch`。详见 CP4 章节 |
+| 17 | `oxlint` 报一片 `react-in-jsx-scope` | 打开 `categories.correctness` 会连带启用这条规则,而它对 React 17+ 的自动 JSX 运行时不适用 | 显式 `"react/react-in-jsx-scope": "off"` |
+| 18 | `check-json` 钩子在 tsconfig 上失败 | `tsconfig*.json` 是 JSONC(TS 官方允许注释) | 排除它们,而不是删掉配置里的解释性注释 |
 
 ---
 
@@ -214,10 +283,40 @@ ALTER TABLE row_result ADD CONSTRAINT uq_row_result_file_version_id_row_no
 
 Linux 部署（Docker）不受影响。
 
+### W0 spike 未做 —— 模型层镜像**未经实测**
+
+`docker-compose.models.yml` 已写好，但**没有拉起来验证过**。文件里选的是
+Infinity（单容器同时挂 embed + rerank，正好对上本项目的双需求），备选方案
+HF TEI 以注释形式留在文件末尾。**这个选择必须靠实测确认，不能靠文档定。**
+
+同一次 spike 里必须一并验证的还有:**客户内网大概率访问不了 HuggingFace。**
+要确认离线模型供给路径（预下载权重挂载 / 权重烤进自建镜像）。这个问题
+留到上线周才发现会很贵。
+
+Langfuse 那边同理:`docker-compose.observability.yml` 写的是 v2（单容器 +
+已由 init 脚本预建的 `langfuse` 库），未起过。升 v3 不要手写——服务集变成
+web + worker + ClickHouse + Redis + MinIO，必须从上游固定 tag 复制官方 compose。
+
+### CI 只在本地做过等价验证
+
+`.github/workflows/ci.yml` 的每一步都在本地跑通过（ruff / mypy / pytest /
+`alembic check` / 契约导出与比对 / oxlint / tsc / vitest / build /
+`pre-commit run --all-files`），但**流水线本身尚未在 GitHub 上真实跑过一次**
+—— 仓库还没 push。首次 push 后要确认的点:服务容器的 `CREATE DATABASE`
+步骤、`ghcr.io/gitleaks/gitleaks:v8.30.1` 镜像可拉取、setup-uv/setup-node
+的缓存键。
+
+### 阶段 1 无 Dockerfile
+
+`docker compose build` 目前无事可做（compose 里只有 postgres/qdrant 两个
+现成镜像）。CI 因此没有 build job —— 与其写一个假的，不如把它留到阶段 4
+「Docker Compose 单机实跑验证」时连同 Dockerfile 一起补。
+
 ---
 
 ## 待办
 
-- [ ] CP4 · 前端垂直切片 + OpenAPI 契约 + CI
-- [ ] 补 `docker-compose.models.yml`(embedding/rerank)与 `docker-compose.observability.yml`(Langfuse)
-- [ ] 合成数据生成器 `app/synth/`
+- [ ] **W0 spike**:实测 embedding 镜像（Infinity vs TEI）+ 离线模型供给路径，结论回写本文件
+- [ ] **W0 spike**:起一次 Langfuse、发一条测试 span、记录版本与内存占用，然后 down
+- [ ] push 后确认 CI 首次运行全绿
+- [ ] 阶段 2 F1 · Excel 导入与文件版本管理（`process_row_once` 的第一个生产调用方在 F3）

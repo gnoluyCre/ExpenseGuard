@@ -33,6 +33,10 @@ dependencies = [
     "langgraph>=1.0.0,<1.1",
     "langgraph-checkpoint-postgres>=3.0.0,<3.1",
     "qdrant-client>=1.16,<1.17",
+    # —— Excel ——
+    # 合成数据生成器（app/synth）写 .xlsx 用它；F1 的导入侧也将复用，
+    # 因此是运行时依赖而非 dev 依赖。纯 Python + wheel，无编译。
+    "openpyxl>=3.1,<4",
 ]
 
 [dependency-groups]
@@ -43,6 +47,10 @@ dev = [
     "testcontainers[postgres]>=4.8,<5",
     "ruff>=0.8,<1",
     "mypy>=1.13,<2",
+    # openpyxl 不带 py.typed，缺了它 mypy strict 会因 import-untyped 直接失败。
+    # 选装 stub 而不是 ignore_missing_imports：后者会把整个 openpyxl 的调用
+    # 都退化成 Any，正好丢掉 strict 模式最想要的那部分检查。
+    "types-openpyxl>=3.1",
 ]
 
 # 这是应用而非库，不安装进 site-packages。
