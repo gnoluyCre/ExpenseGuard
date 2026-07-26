@@ -10,6 +10,10 @@ dependencies = [
     "fastapi>=0.115,<1",
     "uvicorn[standard]>=0.32,<1",
     "python-multipart>=0.0.12,<1",
+    # 运行时依赖:健康检查要探测 Qdrant 的 /readyz。
+    # （它同时也是测试用的 ASGI 客户端，但不能只放 dev 组——
+    #   那样生产镜像里就没有它，启动即 ImportError。）
+    "httpx>=0.27,<1",
     # —— 校验与配置 ——
     # 同一 Pydantic 模型既约束 LLM 结构化输出，又作 API 响应模型，避免双定义漂移
     "pydantic>=2.9,<3",
@@ -37,7 +41,6 @@ dev = [
     "pytest-asyncio>=0.24,<2",
     "pytest-cov>=6,<8",
     "testcontainers[postgres]>=4.8,<5",
-    "httpx>=0.27,<1",
     "ruff>=0.8,<1",
     "mypy>=1.13,<2",
 ]
@@ -80,9 +83,9 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 # 测试里 assert 是正常写法；测试函数不强制返回类型注解；
-# S106 是「硬编码密码」——测试夹具里的 password_hash="x" 是刻意的假值，
+# S105/S106 是「硬编码密码」——测试夹具里的假密码是刻意的，
 # 真实密码哈希由 argon2 生成且从不出现在源码里
-"tests/**" = ["S101", "S106", "ANN"]
+"tests/**" = ["S101", "S105", "S106", "ANN"]
 # 迁移文件由 Alembic 生成，不强制注解与行长
 "app/db/migrations/versions/*" = ["ANN", "E501"]
 # env.py 的 include_object 必须匹配 Alembic 定义的回调签名，
@@ -103,6 +106,13 @@ plugins = ["pydantic.mypy"]
 [[tool.mypy.overrides]]
 module = ["testcontainers.*"]
 ignore_missing_imports = true
+
+# 平台条件代码:mypy 会把 sys.platform 当成检查所在平台的常量，
+# 于是另一个平台的分支必然被判为 unreachable。这不是真问题——
+# 那段代码在对应平台上是要跑的。
+[[tool.mypy.overrides]]
+module = ["app.asyncio_compat"]
+warn_unreachable = false
 
 # ============================================================
 # pytest

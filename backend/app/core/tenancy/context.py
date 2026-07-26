@@ -19,6 +19,12 @@ class TenantContext(BaseModel):
     tenant_id: uuid.UUID
     user_id: uuid.UUID
     role: Role
+    #: 本次请求所用的会话 ID。
+    #:
+    #: 带上它是为了让登出能精确撤销**这一个**会话。
+    #: 若不带，登出就只能去猜（比如「该用户最近活跃的那个会话」），
+    #: 在同一用户多端登录时会撤销错对象。
+    session_id: uuid.UUID
 
 
 #: 存放在 `Session.info` 里的键名。

@@ -25,6 +25,7 @@ Phase 1 先靠 ORM 层，RLS 作为后续独立迁移可选加固。
 """
 
 import uuid
+from typing import Any
 
 from sqlalchemy import event
 from sqlalchemy.orm import ORMExecuteState, Session, with_loader_criteria
@@ -48,6 +49,30 @@ def current_tenant(session: Session) -> uuid.UUID | None:
     return value if isinstance(value, uuid.UUID) else None
 
 
+#: 显式跳过租户过滤的 execution option。
+#:
+#: 唯一的合法用途是**登录**:那时租户上下文尚未建立——它正是要靠
+#: 那次查询来确定。除此之外任何用法都应被视为可疑。
+#:
+#: 做成显式选项而不是「某些情况下守卫自动放行」，是为了让绕过行为
+#: 在代码里可搜索、在评审中可见。`grep -r skip_tenant_filter` 应该
+#: 只有屈指可数的几处命中。
+SKIP_TENANT_FILTER = "skip_tenant_filter"
+
+
+def skip_tenant_filter_options() -> dict[str, Any]:
+    """产出「跳过租户过滤」的 execution options。
+
+    做成函数而不是让调用方写 `{SKIP_TENANT_FILTER: True}`，
+    是因为 SQLAlchemy 的 `execution_options` 参数类型是 TypedDict，
+    mypy 要求键必须是字面量 —— 用常量当键会报
+    `Expected TypedDict key to be string literal`。
+
+    在这里集中转一次类型，调用方就能既用常量、又过类型检查。
+    """
+    return {SKIP_TENANT_FILTER: True}
+
+
 def _apply_tenant_filter(execute_state: ORMExecuteState) -> None:
     """在每次 ORM SELECT 前注入租户过滤。"""
     # 只管 SELECT。列级懒加载（is_column_load）已经限定在已过滤的父行上，
@@ -57,6 +82,10 @@ def _apply_tenant_filter(execute_state: ORMExecuteState) -> None:
 
     # 关系加载同理:父行已经过滤过了。
     if execute_state.is_relationship_load:
+        return
+
+    # 显式声明的绕过（仅登录路径）
+    if execute_state.execution_options.get(SKIP_TENANT_FILTER):
         return
 
     tenant_id = execute_state.session.info.get(SESSION_TENANT_KEY)

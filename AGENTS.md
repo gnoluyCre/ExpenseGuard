@@ -21,7 +21,10 @@
 ## 环境搭建与命令
 执行以下命令进行标准开发流程。不要发明新的包管理器命令。
 - **依赖安装:** `docker compose up -d`(postgres/qdrant/embedding/trace)+ 后端 `uv sync`(或 `pip install -e .`)+ 前端 `npm install`
-- **本地开发:** 后端 `uvicorn app.main:app --reload` · 前端 `npm run dev`
+- **本地开发:** 后端 `uv run python -m app` · 前端 `npm run dev`
+  > ⚠️ 后端**不要**直接用 `uvicorn app.main:app`：uvicorn 在 Windows 硬编码
+  > ProactorEventLoop，而 psycopg 异步模式无法在其上运行（不带 `--reload` 时
+  > 数据库调用会全部挂起至超时）。详见 `app/asyncio_compat.py`。
 - **测试:** 后端 `pytest` · 前端 `npm run test`
 - **代码检查与格式化:** 后端 `ruff check . && ruff format .` · 前端 `npm run lint`
 - **构建:** 前端 `npm run build` · 全栈 `docker compose build`
@@ -74,8 +77,8 @@
 
 ## 当前状态 📍
 **最近更新:** 2026-07-27
-**正在进行:** 项目初始化 —— 尚未开始构建
-**最近完成:** 暂无
+**正在进行:** 阶段 1 CP4 —— 前端垂直切片 + OpenAPI 契约 + CI
+**最近完成:** CP0 仓库重置 / CP1 后端地基与 18 张表 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离（34 个测试全绿）
 **受阻于:** 无(W0 阻塞项:真实报销数据脱敏审批、制度文档到位 —— 见 `MEMORY.md`)
 
 ## 路线图 🗺️

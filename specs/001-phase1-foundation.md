@@ -1,6 +1,6 @@
 # Spec 001 · Phase 1 地基
 
-**状态:** 进行中（CP0–CP2 已完成，CP3–CP4 待做）
+**状态:** 进行中（CP0–CP3 已完成，CP4 待做）
 **最近更新:** 2026-07-27
 
 ---
@@ -36,6 +36,57 @@
 | `tests/integration/test_migrations.py` | 受保护约束的守门员(直查 `pg_constraint`) |
 | `tests/integration/test_idempotency.py` | 5 条幂等测试 |
 | `tests/integration/test_recovery.py` | checkpoint 隔离 + 节点重放三重断言 |
+
+### CP3 · 认证、RBAC 与租户隔离
+
+34 个测试全绿。核心资产:
+
+| 文件 | 作用 |
+|---|---|
+| `app/core/security/password.py` | argon2 封装 + `verify_dummy()` 防用户名枚举 |
+| `app/core/security/session_service.py` | PG 会话:token 只存 SHA-256、双重过期、写节流 |
+| `app/core/security/permissions.py` | 权限矩阵（数据而非 if-else） |
+| `app/core/security/auth_service.py` | 登录 + 审计留痕 |
+| `app/core/tenancy/scope.py` | 租户过滤强制注入（fail-closed） |
+| `app/api/deps.py` | 依赖链 `get_db → get_auth → get_tenant_db` |
+| `app/__main__.py` | 服务器入口（绕开 uvicorn 硬编码的 ProactorEventLoop） |
+
+#### 测试发现的真实漏洞:3 张表绕过了租户过滤
+
+`test_跨租户查询返回空而非他人数据` 一上来就红了:租户 A 的上下文
+查到了租户 B 的数据。
+
+根因是 `issubclass(FileVersion, TenantScopedMixin)` 为 **False** ——
+`FileVersion` / `AppUser` / `UserSession` 当初手写了 `tenant_id` 列
+而没继承 mixin。`with_loader_criteria` 靠 `issubclass` 匹配实体，
+匹配不上就**静默不过滤**:列写得再对也没用。
+
+这正是那种「代码看起来完全正确、评审也看不出问题」的漏洞。
+改为继承 mixin 后 `alembic check` 仍零漂移（mixin 生成的列与手写的
+逐字节一致），说明这是纯粹的元数据问题，与 schema 无关 ——
+也就更难靠看 DDL 发现。
+
+**防复发:** `test_migrations.py::test_all_business_tables_have_tenant_id`
+断言所有业务表都有该列；上面那条跨租户测试则守住 mixin 继承关系。
+
+#### 认证路径的鸡生蛋问题
+
+守卫要求查询时已有租户上下文，但「查会话表」正是确定租户的唯一途径。
+解法是显式的 `skip_tenant_filter` execution option，全系统只用于两处:
+
+- `authenticate()` —— 按 `(tenant_slug, username)` 精确查用户
+- `resolve_session()` —— 按 token 的 SHA-256 精确查会话
+
+做成**显式选项**而非「守卫在某些情况下自动放行」，是为了让绕过行为
+可 grep、可评审。`get_auth` 解析出租户后立即 `bind_tenant`，
+因此下游（含登出撤销）全部自动受保护，不需要更多口子。
+
+#### 失败登录的审计日志曾被回滚
+
+`get_db` 在异常传播时会 `rollback()`，导致「登录失败」的审计记录
+跟着异常一起消失 —— 结果是暴力破解尝试一条都不留痕，而这恰恰是
+最需要留痕的场景。修法是在抛异常前立即 `commit()`（此刻事务里
+只有那一条审计记录，单独提交是安全的）。
 
 ---
 
@@ -99,10 +150,15 @@ ALTER TABLE row_result ADD CONSTRAINT uq_row_result_file_version_id_row_no
     UNIQUE (file_version_id, row_no);
 ```
 
-### 待做:租户过滤反向验证
+### 租户过滤（已实测 2026-07-27）
 
-CP3 完成后需做:临时注释掉 `core/tenancy/scope.py` 的事件监听器,
-跨租户测试必须变红。
+在 conftest 里于 `install_tenant_guard()` 之后调用 `uninstall_tenant_guard()`，
+两条测试立即变红:
+
+- `test_跨租户查询返回空而非他人数据` —— 租户 A 看到了 B 的数据
+- `test_未绑定租户时查询直接报错` —— `DID NOT RAISE TenantScopeMissingError`
+
+证明这两条测试确实在验证守卫机制，而不是碰巧通过。
 
 ---
 
@@ -116,6 +172,10 @@ CP3 完成后需做:临时注释掉 `core/tenancy/scope.py` 的事件监听器,
 | 4 | 所有异步 DB 测试 `InterfaceError` | **psycopg 异步模式无法在 `ProactorEventLoop` 上运行**,而它是 Windows 的默认事件循环 | 测试用 `pytest_asyncio_loop_factories` hook;生产用 `app/asyncio_compat.py` |
 | 5 | ruff 报 62 个「歧义 Unicode」 | RUF001/002/003 把中文全角标点判为与 ASCII 形近 | 关闭这三条规则 |
 | 6 | `test_langgraph_schema_..._is_empty` 单跑绿、全量跑红 | 断言「schema 为空」制造了测试间顺序依赖(`test_recovery` 会建 checkpoint 表) | 去掉「空」断言,只断言 schema 存在 |
+| 7 | 3 张表静默绕过租户过滤 | `FileVersion`/`AppUser`/`UserSession` 手写 tenant_id 而未继承 `TenantScopedMixin`,`with_loader_criteria` 靠 `issubclass` 匹配,匹配不上就不过滤 | 改为继承 mixin(schema 零漂移) |
+| 8 | 健康检查 postgres 探针 3 秒超时,但直连只要 0.03 秒 | **uvicorn 在 Windows 硬编码 `ProactorEventLoop`**(`uvicorn/loops/asyncio.py`),而 psycopg 异步无法在其上运行。且 uvicorn 0.36+ 用 `asyncio.run(loop_factory=...)`,**完全绕过事件循环策略** | 新增 `app/__main__.py`,把循环工厂显式传给 uvicorn |
+| 9 | 登录失败的审计日志消失 | `get_db` 在异常传播时 rollback,把审计记录一起回滚 | 抛异常前立即 commit |
+| 10 | cookie 名两处不一致 | 写用 `settings.session_cookie_name`,读硬编码 `"eg_session"`(FastAPI 的 `Cookie(alias=)` 在导入时求值,拿不到运行时配置) | 改为模块常量 `SESSION_COOKIE_NAME`,删掉该配置项 |
 
 ---
 
@@ -140,11 +200,24 @@ CP3 完成后需做:临时注释掉 `core/tenancy/scope.py` 的事件监听器,
 
 **若要重新排查:** 装 `py-spy` 抓挂起时的 Python 栈是最快的路径。
 
+### Windows 上必须用 `python -m app` 启动服务
+
+**不能**直接 `uvicorn app.main:app`。uvicorn 在 Windows 硬编码 ProactorEventLoop，
+而 psycopg 异步模式无法在其上运行。
+
+这个坑最阴险的地方在于**只在不带 `--reload` 时出现**:reload 走子进程模式
+(`use_subprocess=True`)会拿到 SelectorEventLoop，于是「开发正常、生产挂死」。
+
+且 `asyncio.set_event_loop_policy()` 对此**无效** —— uvicorn 0.36+ 改用
+`asyncio.run(..., loop_factory=...)`，该路径完全绕过事件循环策略。
+唯一可靠的做法是把工厂显式传进去，见 `app/__main__.py`。
+
+Linux 部署（Docker）不受影响。
+
 ---
 
 ## 待办
 
-- [ ] CP3 · 认证、RBAC 与租户隔离
 - [ ] CP4 · 前端垂直切片 + OpenAPI 契约 + CI
 - [ ] 补 `docker-compose.models.yml`(embedding/rerank)与 `docker-compose.observability.yml`(Langfuse)
 - [ ] 合成数据生成器 `app/synth/`

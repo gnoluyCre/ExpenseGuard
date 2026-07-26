@@ -45,7 +45,9 @@ class Settings(BaseSettings):
     # —— 会话 ——
     # session 存 PostgreSQL 表，不引入 Redis（TechDesign 明确：MVP 单机单租户不加组件）。
     # session 同时是审计对象，与 audit_log 同库同事务才能保证登录留痕可查、可备份。
-    session_cookie_name: str = "eg_session"
+    # cookie 名字**刻意不做成配置项** —— FastAPI 的 Cookie(alias=...)
+    # 在导入时求值，拿不到运行时配置。见 core/security/session_service.py
+    # 的 SESSION_COOKIE_NAME。
     session_cookie_secure: bool = False  # dev 为 false；prod 必须 true
     session_idle_timeout_seconds: int = 8 * 60 * 60  # 闲置 8 小时
     session_absolute_timeout_seconds: int = 12 * 60 * 60  # 绝对上限 12 小时

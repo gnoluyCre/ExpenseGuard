@@ -40,7 +40,7 @@ docker compose up -d          # postgres + qdrant
 cd backend
 uv sync
 uv run alembic upgrade head
-uv run uvicorn app.main:app --reload
+uv run python -m app          # 不要用 uvicorn app.main:app —— 见下方说明
 
 # 3. 前端
 cd frontend
@@ -54,6 +54,11 @@ npm run dev
 docker compose -f docker-compose.yml -f docker-compose.models.yml up -d        # embedding / rerank
 docker compose -f docker-compose.observability.yml up -d                        # Langfuse trace 面板
 ```
+
+> **Windows 注意:** 后端必须用 `python -m app` 启动，不能直接
+> `uvicorn app.main:app`。uvicorn 在 Windows 硬编码 ProactorEventLoop，
+> 而 psycopg 异步模式无法在其上运行——不带 `--reload` 时所有数据库调用
+> 会挂起至超时。原因与修法见 `backend/app/asyncio_compat.py`。
 
 ## 常用命令
 
