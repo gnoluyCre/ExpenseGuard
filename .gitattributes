@@ -1,0 +1,24 @@
+# 统一换行符：Windows 开发 + Linux 容器
+# 不加这一条，容器内的 shell 脚本会因 CRLF 报 "bad interpreter: /bin/sh^M"
+* text=auto eol=lf
+
+*.sh    text eol=lf
+*.py    text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.sql   text eol=lf
+
+# Windows 专用脚本保留 CRLF
+*.ps1   text eol=crlf
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+
+# 二进制文件不做换行符转换，也不参与 diff
+*.xlsx  binary
+*.xls   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.pdf   binary
