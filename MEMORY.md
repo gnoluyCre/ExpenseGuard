@@ -5,10 +5,22 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 -->
 
 ## 🏗️ 当前阶段与目标
-**当前任务:** 阶段 1 —— 地基。CP0(仓库重置)、CP1(后端地基 + 18 张表)、CP2(幂等原语与恢复测试)**已完成**,19 个测试全绿。落地记录见 `specs/001-phase1-foundation.md`。
-**下一步:**
-1. CP3 —— 认证(argon2 + PG session 表)、RBAC 三角色、租户过滤的 API 层接线与集成测试(含跨租户隔离的反向验证)。
-2. CP4 —— 前端登录垂直切片、OpenAPI 类型化客户端与漂移门禁、pre-commit + CI。
+**当前任务:** 阶段 1 —— 地基。**CP0–CP3 已完成**,34 个测试全绿(ruff / ruff format / mypy strict / alembic check 同样全绿)。完整落地记录与踩坑清单见 `specs/001-phase1-foundation.md`。
+
+- CP0 仓库重置(干净历史、`.gitignore` 脱敏排除)
+- CP1 后端地基(uv + 18 张表 + Alembic 三层隔离)
+- CP2 幂等原语与恢复测试(项目 #1 优先级,含反向验证)
+- CP3 认证、RBAC、租户隔离(含反向验证)
+
+**下一步 —— CP4(阶段 1 最后一个检查点):**
+1. 前端垂直切片:Vite + React18 + TS strict + Tailwind v4 + shadcn/ui 脚手架;登录页 / `RequireAuth` 路由守卫 / 三角色 `AppShell` / `HealthPage`;≥3 个 Vitest 测试。**不做任何 F1–F8 业务页。**
+2. OpenAPI → `openapi-typescript` + `openapi-fetch` 类型化客户端;`export_openapi.py` 用 `sort_keys=True` 保证稳定输出;CI 加 `git diff --exit-code` 漂移门禁。
+3. pre-commit(ruff + ruff-format + gitleaks + 大文件拦截 + `tenants/`/`data/private/` 路径拦截)。
+4. GitHub Actions CI:backend / frontend / contract / secrets / eval-gate / build。评测门禁做成**数据驱动常驻 job**(`backend/evals/baseline.json` 的 thresholds 为空则 skip),⚠️ 必须真实存在一个带 `@pytest.mark.eval` 的用例——`pytest -m eval` 选中 0 个用例时退出码是 5,会让 job 假红。
+5. 合成数据生成器骨架 `backend/app/synth/`:`random.Random(seed)` 显式实例(绝不用全局 `random`);只实现 1 类违规,其余 7 个 `ViolationKind` 显式 `raise NotImplementedError`;标签与数据**物理分离**(`batch.xlsx` / `batch.labels.jsonl` / `batch.manifest.json`)。
+6. 可选服务:`docker-compose.models.yml`(embedding/rerank)与 `docker-compose.observability.yml`(Langfuse),均不进默认 `up`。
+
+完整方案见批准过的计划:`C:\Users\IGR\.claude\plans\gentle-mixing-toast.md`(CP4 章节)。
 
 ## 📂 架构决策
 *(把构建过程中做出的具体选择记录在此,便于后续 agent 遵循)*
@@ -23,6 +35,9 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - 2026-07-27 — **18 张表一次建完**,分 0001(7 张全保真)/ 0002(11 张骨架)两个迁移。AGENTS.md 禁的是「功能」不是「表」——建空表不产生任何用户可见行为。决定性理由是受保护区域条款:约束若推迟到功能 PR 才第一次出现,「发明约束」与「实现功能」会发生在同一次改动中,那恰是约束最容易被写弱的时刻。
 - 2026-07-27 — 全部业务表**冗余 `tenant_id`** + 复合外键 `(file_version_id, tenant_id)`。冗余是必需的:租户过滤靠 `with_loader_criteria` 挂在带该列的模型上,没有列就挂不上过滤器。复合外键把「冗余值可能漂移」从代码纪律变成数据库不变式。
 - 2026-07-27 — 测试库默认改用 docker-compose 预建的 `expenseguard_test`,testcontainers 降为 `USE_TESTCONTAINERS=1` 可选路径。原因见下方已知问题。
+- 2026-07-27 — **所有业务表必须继承 `TenantScopedMixin`,而不是自己写一个同样的 `tenant_id` 列。** 租户过滤靠 `issubclass(Model, TenantScopedMixin)` 匹配实体,匹配不上就**静默不过滤**。CP3 时 `FileVersion`/`AppUser`/`UserSession` 就栽在这里——三张表列写得完全正确、DDL 无误、改继承后 `alembic check` 仍零漂移,但跨租户数据一直在泄漏。
+- 2026-07-27 — 租户过滤的绕过做成**显式 execution option**(`skip_tenant_filter_options()`),而非「守卫在某些情况下自动放行」。全系统只用于两处(按 tenant_slug+username 查用户、按 token 哈希查会话)。目的是让绕过行为可 `grep`、可评审。
+- 2026-07-27 — **Windows 上后端必须用 `uv run python -m app` 启动**,不能直接 `uvicorn app.main:app`。见下方已知问题。
 
 ## 🐛 已知问题与坑点
 *(把当前 bug 或临时绕过方案记录在此)*
@@ -39,6 +54,12 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - **testcontainers 在 Windows + Docker Desktop 下挂死**:容器正常起、迁移也跑完,但之后 pytest 无连接、无输出、无进展。根因未定位,已降级为可选路径。
 - **不要用 rollback fixture 测幂等**:rollback 掉的东西从未提交过,而幂等验证的正是已提交副作用;更糟的是它会**静默通过**——上一轮残留数据会让本该失败的测试恰好变绿。
 - **pydantic-settings 对 `list[str]` 字段先做 `json.loads`**,发生在 before-validator 之前;要支持逗号分隔需加 `NoDecode`。
+- **uvicorn 在 Windows 硬编码 `ProactorEventLoop`**(`uvicorn/loops/asyncio.py`),psycopg 异步在其上无法工作。且 uvicorn 0.36+ 用 `asyncio.run(..., loop_factory=...)`,**`set_event_loop_policy` 对它完全无效**。这个坑只在**不带 `--reload`** 时出现(reload 走子进程 → SelectorEventLoop),是典型的「开发正常、生产挂死」。修法是 `app/__main__.py` 显式传循环工厂。
+- **`get_db` 在异常传播时会 rollback**,所以任何「失败路径上的审计日志」都必须在抛异常前单独 `commit()`,否则最该留痕的场景反而一条都不留。
+
+### 已完成阶段的测试统计(便于新会话快速判断状态)
+
+`cd backend && uv run pytest` 应为 **34 passed**。若数量对不上,说明环境或代码有问题,先排查再继续。
 
 ## 📜 已完成阶段
 - [ ] 初始脚手架
