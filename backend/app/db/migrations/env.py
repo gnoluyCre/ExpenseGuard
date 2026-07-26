@@ -72,10 +72,19 @@ def include_object(
 
 
 def _database_url() -> str:
-    """从应用配置读取连接串，而不是写死在 alembic.ini 里。
+    """解析数据库连接串。
 
-    好处:凭据只有一个来源（环境变量），alembic.ini 可以安全地进仓库。
+    优先级:
+      1. 调用方显式注入的 `sqlalchemy.url`（测试用 —— testcontainers
+         起的临时库地址在运行时才知道，只能这样传进来）
+      2. 应用配置（正常路径）
+
+    连接串**不写在 alembic.ini 里**:凭据只有环境变量一个来源，
+    alembic.ini 因此可以安全地进仓库。
     """
+    override = config.get_main_option("sqlalchemy.url", None)
+    if override:
+        return override
     return get_settings().sync_database_url
 
 

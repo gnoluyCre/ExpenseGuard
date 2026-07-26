@@ -79,8 +79,10 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# 测试里 assert 是正常写法；测试函数不强制返回类型注解
-"tests/**" = ["S101", "ANN"]
+# 测试里 assert 是正常写法；测试函数不强制返回类型注解；
+# S106 是「硬编码密码」——测试夹具里的 password_hash="x" 是刻意的假值，
+# 真实密码哈希由 argon2 生成且从不出现在源码里
+"tests/**" = ["S101", "S106", "ANN"]
 # 迁移文件由 Alembic 生成，不强制注解与行长
 "app/db/migrations/versions/*" = ["ANN", "E501"]
 # env.py 的 include_object 必须匹配 Alembic 定义的回调签名，
