@@ -85,6 +85,7 @@ _TRUNCATE_SQL = text(
         audit_log, capability_declaration, sampling_audit, review, evidence_step,
         correlation_finding, finding, field_availability, row_result, expense_row,
         file_version, policy_clause, policy_document, rule_config, schema_mapping,
+        schema_mapping_version,
         user_session, app_user, tenant
     RESTART IDENTITY CASCADE
     """

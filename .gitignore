@@ -73,6 +73,10 @@ temp_test_run_data.json
 .docker-data/
 .cache/
 models/
+# `models/` above is for downloaded model weights. Keep application ORM
+# models tracked; otherwise migrations and runtime metadata silently diverge.
+!backend/app/db/models/
+!backend/app/db/models/*.py
 
 # ============================================================
 # 真实报销文件误放根目录的兜底

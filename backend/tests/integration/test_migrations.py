@@ -32,6 +32,7 @@ EXPECTED_TABLES = {
     "rule_config",
     "sampling_audit",
     "schema_mapping",
+    "schema_mapping_version",
     "tenant",
     "user_session",
 }
@@ -101,6 +102,8 @@ async def test_row_result_idempotency_constraint_exists(engine: AsyncEngine) -> 
         ("evidence_step", "uq_evidence_step_finding_id_step_no"),
         # 被放行样本抽检:漏放率唯一的可测来源
         ("sampling_audit", "uq_sampling_audit_file_version_id_row_no"),
+        # F2 必须保留 0002 的映射骨架唯一约束。
+        ("schema_mapping", "uq_schema_mapping_tenant_id_source_column_version"),
     ],
 )
 async def test_protected_unique_constraints_exist(
@@ -121,6 +124,93 @@ async def test_protected_unique_constraints_exist(
             {"table": table, "constraint": constraint},
         )
     assert exists, f"{table} 上缺少受保护的唯一约束 {constraint}"
+
+
+async def test_f2_schema_parsing_columns_exist(engine: AsyncEngine) -> None:
+    """F2 物化列必须由 0003 建立，而不是只存在于 ORM metadata。"""
+    expected = {
+        "file_version": {"mapping_version_id", "parse_status", "parsed_at"},
+        "expense_row": {"normalized_json", "parse_error_code", "parse_error_detail"},
+        "schema_mapping": {"mapping_version_id"},
+    }
+    async with engine.connect() as conn:
+        for table, required_columns in expected.items():
+            rows = await conn.execute(
+                text(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_schema = 'public' AND table_name = :table"
+                ),
+                {"table": table},
+            )
+            actual = {row[0] for row in rows}
+            assert required_columns <= actual, (
+                f"{table} 缺少 F2 列: {sorted(required_columns - actual)}"
+            )
+
+
+@pytest.mark.parametrize(
+    ("table", "constraint", "constraint_type"),
+    [
+        (
+            "schema_mapping_version",
+            "uq_schema_mapping_version_tenant_id_version",
+            "u",
+        ),
+        (
+            "schema_mapping_version",
+            "uq_schema_mapping_version_id_tenant_id",
+            "u",
+        ),
+        (
+            "schema_mapping",
+            "uq_schema_mapping_mapping_version_id_source_column",
+            "u",
+        ),
+        (
+            "schema_mapping",
+            "uq_schema_mapping_mapping_version_id_target_field",
+            "u",
+        ),
+        (
+            "schema_mapping",
+            "fk_schema_mapping_mapping_version_tenant",
+            "f",
+        ),
+        (
+            "file_version",
+            "fk_file_version_mapping_version_tenant",
+            "f",
+        ),
+        ("file_version", "ck_file_version_parse_status_values", "c"),
+    ],
+)
+async def test_f2_schema_parsing_constraints_exist(
+    engine: AsyncEngine,
+    table: str,
+    constraint: str,
+    constraint_type: str,
+) -> None:
+    """F2 的版本、租户一致性和状态域约束必须落在 PostgreSQL。"""
+    async with engine.connect() as conn:
+        exists = await conn.scalar(
+            text(
+                """
+                SELECT EXISTS (
+                    SELECT 1 FROM pg_constraint c
+                    JOIN pg_class t ON t.oid = c.conrelid
+                    WHERE t.relname = :table
+                      AND c.conname = :constraint
+                      AND c.contype = :constraint_type
+                )
+                """
+            ),
+            {
+                "table": table,
+                "constraint": constraint,
+                "constraint_type": constraint_type,
+            },
+        )
+    assert exists, f"{table} 缺少 F2 约束 {constraint}"
 
 
 async def test_finding_has_two_severity_dimensions(engine: AsyncEngine) -> None:

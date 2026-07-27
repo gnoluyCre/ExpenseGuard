@@ -5,7 +5,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 -->
 
 ## 🏗️ 当前阶段与目标
-**当前任务:阶段 2 F1 · Excel 导入与文件版本管理已完成。** 已新增 `.xlsx` 上传、内容哈希去重、`file_version` 创建/复用、`expense_row` 原始行落库、批次列表/详情 API、桌面端批次页与契约同步。F1 后端集成测试已通过。
+**当前任务:阶段 2 F2 · CP-F2.2 解析核心已完成。** `backend/app/core/parsing/` 已实现严格 Pydantic 模型、金额/日期/文本归一化、映射与推断校验、12 字段可用性探测，以及带 `FOR UPDATE NOWAIT`、同版本复用和原子重解析的批次服务。
 
 - CP0 仓库重置(干净历史、`.gitignore` 脱敏排除)
 - CP1 后端地基(uv + 18 张表 + Alembic 三层隔离)
@@ -13,7 +13,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - CP3 认证、RBAC、租户隔离(含反向验证)
 - CP4 前端垂直切片 + OpenAPI 契约门禁 + pre-commit/CI + 合成数据生成器(含反向验证)
 
-**下一步:阶段 2 F2 · Schema 映射与结构化解析。** 串行依赖链 F1→F2→F3→F4→F5,不得跳步。
+**下一步:CP-F2.3 · API、权限与审计。** 落地映射查询/保存、触发解析、错误清单和字段可用性接口；按 `CONFIG_READ/WRITE`、`BATCH_IMPORT/READ` 鉴权，补跨租户、审计和失败路径独立事务测试；不进入 F3。
 `process_row_once` 至今**一个生产调用方都没有** —— 第一个是 F3,刻意如此。
 
 **开工前必读的两件事:**
@@ -24,6 +24,11 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 
 ## 📂 架构决策
 *(把构建过程中做出的具体选择记录在此,便于后续 agent 遵循)*
+- 2026-07-27 — **F2 推断只读取已直接映射的统一字段，不读取任意原始列，也不支持推断链。** `constant` 首版只允许 `currency`；`literal_lookup` 使用严格判别联合，按配置顺序做 NFKC 字面量包含匹配并取首个命中。推断目标必须是未直接映射的可选字段。规格 §6.2 的 direct+inference 同时配置示例与 §5.1/§6.1 正文冲突，实现以正文互斥规则为准。
+- 2026-07-27 — **F2 可用性按字段观察结果计数，而非按整行成功计数。** 某行因金额失败时，该行已成功规范化的日期仍计入日期 non-null_count；所有失败行仍在固定 `row_count` 分母中。这样既不排除坏行虚高比例，也不因无关字段错误低估目标字段质量。
+- 2026-07-27 — **解析服务使用调用方外层事务 + 内部 SAVEPOINT。** `FOR UPDATE NOWAIT`、行结果替换、12 项可用性覆盖和 `file_version` 更新处于同一原子单元；API 依赖负责最终 commit/rollback。首次系统失败后的 `failed` 状态与失败审计需要独立短事务，留到 CP-F2.3，不在失败事务中勉强续写。
+- 2026-07-27 — **F2 映射版本号采用租户内全局递增。** 原因是 0002 的 `unique(tenant_id, source_column, version)` 属于受保护约束；父版本号全局化后，子条目的兼容 `version` 可与父版本一致且不阻塞不同表头复用相同源列。映射版本不可变，legacy `confidence` 仅保留历史值，新写入为 null。
+- 2026-07-27 — **`.gitignore` 的模型权重规则必须精确放行 `backend/app/db/models/*.py`。** 旧的通用 `models/` 规则误伤 ORM 目录，曾导致模型文件完全不受 Git 跟踪；现已增加窄范围例外，不放行下载权重或私有数据。
 - 2026-07-27 — **开发工具入口从 ClaudeCode 切换为 Codex。** `AGENTS.md` 继续作为唯一事实来源,Codex 原生读取;ClaudeCode 专用的 `.claude/` 与 `CLAUDE.md` 退役。后续新会话按 `AGENTS.md` → `MEMORY.md` → 当前 `specs/` → `agent_docs/` 的顺序加载上下文。
 - 2026-07-27 — **F1 保持纯原始证据链导入,不启动 LangGraph workflow。** Excel 第一行只作为原始列头,数据行按物理行号写入 `expense_row.raw_json`;`parse_error` 默认为空。字段映射、金额/日期归一化、字段可用性探测与正式解析失败语义全部留到 F2。
 - 2026-07-27 — 形态选 **agent-in-workflow**:确定性 workflow 主干 + 单点 ReAct 取证 agent。原因:审计结论必须可复现、经得起内审质询,不能把整条链路交给概率性推理。不采用多智能体协作(研究阶段明确排除)。
@@ -78,7 +83,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 
 ### 已完成阶段的测试统计(便于新会话快速判断状态)
 
-- `cd backend && uv run pytest` 应为 **49 passed, 1 skipped**（skip 的是常驻待命的评测门禁）
+- `cd backend && uv run python -m pytest --basetemp <可写临时目录>` 应为 **128 passed, 1 skipped**（skip 的是常驻待命的评测门禁）；其中 CP-F2.2 纯逻辑 **51 passed**、解析服务 PostgreSQL 集成 **6 passed**，解析包定向覆盖率 **91%**；迁移目录测试为 **20 passed**。
 - `cd frontend && npm run test` 应为 **8 passed**
 
 ### F1 验证统计
@@ -89,7 +94,9 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 
 ## 📜 已完成阶段
 - [x] 初始脚手架（monorepo + uv + Vite）
-- [x] 数据库 schema 创建（18 张表,含 `row_result` 幂等表与 `audit_log` 追加写触发器）
+- [x] 数据库 schema 创建（19 张表,含 `schema_mapping_version`、`row_result` 幂等表与 `audit_log` 追加写触发器）
+- [x] F2 CP-F2.1（映射版本、结构化解析持久化列、legacy 回填与双向迁移）
+- [x] F2 CP-F2.2（严格归一化、映射/推断校验、12 字段可用性、原子解析/复用/重解析）
 - [x] 认证集成（server-side session + RBAC 三角色 + 租户过滤 fail-closed）
 - [x] 前端垂直切片（登录 / 路由守卫 / 三角色外壳 / 系统状态页）
 - [x] OpenAPI 契约门禁 + pre-commit + GitHub Actions CI
