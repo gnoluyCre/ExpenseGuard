@@ -19,7 +19,7 @@ Idea -> Research -> PRD -> Tech Design -> Agent Config -> Build MVP
 
 1. Keep users in one continuous project session where possible.
 2. Prefer compaction/summaries over opening empty replacement chats.
-3. Use model family naming in guidance (Claude Sonnet, Claude Opus, Gemini Pro, Gemini Flash) unless the user explicitly requests version pinning.
+3. Use model family naming in guidance (Codex Sonnet, Codex Opus, Gemini Pro, Gemini Flash) unless the user explicitly requests version pinning.
 
 ## Step 1: Assess Current State
 

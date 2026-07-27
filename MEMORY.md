@@ -24,6 +24,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 
 ## 📂 架构决策
 *(把构建过程中做出的具体选择记录在此,便于后续 agent 遵循)*
+- 2026-07-27 — **开发工具入口从 ClaudeCode 切换为 Codex。** `AGENTS.md` 继续作为唯一事实来源,Codex 原生读取;ClaudeCode 专用的 `.claude/` 与 `CLAUDE.md` 退役。后续新会话按 `AGENTS.md` → `MEMORY.md` → 当前 `specs/` → `agent_docs/` 的顺序加载上下文。
 - 2026-07-27 — 形态选 **agent-in-workflow**:确定性 workflow 主干 + 单点 ReAct 取证 agent。原因:审计结论必须可复现、经得起内审质询,不能把整条链路交给概率性推理。不采用多智能体协作(研究阶段明确排除)。
 - 2026-07-27 — 编排选 **LangGraph + PostgresSaver**。已知风险:节点从中断恢复时从头重放,`interrupt()` 前副作用会重复 → 用**行级幂等结果表**兜底(W1 最高优先级工程项,非可选优化)。
 - 2026-07-27 — 向量库选 **Qdrant**。原因:检索必然带复合过滤(tenant + 制度版本 + 费用发生日落在生效区间),payload 过滤在 HNSW 遍历内执行是其相对优势场景。退路:`VectorStore` 接口抽象,可切回 PGVector。

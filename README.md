@@ -121,6 +121,12 @@ cd backend && uv run python -m app.synth --seed 20260727 --rows 50 --out ../data
 
 ## 给 AI 编码助手
 
-**先读 [`AGENTS.md`](AGENTS.md)** — 它是本项目的唯一事实来源:路线图、命令、工程规则。
-实现细节位于 [`agent_docs/`](agent_docs/),编码前请查阅。
+**先读 [`AGENTS.md`](AGENTS.md)** — 它是本项目的唯一事实来源:路线图、命令、工程规则。Codex 原生读取该文件,本仓库不再维护 ClaudeCode 专用入口。
+
+接手开发时按这个顺序加载上下文:
+1. [`AGENTS.md`](AGENTS.md) —— 当前阶段、受保护区域、命令约束
+2. [`MEMORY.md`](MEMORY.md) —— 最近决策、已知坑点、当前目标
+3. [`specs/`](specs/) 中当前阶段规格 —— 已完成验收与待办
+4. [`agent_docs/`](agent_docs/) —— 技术栈、代码模式、测试策略等细节
+
 标记任务完成前,对照 [`REVIEW-CHECKLIST.md`](REVIEW-CHECKLIST.md)。

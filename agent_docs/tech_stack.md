@@ -1,7 +1,7 @@
 # 技术栈与工具
 
-- **前端:** React 18 + Vite + TypeScript(strict)+ Tailwind CSS + shadcn/ui。仅桌面浏览器端(不做响应式 / 移动端)。API 客户端由后端 OpenAPI 生成为类型化客户端。
-- **后端:** Python 3.11+ + FastAPI + Pydantic v2。编排层 LangGraph + PostgresSaver(checkpoint)。异步优先。
+- **前端:** React 19 + Vite 8 + TypeScript 5.9(strict)+ Tailwind CSS v4 + shadcn/ui。仅桌面浏览器端(不做移动端 / 平板适配)。API 客户端由后端 OpenAPI 生成为类型化客户端。
+- **后端:** Python 3.13 + FastAPI + Pydantic v2。编排层 LangGraph + PostgresSaver(checkpoint)。异步优先。
 - **数据库:** PostgreSQL(业务表 + LangGraph checkpoint + 审计日志同库,不同 schema)+ SQLAlchemy + Alembic 迁移。
 - **向量库:** Qdrant(制度条款向量;payload 复合过滤 tenant + effective_date/expiry_date)。经 `VectorStore` 接口抽象,可退回 PGVector。
 - **样式:** Tailwind CSS + shadcn/ui。
@@ -10,19 +10,19 @@
 - **结构化输出:** Pydantic schema + XGrammar 约束解码(自托管)/ function calling(云 API),同一套 schema 双路径。
 - **规则引擎:** JSON Logic / 决策表 —— 规则即数据,阈值白名单为配置非代码。
 - **可观测:** Langfuse 或 Phoenix + OpenTelemetry;trace 按 task_id 聚合 token / 延迟 / 成本。
-- **测试 / 评测:** pytest(单元 / 集成)+ DeepEval(CI 评测门禁)+ promptfoo(注入红队)+ Ragas(RAG 指标)。
+- **测试 / 评测:** pytest(单元 / 集成)+ Vitest(前端)+ 数据驱动 eval gate(基线阈值为空时 skip)+ 后续 DeepEval / promptfoo / Ragas。
 - **部署:** Docker Compose 单机(api / frontend / postgres / qdrant / embedding / trace)。
 
 ## 安装与启动命令
 ```bash
 # 起依赖服务
-docker compose up -d          # postgres, qdrant, embedding, langfuse/phoenix
+docker compose up -d          # postgres, qdrant
 
 # 后端
 cd backend
 uv sync                       # 或 pip install -e .
-alembic upgrade head          # 应用迁移
-uvicorn app.main:app --reload # 开发服务器
+uv run alembic upgrade head   # 应用迁移
+uv run python -m app          # 开发服务器;Windows 不要直接用 uvicorn app.main:app
 
 # 前端
 cd frontend

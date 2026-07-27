@@ -1,7 +1,7 @@
 # AGENTS.md —— ExpenseGuard 主计划
 
 <!--
-本文件是本项目所有 AI 编码助手的唯一事实来源。
+本文件是本项目所有 AI 编码助手的唯一事实来源,Codex 原生读取。
 保持精简 —— 细节位于文末的「上下文文件」中。构建过程中请持续更新「当前状态」与「路线图」。
 -->
 
@@ -83,9 +83,10 @@
 **正在进行:** 阶段 1 已完成,准备进入阶段 2 F1(Excel 导入与文件版本管理)
 **最近完成:** CP0 仓库重置 / CP1 后端地基与 18 张表 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离 / **CP4 前端垂直切片 + OpenAPI 契约 + CI**(后端 49 passed + 1 skipped,前端 8 passed)
 **受阻于:** 无(W0 阻塞项:真实报销数据脱敏审批、制度文档到位 —— 见 `MEMORY.md`)
-**已知缺口(两项,均不阻塞 F1):**
+**已知缺口(三项,均不阻塞 F1):**
 1. **W0 spike 未做** —— `docker-compose.models.yml` 的 embedding 镜像**未实测**;客户内网访问不了 HuggingFace 时的离线权重供给路径未验证。留到上线周才发现会很贵。
 2. **CI 未在 GitHub 上真实跑过** —— 每一步都在本地跑通了等价命令,但仓库尚未 push。首次 push 后需确认:服务容器的 `CREATE DATABASE` 步骤、gitleaks 镜像可拉取、setup-uv/setup-node 的缓存键。
+3. **开发工具接管完成** —— 已退役 ClaudeCode 专用入口;后续 Codex 以本文件 + `MEMORY.md` + 当前 `specs/` 为上下文入口。
 
 细节见 `specs/001-phase1-foundation.md` 的「已知问题」与「待办」。
 

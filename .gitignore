@@ -23,8 +23,9 @@ data/private/
 *.pfx
 secrets/
 
-# 本机专属的 Claude Code 配置
-.claude/settings.local.json
+# 本机专属的 AI 工具配置
+.codex/local/
+.codex/*.local.json
 
 # ============================================================
 # Python

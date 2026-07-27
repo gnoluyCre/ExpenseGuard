@@ -56,7 +56,7 @@ Extract from documents:
 Ask the user:
 
 > **Which AI tools will you use?** (Select all that apply)
-> 1. Claude Code (terminal-based)
+> 1. Codex (terminal-based)
 > 2. Gemini CLI (free terminal agent)
 > 3. Google Antigravity / equivalent (agent-first IDE)
 > 4. Cursor (AI-powered IDE)
@@ -114,7 +114,7 @@ project/
 │   ├── project_brief.md        # Persistent rules
 │   ├── product_requirements.md # PRD summary
 │   └── testing.md              # Test strategy
-├── CLAUDE.md                   # If Claude Code selected
+├── AGENTS.md                   # If Codex selected
 ├── .cursor/rules/vibe.mdc      # If Cursor selected
 ├── .agent/rules/vibe.md        # If Antigravity selected
 └── (Codex needs nothing — it reads AGENTS.md natively)
@@ -126,16 +126,16 @@ AGENTS.md is the universal contract — Codex reads it natively, and most modern
 
 | Tool | File | What it is |
 |---|---|---|
-| Claude Code | `CLAUDE.md` | 3-line pointer to `AGENTS.md` + `agent_docs/` |
+| Codex | `AGENTS.md` | 3-line pointer to `AGENTS.md` + `agent_docs/` |
 | Codex | — none — | Nothing; `AGENTS.md` is Codex's native instruction file. Optional: `~/.codex/prompts/` for personal slash prompts |
 | Antigravity | `.agent/rules/vibe.md` | Always-on workspace rule pointing at `AGENTS.md` |
 | Cursor | `.cursor/rules/vibe.mdc` | Rule with `alwaysApply: true` pointing at `AGENTS.md` |
 | Any other tool | its custom-instructions feature | "Read AGENTS.md — it is the source of truth for this project." (Gemini CLI users: point it at AGENTS.md the same way.) |
 
-### CLAUDE.md (Claude Code)
+### AGENTS.md (Codex)
 
 ```markdown
-# CLAUDE.md
+# AGENTS.md
 
 Read AGENTS.md first. It is the source of truth for this project: roadmap, commands, rules.
 Implementation details live in `agent_docs/` — consult them before coding.
