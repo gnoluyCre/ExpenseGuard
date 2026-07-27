@@ -5,7 +5,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 -->
 
 ## 🏗️ 当前阶段与目标
-**当前任务:阶段 2 F2 · CP-F2.3 API、权限与审计已完成。** 五个 F2 API 已接入现有会话租户注入与 RBAC；映射版本追加写、批次解析、错误清单和 12 字段可用性均有真实 PostgreSQL API 集成覆盖，成功/失败审计不含原始报销 PII。
+**当前任务:阶段 2 F3 · CP-F3.0 规格已完成。** 五类确定性规则、不可变规则快照、行级 verdict、租户全历史发票号查重、并发/幂等、API、权限、审计和 `0004` 迁移边界已在 `specs/004-phase2-f3-deterministic-validation.md` 固化。
 
 - CP0 仓库重置(干净历史、`.gitignore` 脱敏排除)
 - CP1 后端地基(uv + 18 张表 + Alembic 三层隔离)
@@ -13,17 +13,22 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - CP3 认证、RBAC、租户隔离(含反向验证)
 - CP4 前端垂直切片 + OpenAPI 契约门禁 + pre-commit/CI + 合成数据生成器(含反向验证)
 
-**下一步:CP-F2.4 · 桌面端批次工作流。** 在现有批次页增加原始数据、字段映射、错误清单和字段可用性四个视图，接入本检查点生成的类型化 API 客户端；不新增独立配置管理页，不进入 F3。
+**下一步:CP-F3.1 · 持久化 schema 与 ORM。** 新增 `0004_f3_deterministic_validation.py`、不可变 validation run/dependency、file revision、规则/finding 持久化字段与租户复合约束；强类型 Pydantic 判别联合属于 CP-F3.2，不修改 `0001`–`0003`，不提前进入 F4/F5。
 `process_row_once` 至今**一个生产调用方都没有** —— 第一个是 F3,刻意如此。
 
 **开工前必读的两件事:**
 1. 契约同步是硬要求:改了 Pydantic 模型 → `cd backend && uv run python scripts/export_openapi.py` + `cd frontend && npm run gen:api`,两个生成物都要提交,否则 CI 的 contract job 直接红。
 2. 评测门禁已就位但处于待命:`backend/evals/baseline.json` 的 `thresholds` 一填数值就自动开始阻断,**不需要改任何 workflow YAML**。
 
-**遗留缺口（不阻塞 F2，但别忘）:** W0 spike 未做 —— `docker-compose.models.yml` 的 embedding 镜像未实测、离线模型供给路径未验证;GitHub CI 远端状态待确认。
+**遗留缺口（不阻塞 F3，但别忘）:** W0 spike 未做 —— `docker-compose.models.yml` 的 embedding 镜像未实测、离线模型供给路径未验证;GitHub CI 远端状态待确认。
 
 ## 📂 架构决策
 *(把构建过程中做出的具体选择记录在此,便于后续 agent 遵循)*
+- 2026-07-28 — **F3 CP-F3.0–F3.5 共用 `specs/004-phase2-f3-deterministic-validation.md` 一份规范。** §1–§12 是唯一业务/接口定义，§13 给出五个实施契约，§14 只追加已经完成的落地事实；不为各 CP 创建重复规格，独立运维 runbook 也不得成为第二事实来源。
+- 2026-07-27 — **F3 使用五类强类型规则配置，不开放任意 JSON Logic。** 限额、票种、时效、抬头和发票号查重分别使用冻结的 Pydantic 判别联合；阈值、允许集合和 OR-of-AND 精确例外均为数据，未知字段/运算符直接拒绝。
+- 2026-07-27 — **F3 首次成功校验冻结规则集快照。** 每行按 `expense_date` 选择生效版本，规则集 manifest 同时绑定 `mapping_version_id`；同批重复调用只复用，新规则或新映射必须通过显式派生 `file_version` revision 应用，普通重复上传仍复用 revision 1。`row_result.rule_version` 存规则集指纹，finding 存具体规则 ID/版本。
+- 2026-07-27 — **F3 缺依赖显式转人工，发票号按租户全历史精确查重。** inferred 默认可参与并携带 provenance，规则可要求 direct；verdict 优先级为 `flagged > manual_review > passed`。重复首条按 `(uploaded_at, file_version.id, row_no)` 稳定确定，连号/模糊匹配留在 F6。
+- 2026-07-27 — **默认开发库已在可恢复备份后从 `0002` 升级到 `0003`。** 私有备份包含完整库、public schema 和 F2 定向数据三份 custom archive，均通过 `pg_restore --list` 与 SHA-256 交叉验证；升级后 `alembic check`、F2 外键、行数守恒、受保护唯一约束和审计触发器全部通过。
 - 2026-07-27 — **F2 推断只读取已直接映射的统一字段，不读取任意原始列，也不支持推断链。** `constant` 首版只允许 `currency`；`literal_lookup` 使用严格判别联合，按配置顺序做 NFKC 字面量包含匹配并取首个命中。推断目标必须是未直接映射的可选字段。规格 §6.2 的 direct+inference 同时配置示例与 §5.1/§6.1 正文冲突，实现以正文互斥规则为准。
 - 2026-07-27 — **F2 可用性按字段观察结果计数，而非按整行成功计数。** 某行因金额失败时，该行已成功规范化的日期仍计入日期 non-null_count；所有失败行仍在固定 `row_count` 分母中。这样既不排除坏行虚高比例，也不因无关字段错误低估目标字段质量。
 - 2026-07-27 — **解析服务使用调用方外层事务 + 内部 SAVEPOINT。** `FOR UPDATE NOWAIT`、行结果替换、12 项可用性覆盖和 `file_version` 更新处于同一原子单元；API 依赖负责最终 commit/rollback。首次系统失败后的 `failed` 状态与失败审计需要独立短事务，留到 CP-F2.3，不在失败事务中勉强续写。
@@ -86,8 +91,9 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 
 ### 已完成阶段的测试统计(便于新会话快速判断状态)
 
-- `cd backend && uv run python -m pytest --basetemp <可写临时目录>` 应为 **142 passed, 1 skipped**（skip 的是常驻待命的评测门禁）；其中 CP-F2.2 纯逻辑 **51 passed**、解析服务 PostgreSQL 集成 **6 passed**、CP-F2.3 API 集成 **14 passed**，解析包定向覆盖率 **91%**；迁移目录测试为 **20 passed**。
-- `cd frontend && npm run test` 应为 **14 passed**；其中 CP-F2.4 批次工作流定向测试 **6 passed**。
+- CP-F2.5 实测：`cd backend && uv run python -m pytest --basetemp <可写临时目录>` 为 **142 passed, 1 skipped**（skip 的是常驻待命的评测门禁）；其中 CP-F2.2 纯逻辑 **51 passed**、解析服务 PostgreSQL 集成 **6 passed**、CP-F2.3 API 集成 **14 passed**，解析包定向覆盖率 **91%**；迁移目录测试为 **20 passed**。
+- CP-F2.5 实测：`cd frontend && npm run test` 为 **14 passed**；其中 CP-F2.4 批次工作流定向测试 **6 passed**。
+- CP-F2.5 其余门禁：Ruff lint/格式检查、strict mypy、OpenAPI 导出与客户端生成、前端 typecheck/oxlint/Prettier/生产构建及测试库 `alembic check` 全部通过；契约生成物无漂移。
 
 ### F1 验证统计
 
@@ -102,6 +108,8 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - [x] F2 CP-F2.2（严格归一化、映射/推断校验、12 字段可用性、原子解析/复用/重解析）
 - [x] F2 CP-F2.3（五个 API、RBAC、租户隔离、无 PII 审计与失败独立事务）
 - [x] F2 CP-F2.4（批次页原始数据/字段映射/错误清单/字段可用性四视图、三角色权限、映射复用/保存、解析触发与缓存刷新）
+- [x] F2 CP-F2.5（全量测试、契约同步、静态检查、生产构建与 Alembic 零漂移）
+- [x] F3 CP-F3.0（五类强类型规则、不可变快照、verdict、全历史查重、并发/幂等、API 与迁移边界规格）
 - [x] 认证集成（server-side session + RBAC 三角色 + 租户过滤 fail-closed）
 - [x] 前端垂直切片（登录 / 路由守卫 / 三角色外壳 / 系统状态页）
 - [x] OpenAPI 契约门禁 + pre-commit + GitHub Actions CI
