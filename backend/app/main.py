@@ -18,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
 
 from app.api.errors import register_error_handlers
-from app.api.routes import auth, batches, health
+from app.api.routes import auth, batches, health, schema_mappings
 from app.core.tenancy.scope import install_tenant_guard
 from app.db.engine import create_engine_from_settings, create_session_factory
 from app.settings import Settings, get_settings
@@ -90,6 +90,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(health.router)
     app.include_router(auth.router)
     app.include_router(batches.router)
+    app.include_router(schema_mappings.router)
     return app
 
 

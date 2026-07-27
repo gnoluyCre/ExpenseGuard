@@ -1,6 +1,103 @@
 {
   "components": {
     "schemas": {
+      "AvailabilityEvidence": {
+        "additionalProperties": false,
+        "description": "不含样本值的版本化字段可用性证据。",
+        "properties": {
+          "direct": {
+            "$ref": "#/components/schemas/DirectAvailabilityEvidence"
+          },
+          "inference": {
+            "$ref": "#/components/schemas/InferenceAvailabilityEvidence"
+          },
+          "mapping_version_id": {
+            "format": "uuid",
+            "title": "Mapping Version Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "selected_basis": {
+            "enum": [
+              "direct",
+              "inference",
+              "none"
+            ],
+            "title": "Selected Basis",
+            "type": "string"
+          },
+          "total_rows": {
+            "exclusiveMinimum": 0.0,
+            "title": "Total Rows",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "mapping_version_id",
+          "total_rows",
+          "direct",
+          "inference",
+          "selected_basis"
+        ],
+        "title": "AvailabilityEvidence",
+        "type": "object"
+      },
+      "AvailabilityThresholdsRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "available_min_non_null_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "default": "0.80",
+            "title": "Available Min Non Null Rate"
+          },
+          "inferred_min_success_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "default": "0.80",
+            "title": "Inferred Min Success Rate"
+          }
+        },
+        "title": "AvailabilityThresholdsRequest",
+        "type": "object"
+      },
+      "AvailabilityThresholdsResponse": {
+        "properties": {
+          "available_min_non_null_rate": {
+            "title": "Available Min Non Null Rate",
+            "type": "string"
+          },
+          "inferred_min_success_rate": {
+            "title": "Inferred Min Success Rate",
+            "type": "string"
+          }
+        },
+        "required": [
+          "available_min_non_null_rate",
+          "inferred_min_success_rate"
+        ],
+        "title": "AvailabilityThresholdsResponse",
+        "type": "object"
+      },
       "BatchDetailResponse": {
         "description": "批次详情响应。",
         "properties": {
@@ -159,6 +256,41 @@
         "title": "Body_batches_import",
         "type": "object"
       },
+      "ConstantInferenceRule": {
+        "additionalProperties": false,
+        "description": "固定值推断；首版只允许推断币种。",
+        "properties": {
+          "rule_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Rule Id",
+            "type": "string"
+          },
+          "target_field": {
+            "const": "currency",
+            "title": "Target Field",
+            "type": "string"
+          },
+          "type": {
+            "const": "constant",
+            "title": "Type",
+            "type": "string"
+          },
+          "value": {
+            "minLength": 1,
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rule_id",
+          "type",
+          "target_field",
+          "value"
+        ],
+        "title": "ConstantInferenceRule",
+        "type": "object"
+      },
       "CurrentUser": {
         "description": "当前登录用户。",
         "properties": {
@@ -228,6 +360,79 @@
         "title": "DependencyStatus",
         "type": "string"
       },
+      "DirectAvailabilityEvidence": {
+        "additionalProperties": false,
+        "description": "直接映射的非空率证据。",
+        "properties": {
+          "configured": {
+            "title": "Configured",
+            "type": "boolean"
+          },
+          "non_null_count": {
+            "minimum": 0.0,
+            "title": "Non Null Count",
+            "type": "integer"
+          },
+          "non_null_rate": {
+            "pattern": "^\\d\\.\\d{4}$",
+            "title": "Non Null Rate",
+            "type": "string"
+          },
+          "source_columns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Source Columns",
+            "type": "array"
+          },
+          "threshold": {
+            "pattern": "^\\d\\.\\d{4}$",
+            "title": "Threshold",
+            "type": "string"
+          }
+        },
+        "required": [
+          "configured",
+          "source_columns",
+          "non_null_count",
+          "non_null_rate",
+          "threshold"
+        ],
+        "title": "DirectAvailabilityEvidence",
+        "type": "object"
+      },
+      "ErrorDetail": {
+        "description": "错误详情。",
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorDetail",
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "description": "统一错误响应体。注册进 OpenAPI，使前端能生成对应类型。",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorDetail"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "title": "ErrorResponse",
+        "type": "object"
+      },
       "ExpenseRowResponse": {
         "description": "原始报销行摘要。",
         "properties": {
@@ -260,6 +465,99 @@
         "title": "ExpenseRowResponse",
         "type": "object"
       },
+      "FieldAvailabilityItemResponse": {
+        "properties": {
+          "evidence": {
+            "$ref": "#/components/schemas/AvailabilityEvidence"
+          },
+          "field_name": {
+            "title": "Field Name",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "available",
+              "inferred",
+              "missing"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "field_name",
+          "status",
+          "evidence"
+        ],
+        "title": "FieldAvailabilityItemResponse",
+        "type": "object"
+      },
+      "FieldAvailabilityResponse": {
+        "properties": {
+          "file_version_id": {
+            "format": "uuid",
+            "title": "File Version Id",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/FieldAvailabilityItemResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "mapping_version_id": {
+            "format": "uuid",
+            "title": "Mapping Version Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file_version_id",
+          "mapping_version_id",
+          "items"
+        ],
+        "title": "FieldAvailabilityResponse",
+        "type": "object"
+      },
+      "FieldError": {
+        "additionalProperties": false,
+        "description": "一个稳定、用户安全的字段解析错误。",
+        "properties": {
+          "code": {
+            "enum": [
+              "REQUIRED_VALUE_MISSING",
+              "AMOUNT_INVALID_FORMAT",
+              "AMOUNT_OUT_OF_RANGE",
+              "DATE_INVALID_FORMAT",
+              "DATE_OUT_OF_RANGE",
+              "TEXT_TOO_LONG",
+              "CURRENCY_INVALID"
+            ],
+            "title": "Code",
+            "type": "string"
+          },
+          "field": {
+            "$ref": "#/components/schemas/UnifiedField"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "source_column": {
+            "title": "Source Column",
+            "type": "string"
+          }
+        },
+        "required": [
+          "field",
+          "code",
+          "source_column",
+          "message"
+        ],
+        "title": "FieldError",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -271,6 +569,114 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "InferenceAvailabilityEvidence": {
+        "additionalProperties": false,
+        "description": "确定性推断的成功率证据。",
+        "properties": {
+          "configured": {
+            "title": "Configured",
+            "type": "boolean"
+          },
+          "rule_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Rule Ids",
+            "type": "array"
+          },
+          "success_count": {
+            "minimum": 0.0,
+            "title": "Success Count",
+            "type": "integer"
+          },
+          "success_rate": {
+            "pattern": "^\\d\\.\\d{4}$",
+            "title": "Success Rate",
+            "type": "string"
+          },
+          "threshold": {
+            "pattern": "^\\d\\.\\d{4}$",
+            "title": "Threshold",
+            "type": "string"
+          }
+        },
+        "required": [
+          "configured",
+          "rule_ids",
+          "success_count",
+          "success_rate",
+          "threshold"
+        ],
+        "title": "InferenceAvailabilityEvidence",
+        "type": "object"
+      },
+      "LiteralLookupCase": {
+        "additionalProperties": false,
+        "description": "字面量包含匹配的一项；列表顺序决定优先级。",
+        "properties": {
+          "literal": {
+            "minLength": 1,
+            "title": "Literal",
+            "type": "string"
+          },
+          "value": {
+            "minLength": 1,
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "literal",
+          "value"
+        ],
+        "title": "LiteralLookupCase",
+        "type": "object"
+      },
+      "LiteralLookupInferenceRule": {
+        "additionalProperties": false,
+        "description": "从已直接映射字段做 NFKC 字面量包含匹配。",
+        "properties": {
+          "cases": {
+            "items": {
+              "$ref": "#/components/schemas/LiteralLookupCase"
+            },
+            "minItems": 1,
+            "title": "Cases",
+            "type": "array"
+          },
+          "rule_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Rule Id",
+            "type": "string"
+          },
+          "source_fields": {
+            "items": {
+              "$ref": "#/components/schemas/UnifiedField"
+            },
+            "minItems": 1,
+            "title": "Source Fields",
+            "type": "array"
+          },
+          "target_field": {
+            "$ref": "#/components/schemas/UnifiedField"
+          },
+          "type": {
+            "const": "literal_lookup",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rule_id",
+          "type",
+          "target_field",
+          "source_fields",
+          "cases"
+        ],
+        "title": "LiteralLookupInferenceRule",
         "type": "object"
       },
       "LivenessResponse": {
@@ -314,6 +720,282 @@
         "title": "LoginRequest",
         "type": "object"
       },
+      "MappingEntryRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "source_column": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Source Column",
+            "type": "string"
+          },
+          "target_field": {
+            "title": "Target Field",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_column",
+          "target_field"
+        ],
+        "title": "MappingEntryRequest",
+        "type": "object"
+      },
+      "MappingEntryResponse": {
+        "properties": {
+          "source_column": {
+            "title": "Source Column",
+            "type": "string"
+          },
+          "target_field": {
+            "$ref": "#/components/schemas/UnifiedField"
+          }
+        },
+        "required": [
+          "source_column",
+          "target_field"
+        ],
+        "title": "MappingEntryResponse",
+        "type": "object"
+      },
+      "MappingVersionResponse": {
+        "properties": {
+          "availability_thresholds": {
+            "$ref": "#/components/schemas/AvailabilityThresholdsResponse"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "currency_aliases": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Currency Aliases",
+            "type": "object"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "inference_rules": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "constant": "#/components/schemas/ConstantInferenceRule",
+                  "literal_lookup": "#/components/schemas/LiteralLookupInferenceRule"
+                },
+                "propertyName": "type"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ConstantInferenceRule"
+                },
+                {
+                  "$ref": "#/components/schemas/LiteralLookupInferenceRule"
+                }
+              ]
+            },
+            "title": "Inference Rules",
+            "type": "array"
+          },
+          "is_current_for_batch": {
+            "title": "Is Current For Batch",
+            "type": "boolean"
+          },
+          "mappings": {
+            "items": {
+              "$ref": "#/components/schemas/MappingEntryResponse"
+            },
+            "title": "Mappings",
+            "type": "array"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "created_at",
+          "created_by",
+          "is_current_for_batch",
+          "mappings",
+          "availability_thresholds",
+          "currency_aliases",
+          "inference_rules"
+        ],
+        "title": "MappingVersionResponse",
+        "type": "object"
+      },
+      "ParseBatchRequest": {
+        "additionalProperties": false,
+        "description": "触发解析所需的不可变映射版本。",
+        "properties": {
+          "mapping_version_id": {
+            "format": "uuid",
+            "title": "Mapping Version Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mapping_version_id"
+        ],
+        "title": "ParseBatchRequest",
+        "type": "object"
+      },
+      "ParseBatchResponse": {
+        "description": "解析计数与当前版本状态。",
+        "properties": {
+          "error_count": {
+            "title": "Error Count",
+            "type": "integer"
+          },
+          "file_version_id": {
+            "format": "uuid",
+            "title": "File Version Id",
+            "type": "string"
+          },
+          "mapping_version": {
+            "title": "Mapping Version",
+            "type": "integer"
+          },
+          "mapping_version_id": {
+            "format": "uuid",
+            "title": "Mapping Version Id",
+            "type": "string"
+          },
+          "parsed_at": {
+            "title": "Parsed At",
+            "type": "string"
+          },
+          "reused_existing": {
+            "title": "Reused Existing",
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "parsed",
+              "parsed_with_errors"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "success_count": {
+            "title": "Success Count",
+            "type": "integer"
+          },
+          "total_rows": {
+            "title": "Total Rows",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "file_version_id",
+          "mapping_version_id",
+          "mapping_version",
+          "status",
+          "total_rows",
+          "success_count",
+          "error_count",
+          "parsed_at",
+          "reused_existing"
+        ],
+        "title": "ParseBatchResponse",
+        "type": "object"
+      },
+      "ParseErrorItemResponse": {
+        "description": "解析失败行；raw_json 仅返回给同租户 BATCH_READ 用户。",
+        "properties": {
+          "parse_error": {
+            "title": "Parse Error",
+            "type": "string"
+          },
+          "parse_error_code": {
+            "title": "Parse Error Code",
+            "type": "string"
+          },
+          "parse_error_detail": {
+            "$ref": "#/components/schemas/RowErrorDetail"
+          },
+          "raw_json": {
+            "additionalProperties": true,
+            "title": "Raw Json",
+            "type": "object"
+          },
+          "row_no": {
+            "title": "Row No",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "row_no",
+          "raw_json",
+          "parse_error_code",
+          "parse_error",
+          "parse_error_detail"
+        ],
+        "title": "ParseErrorItemResponse",
+        "type": "object"
+      },
+      "ParseErrorsResponse": {
+        "properties": {
+          "file_version_id": {
+            "format": "uuid",
+            "title": "File Version Id",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ParseErrorItemResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "mapping_version_id": {
+            "format": "uuid",
+            "title": "Mapping Version Id",
+            "type": "string"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "file_version_id",
+          "mapping_version_id",
+          "total",
+          "offset",
+          "limit",
+          "items"
+        ],
+        "title": "ParseErrorsResponse",
+        "type": "object"
+      },
       "ReadinessResponse": {
         "description": "就绪响应。",
         "properties": {
@@ -344,6 +1026,222 @@
           "viewer"
         ],
         "title": "Role",
+        "type": "string"
+      },
+      "RowErrorDetail": {
+        "additionalProperties": false,
+        "description": "失败行写入 ``parse_error_detail`` 的版本化结构。",
+        "properties": {
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "mapping_version_id": {
+            "format": "uuid",
+            "title": "Mapping Version Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "mapping_version_id",
+          "errors"
+        ],
+        "title": "RowErrorDetail",
+        "type": "object"
+      },
+      "SaveSchemaMappingRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "availability_thresholds": {
+            "$ref": "#/components/schemas/AvailabilityThresholdsRequest"
+          },
+          "currency_aliases": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Currency Aliases",
+            "type": "object"
+          },
+          "file_version_id": {
+            "format": "uuid",
+            "title": "File Version Id",
+            "type": "string"
+          },
+          "inference_rules": {
+            "default": [],
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Inference Rules",
+            "type": "array"
+          },
+          "mappings": {
+            "items": {
+              "$ref": "#/components/schemas/MappingEntryRequest"
+            },
+            "title": "Mappings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "file_version_id",
+          "mappings"
+        ],
+        "title": "SaveSchemaMappingRequest",
+        "type": "object"
+      },
+      "SaveSchemaMappingResponse": {
+        "properties": {
+          "availability_thresholds": {
+            "$ref": "#/components/schemas/AvailabilityThresholdsResponse"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "currency_aliases": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Currency Aliases",
+            "type": "object"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "inference_rules": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "constant": "#/components/schemas/ConstantInferenceRule",
+                  "literal_lookup": "#/components/schemas/LiteralLookupInferenceRule"
+                },
+                "propertyName": "type"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ConstantInferenceRule"
+                },
+                {
+                  "$ref": "#/components/schemas/LiteralLookupInferenceRule"
+                }
+              ]
+            },
+            "title": "Inference Rules",
+            "type": "array"
+          },
+          "is_current_for_batch": {
+            "title": "Is Current For Batch",
+            "type": "boolean"
+          },
+          "mappings": {
+            "items": {
+              "$ref": "#/components/schemas/MappingEntryResponse"
+            },
+            "title": "Mappings",
+            "type": "array"
+          },
+          "reused_existing": {
+            "title": "Reused Existing",
+            "type": "boolean"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "created_at",
+          "created_by",
+          "is_current_for_batch",
+          "mappings",
+          "availability_thresholds",
+          "currency_aliases",
+          "inference_rules",
+          "reused_existing"
+        ],
+        "title": "SaveSchemaMappingResponse",
+        "type": "object"
+      },
+      "SchemaMappingsResponse": {
+        "properties": {
+          "file_version_id": {
+            "format": "uuid",
+            "title": "File Version Id",
+            "type": "string"
+          },
+          "header_signature": {
+            "title": "Header Signature",
+            "type": "string"
+          },
+          "source_columns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Source Columns",
+            "type": "array"
+          },
+          "versions": {
+            "items": {
+              "$ref": "#/components/schemas/MappingVersionResponse"
+            },
+            "title": "Versions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "file_version_id",
+          "header_signature",
+          "source_columns",
+          "versions"
+        ],
+        "title": "SchemaMappingsResponse",
+        "type": "object"
+      },
+      "UnifiedField": {
+        "description": "固定的 12 个统一报销字段，顺序也是稳定输出顺序。",
+        "enum": [
+          "amount",
+          "expense_date",
+          "employee",
+          "expense_type",
+          "invoice_type",
+          "invoice_no",
+          "merchant",
+          "invoice_title",
+          "submission_date",
+          "location",
+          "currency",
+          "description"
+        ],
+        "title": "UnifiedField",
         "type": "string"
       },
       "ValidationError": {
@@ -702,6 +1600,349 @@
         ]
       }
     },
+    "/api/batches/{file_version_id}/field-availability": {
+      "get": {
+        "description": "返回当前解析版本的全部统一字段可用性。",
+        "operationId": "batches_field_availability",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_version_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "File Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldAvailabilityResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Field Availability",
+        "tags": [
+          "batches"
+        ]
+      }
+    },
+    "/api/batches/{file_version_id}/parse": {
+      "post": {
+        "description": "按指定不可变映射版本原子解析批次。",
+        "operationId": "batches_parse",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_version_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "File Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParseBatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParseBatchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Parse",
+        "tags": [
+          "batches"
+        ]
+      }
+    },
+    "/api/batches/{file_version_id}/parse-errors": {
+      "get": {
+        "description": "分页读取解析失败行，保留原始证据链。",
+        "operationId": "batches_parse_errors",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_version_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "File Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParseErrorsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Parse Errors",
+        "tags": [
+          "batches"
+        ]
+      }
+    },
     "/api/health": {
       "get": {
         "description": "存活探针。刻意不碰任何外部依赖。",
@@ -743,6 +1984,194 @@
         "summary": "Readiness",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/api/schema-mappings": {
+      "get": {
+        "description": "返回当前批次表头可精确复用的映射版本。",
+        "operationId": "schema-mappings_list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "file_version_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "File Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaMappingsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "List",
+        "tags": [
+          "schema-mappings"
+        ]
+      },
+      "put": {
+        "description": "追加一个不可变映射版本；相同内容重试幂等复用。",
+        "operationId": "schema-mappings_save",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveSchemaMappingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveSchemaMappingResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveSchemaMappingResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Save",
+        "tags": [
+          "schema-mappings"
         ]
       }
     }

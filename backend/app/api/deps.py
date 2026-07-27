@@ -42,7 +42,7 @@ from app.settings import Settings, get_settings
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 
 
-def _session_factory(request: Request) -> async_sessionmaker[AsyncSession]:
+def get_session_factory(request: Request) -> async_sessionmaker[AsyncSession]:
     """从应用状态取会话工厂（由 lifespan 装配）。"""
     factory = getattr(request.app.state, "session_factory", None)
     if factory is None:  # pragma: no cover
@@ -57,7 +57,7 @@ async def get_db(request: Request) -> AsyncIterator[AsyncSession]:
     否则任何 ORM 查询都会因缺少租户上下文而抛 `TenantScopeMissingError`
     （这是 fail-closed 设计的预期行为，不是 bug）。
     """
-    async with _session_factory(request)() as session:
+    async with get_session_factory(request)() as session:
         try:
             yield session
             await session.commit()
@@ -110,6 +110,7 @@ async def get_tenant_db(db: DbDep, auth: AuthDep) -> AsyncSession:
 
 
 TenantDbDep = Annotated[AsyncSession, Depends(get_tenant_db)]
+SessionFactoryDep = Annotated[async_sessionmaker[AsyncSession], Depends(get_session_factory)]
 
 
 def require_permission(

@@ -4,12 +4,19 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, Query, UploadFile
 from pydantic import BaseModel, ConfigDict
 
-from app.api.deps import AuthDep, SettingsDep, TenantDbDep, require_permission
+from app.api.deps import (
+    AuthDep,
+    SessionFactoryDep,
+    SettingsDep,
+    TenantDbDep,
+    require_permission,
+)
+from app.api.errors import ErrorResponse
 from app.core.batches.importer import (
     BatchDetail,
     BatchImportResult,
@@ -18,6 +25,15 @@ from app.core.batches.importer import (
     import_batch,
     list_batches,
 )
+from app.core.errors import ExpenseGuardError
+from app.core.parsing.api_service import (
+    get_field_availability,
+    list_parse_errors,
+    record_parse_failure,
+    record_parse_success,
+)
+from app.core.parsing.models import AvailabilityEvidence, BatchParseResult, RowErrorDetail
+from app.core.parsing.service import BatchParseInternalError, parse_batch
 from app.core.security.permissions import Permission
 
 router = APIRouter(prefix="/api/batches", tags=["batches"])
@@ -55,6 +71,59 @@ class BatchDetailResponse(BatchSummaryResponse):
     """批次详情响应。"""
 
     rows: list[ExpenseRowResponse]
+
+
+class ParseBatchRequest(BaseModel):
+    """触发解析所需的不可变映射版本。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    mapping_version_id: uuid.UUID
+
+
+class ParseBatchResponse(BaseModel):
+    """解析计数与当前版本状态。"""
+
+    file_version_id: uuid.UUID
+    mapping_version_id: uuid.UUID
+    mapping_version: int
+    status: Literal["parsed", "parsed_with_errors"]
+    total_rows: int
+    success_count: int
+    error_count: int
+    parsed_at: str
+    reused_existing: bool
+
+
+class ParseErrorItemResponse(BaseModel):
+    """解析失败行；raw_json 仅返回给同租户 BATCH_READ 用户。"""
+
+    row_no: int
+    raw_json: dict[str, Any]
+    parse_error_code: str
+    parse_error: str
+    parse_error_detail: RowErrorDetail
+
+
+class ParseErrorsResponse(BaseModel):
+    file_version_id: uuid.UUID
+    mapping_version_id: uuid.UUID
+    total: int
+    offset: int
+    limit: int
+    items: list[ParseErrorItemResponse]
+
+
+class FieldAvailabilityItemResponse(BaseModel):
+    field_name: str
+    status: Literal["available", "inferred", "missing"]
+    evidence: AvailabilityEvidence
+
+
+class FieldAvailabilityResponse(BaseModel):
+    file_version_id: uuid.UUID
+    mapping_version_id: uuid.UUID
+    items: list[FieldAvailabilityItemResponse]
 
 
 def _summary_response(summary: BatchSummary) -> BatchSummaryResponse:
@@ -128,3 +197,137 @@ async def list_batches_endpoint(db: TenantDbDep) -> list[BatchSummaryResponse]:
 async def batch_detail_endpoint(file_version_id: uuid.UUID, db: TenantDbDep) -> BatchDetailResponse:
     """读取批次详情。"""
     return _detail_response(await get_batch_detail(db, file_version_id))
+
+
+@router.post(
+    "/{file_version_id}/parse",
+    response_model=ParseBatchResponse,
+    responses={
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+        409: {"model": ErrorResponse},
+        422: {"model": ErrorResponse},
+        500: {"model": ErrorResponse},
+    },
+    name="parse",
+    dependencies=[Depends(require_permission(Permission.BATCH_IMPORT))],
+)
+async def parse_batch_endpoint(
+    file_version_id: uuid.UUID,
+    payload: ParseBatchRequest,
+    db: TenantDbDep,
+    auth: AuthDep,
+    session_factory: SessionFactoryDep,
+) -> ParseBatchResponse:
+    """按指定不可变映射版本原子解析批次。"""
+    try:
+        result = await parse_batch(
+            db,
+            file_version_id=file_version_id,
+            mapping_version_id=payload.mapping_version_id,
+        )
+        await record_parse_success(
+            db,
+            tenant_id=auth.tenant_id,
+            actor_id=auth.user_id,
+            result=result,
+        )
+    except ExpenseGuardError:
+        raise
+    except Exception as exc:
+        await db.rollback()
+        await record_parse_failure(
+            session_factory,
+            tenant_id=auth.tenant_id,
+            actor_id=auth.user_id,
+            file_version_id=file_version_id,
+            mapping_version_id=payload.mapping_version_id,
+        )
+        raise BatchParseInternalError(
+            code="BATCH_PARSE_INTERNAL_ERROR",
+            message="批次解析遇到内部错误，本次写入已回滚",
+        ) from exc
+    return _parse_response(result)
+
+
+@router.get(
+    "/{file_version_id}/parse-errors",
+    response_model=ParseErrorsResponse,
+    responses={
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+        409: {"model": ErrorResponse},
+        422: {"model": ErrorResponse},
+    },
+    name="parse_errors",
+    dependencies=[Depends(require_permission(Permission.BATCH_READ))],
+)
+async def parse_errors_endpoint(
+    file_version_id: uuid.UUID,
+    db: TenantDbDep,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+) -> ParseErrorsResponse:
+    """分页读取解析失败行，保留原始证据链。"""
+    page = await list_parse_errors(
+        db,
+        file_version_id=file_version_id,
+        offset=offset,
+        limit=limit,
+    )
+    return ParseErrorsResponse(
+        file_version_id=page.file_version_id,
+        mapping_version_id=page.mapping_version_id,
+        total=page.total,
+        offset=page.offset,
+        limit=page.limit,
+        items=[
+            ParseErrorItemResponse(
+                row_no=item.row_no,
+                raw_json=item.raw_json,
+                parse_error_code=item.parse_error_code,
+                parse_error=item.parse_error,
+                parse_error_detail=item.parse_error_detail,
+            )
+            for item in page.items
+        ],
+    )
+
+
+@router.get(
+    "/{file_version_id}/field-availability",
+    response_model=FieldAvailabilityResponse,
+    responses={
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+        409: {"model": ErrorResponse},
+        422: {"model": ErrorResponse},
+    },
+    name="field_availability",
+    dependencies=[Depends(require_permission(Permission.BATCH_READ))],
+)
+async def field_availability_endpoint(
+    file_version_id: uuid.UUID,
+    db: TenantDbDep,
+) -> FieldAvailabilityResponse:
+    """返回当前解析版本的全部统一字段可用性。"""
+    result = await get_field_availability(db, file_version_id=file_version_id)
+    return FieldAvailabilityResponse(
+        file_version_id=result.file_version_id,
+        mapping_version_id=result.mapping_version_id,
+        items=[
+            FieldAvailabilityItemResponse(
+                field_name=item.field_name,
+                status=item.status,
+                evidence=item.evidence,
+            )
+            for item in result.items
+        ],
+    )
+
+
+def _parse_response(result: BatchParseResult) -> ParseBatchResponse:
+    return ParseBatchResponse.model_validate(result.model_dump())

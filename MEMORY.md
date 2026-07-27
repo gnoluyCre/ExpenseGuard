@@ -5,7 +5,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 -->
 
 ## 🏗️ 当前阶段与目标
-**当前任务:阶段 2 F2 · CP-F2.2 解析核心已完成。** `backend/app/core/parsing/` 已实现严格 Pydantic 模型、金额/日期/文本归一化、映射与推断校验、12 字段可用性探测，以及带 `FOR UPDATE NOWAIT`、同版本复用和原子重解析的批次服务。
+**当前任务:阶段 2 F2 · CP-F2.3 API、权限与审计已完成。** 五个 F2 API 已接入现有会话租户注入与 RBAC；映射版本追加写、批次解析、错误清单和 12 字段可用性均有真实 PostgreSQL API 集成覆盖，成功/失败审计不含原始报销 PII。
 
 - CP0 仓库重置(干净历史、`.gitignore` 脱敏排除)
 - CP1 后端地基(uv + 18 张表 + Alembic 三层隔离)
@@ -13,7 +13,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - CP3 认证、RBAC、租户隔离(含反向验证)
 - CP4 前端垂直切片 + OpenAPI 契约门禁 + pre-commit/CI + 合成数据生成器(含反向验证)
 
-**下一步:CP-F2.3 · API、权限与审计。** 落地映射查询/保存、触发解析、错误清单和字段可用性接口；按 `CONFIG_READ/WRITE`、`BATCH_IMPORT/READ` 鉴权，补跨租户、审计和失败路径独立事务测试；不进入 F3。
+**下一步:CP-F2.4 · 桌面端批次工作流。** 在现有批次页增加原始数据、字段映射、错误清单和字段可用性四个视图，接入本检查点生成的类型化 API 客户端；不新增独立配置管理页，不进入 F3。
 `process_row_once` 至今**一个生产调用方都没有** —— 第一个是 F3,刻意如此。
 
 **开工前必读的两件事:**
@@ -27,6 +27,9 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - 2026-07-27 — **F2 推断只读取已直接映射的统一字段，不读取任意原始列，也不支持推断链。** `constant` 首版只允许 `currency`；`literal_lookup` 使用严格判别联合，按配置顺序做 NFKC 字面量包含匹配并取首个命中。推断目标必须是未直接映射的可选字段。规格 §6.2 的 direct+inference 同时配置示例与 §5.1/§6.1 正文冲突，实现以正文互斥规则为准。
 - 2026-07-27 — **F2 可用性按字段观察结果计数，而非按整行成功计数。** 某行因金额失败时，该行已成功规范化的日期仍计入日期 non-null_count；所有失败行仍在固定 `row_count` 分母中。这样既不排除坏行虚高比例，也不因无关字段错误低估目标字段质量。
 - 2026-07-27 — **解析服务使用调用方外层事务 + 内部 SAVEPOINT。** `FOR UPDATE NOWAIT`、行结果替换、12 项可用性覆盖和 `file_version` 更新处于同一原子单元；API 依赖负责最终 commit/rollback。首次系统失败后的 `failed` 状态与失败审计需要独立短事务，留到 CP-F2.3，不在失败事务中勉强续写。
+- 2026-07-27 — **F2 映射 PUT 使用租户父行锁串行分配全局版本号。** 规范化映射、四位小数阈值、币种别名和有序推断配置组成 canonical JSON 指纹；同表头最新指纹相同则返回 200 并复用，不创建版本或审计，内容变化才返回 201 追加版本。
+- 2026-07-27 — **F2 解析审计与业务事务边界已固定。** 首次成功应用映射时，`batch.parse` 与解析结果同事务提交；同版本复用不重复审计。未分类系统异常先回滚解析事务，再用独立短事务追加 `batch.parse_failed`，payload 只含批次/映射 ID 与稳定错误分类，不含异常文本或报销 PII。
+- 2026-07-27 — **API 输入校验统一返回 `{error:{code,message}}`。** FastAPI/Pydantic 请求校验使用 `REQUEST_VALIDATION_ERROR`；映射领域校验继续返回规格中的稳定 `MAPPING_*` 码，冲突和系统错误分别使用 409/500。
 - 2026-07-27 — **F2 映射版本号采用租户内全局递增。** 原因是 0002 的 `unique(tenant_id, source_column, version)` 属于受保护约束；父版本号全局化后，子条目的兼容 `version` 可与父版本一致且不阻塞不同表头复用相同源列。映射版本不可变，legacy `confidence` 仅保留历史值，新写入为 null。
 - 2026-07-27 — **`.gitignore` 的模型权重规则必须精确放行 `backend/app/db/models/*.py`。** 旧的通用 `models/` 规则误伤 ORM 目录，曾导致模型文件完全不受 Git 跟踪；现已增加窄范围例外，不放行下载权重或私有数据。
 - 2026-07-27 — **开发工具入口从 ClaudeCode 切换为 Codex。** `AGENTS.md` 继续作为唯一事实来源,Codex 原生读取;ClaudeCode 专用的 `.claude/` 与 `CLAUDE.md` 退役。后续新会话按 `AGENTS.md` → `MEMORY.md` → 当前 `specs/` → `agent_docs/` 的顺序加载上下文。
@@ -83,7 +86,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 
 ### 已完成阶段的测试统计(便于新会话快速判断状态)
 
-- `cd backend && uv run python -m pytest --basetemp <可写临时目录>` 应为 **128 passed, 1 skipped**（skip 的是常驻待命的评测门禁）；其中 CP-F2.2 纯逻辑 **51 passed**、解析服务 PostgreSQL 集成 **6 passed**，解析包定向覆盖率 **91%**；迁移目录测试为 **20 passed**。
+- `cd backend && uv run python -m pytest --basetemp <可写临时目录>` 应为 **142 passed, 1 skipped**（skip 的是常驻待命的评测门禁）；其中 CP-F2.2 纯逻辑 **51 passed**、解析服务 PostgreSQL 集成 **6 passed**、CP-F2.3 API 集成 **14 passed**，解析包定向覆盖率 **91%**；迁移目录测试为 **20 passed**。
 - `cd frontend && npm run test` 应为 **8 passed**
 
 ### F1 验证统计
@@ -97,6 +100,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - [x] 数据库 schema 创建（19 张表,含 `schema_mapping_version`、`row_result` 幂等表与 `audit_log` 追加写触发器）
 - [x] F2 CP-F2.1（映射版本、结构化解析持久化列、legacy 回填与双向迁移）
 - [x] F2 CP-F2.2（严格归一化、映射/推断校验、12 字段可用性、原子解析/复用/重解析）
+- [x] F2 CP-F2.3（五个 API、RBAC、租户隔离、无 PII 审计与失败独立事务）
 - [x] 认证集成（server-side session + RBAC 三角色 + 租户过滤 fail-closed）
 - [x] 前端垂直切片（登录 / 路由守卫 / 三角色外壳 / 系统状态页）
 - [x] OpenAPI 契约门禁 + pre-commit + GitHub Actions CI

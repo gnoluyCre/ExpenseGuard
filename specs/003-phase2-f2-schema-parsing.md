@@ -1,8 +1,8 @@
 # Spec 003 — Phase 2 F2 Schema 映射与结构化解析
 
-**状态：** CP-F2.0–CP-F2.2 已完成
+**状态：** CP-F2.0–CP-F2.3 已完成
 **最近更新：** 2026-07-27
-**后续检查点：** CP-F2.3 API、权限与审计
+**后续检查点：** CP-F2.4 桌面端批次工作流
 
 ## 1. 目标与范围
 
@@ -613,9 +613,17 @@ CP-F2.2 实际落地记录（2026-07-27）：
 - 解析服务用 `SELECT ... FOR UPDATE NOWAIT` 和事务内保存点覆盖行结果、全部 12 项可用性及批次状态；同版本复用不刷新 `parsed_at`，新版本只从 `raw_json` 重算，系统异常保留旧成功结果。
 - 新增纯逻辑测试 51 个、真实 PostgreSQL 服务集成测试 6 个；覆盖部分失败、同版本复用、换版本重解析、捕获异常后提交外层事务仍无半批写入，以及并发锁冲突。解析包定向覆盖率 91%；后端全量 128 passed、1 skipped；Ruff、格式检查和 strict mypy 全部通过。
 
+CP-F2.3 实际落地记录（2026-07-27）：
+
+- 新增 `GET/PUT /api/schema-mappings`、`POST /api/batches/{id}/parse`、`GET /api/batches/{id}/parse-errors` 与 `GET /api/batches/{id}/field-availability`，全部经现有会话注入租户并按 §12 权限矩阵鉴权。
+- 映射保存锁定租户父行后分配租户内全局版本号；规范化配置指纹命中同表头最新版本时返回 200 幂等复用，否则返回 201 追加版本。版本、映射条目和 `schema_mapping_version.create` 审计同事务提交。
+- 首次解析成功追加 `batch.parse` 审计，同版本复用不重复记录；系统异常先回滚业务事务，再以独立短事务追加 `batch.parse_failed`。两类 payload 均只记录 ID、版本、状态和计数，不记录 `raw_json`、`normalized_json`、异常文本或报销 PII。
+- 解析冲突稳定映射为 409，未分类系统异常映射为 `500 BATCH_PARSE_INTERNAL_ERROR`；FastAPI 请求校验统一为 `{error:{code,message}}`，领域映射校验继续使用 §9.6 的稳定错误码。
+- 新增真实 PostgreSQL API 集成测试 14 个，覆盖权限、跨租户、映射创建/复用/并发、部分失败、错误分页、12 字段固定顺序、重复解析、换版本重解析、行锁冲突、系统异常回滚及无 PII 审计。后端全量 142 passed、1 skipped；Ruff、格式检查和 strict mypy 全部通过；OpenAPI 与前端生成客户端已同步。
+
 - [x] **CP-F2.0：** 规格固化。
 - [x] **CP-F2.1：** 数据库迁移与 ORM 持久化模型；`0003` 往返迁移、legacy 回填、脏数据回滚及 `alembic check` 已验证。
 - [x] **CP-F2.2：** `backend/app/core/parsing/` 纯逻辑与解析服务；51 个单元测试、6 个服务集成测试、91% 定向覆盖率及后端全量门禁通过。
-- [ ] **CP-F2.3：** API、权限、租户隔离与审计集成测试。
+- [x] **CP-F2.3：** API、权限、租户隔离与审计集成测试；14 个 API 集成测试及后端全量门禁通过。
 - [ ] **CP-F2.4：** 现有桌面批次页四视图工作流。
 - [ ] **CP-F2.5：** 全量测试、契约同步、交付门禁和状态文件更新。

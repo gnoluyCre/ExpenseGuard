@@ -7,6 +7,7 @@
 import logging
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -47,6 +48,20 @@ async def _handle_domain_error(request: Request, exc: Exception) -> JSONResponse
     )
 
 
+async def _handle_request_validation_error(request: Request, exc: Exception) -> JSONResponse:
+    """将 FastAPI/Pydantic 的输入错误收敛到项目统一错误 shape。"""
+    if not isinstance(exc, RequestValidationError):  # pragma: no cover
+        raise exc
+    logger.info("request validation error", extra={"path": request.url.path})
+    return JSONResponse(
+        status_code=422,
+        content=ErrorResponse(
+            error=ErrorDetail(code="REQUEST_VALIDATION_ERROR", message="请求参数无效")
+        ).model_dump(),
+    )
+
+
 def register_error_handlers(app: FastAPI) -> None:
     """挂上领域错误处理器。"""
     app.add_exception_handler(ExpenseGuardError, _handle_domain_error)
+    app.add_exception_handler(RequestValidationError, _handle_request_validation_error)

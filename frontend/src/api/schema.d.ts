@@ -114,6 +114,66 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/batches/{file_version_id}/field-availability": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Field Availability
+     * @description 返回当前解析版本的全部统一字段可用性。
+     */
+    get: operations["batches_field_availability"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/batches/{file_version_id}/parse": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Parse
+     * @description 按指定不可变映射版本原子解析批次。
+     */
+    post: operations["batches_parse"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/batches/{file_version_id}/parse-errors": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Parse Errors
+     * @description 分页读取解析失败行，保留原始证据链。
+     */
+    get: operations["batches_parse_errors"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/health": {
     parameters: {
       query?: never;
@@ -154,10 +214,80 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/schema-mappings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List
+     * @description 返回当前批次表头可精确复用的映射版本。
+     */
+    get: operations["schema-mappings_list"];
+    /**
+     * Save
+     * @description 追加一个不可变映射版本；相同内容重试幂等复用。
+     */
+    put: operations["schema-mappings_save"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /**
+     * AvailabilityEvidence
+     * @description 不含样本值的版本化字段可用性证据。
+     */
+    AvailabilityEvidence: {
+      direct: components["schemas"]["DirectAvailabilityEvidence"];
+      inference: components["schemas"]["InferenceAvailabilityEvidence"];
+      /**
+       * Mapping Version Id
+       * Format: uuid
+       */
+      mapping_version_id: string;
+      /**
+       * Schema Version
+       * @default 1
+       * @constant
+       */
+      schema_version: 1;
+      /**
+       * Selected Basis
+       * @enum {string}
+       */
+      selected_basis: "direct" | "inference" | "none";
+      /** Total Rows */
+      total_rows: number;
+    };
+    /** AvailabilityThresholdsRequest */
+    AvailabilityThresholdsRequest: {
+      /**
+       * Available Min Non Null Rate
+       * @default 0.80
+       */
+      available_min_non_null_rate: number | string;
+      /**
+       * Inferred Min Success Rate
+       * @default 0.80
+       */
+      inferred_min_success_rate: number | string;
+    };
+    /** AvailabilityThresholdsResponse */
+    AvailabilityThresholdsResponse: {
+      /** Available Min Non Null Rate */
+      available_min_non_null_rate: string;
+      /** Inferred Min Success Rate */
+      inferred_min_success_rate: string;
+    };
     /**
      * BatchDetailResponse
      * @description 批次详情响应。
@@ -251,6 +381,26 @@ export interface components {
       file: string;
     };
     /**
+     * ConstantInferenceRule
+     * @description 固定值推断；首版只允许推断币种。
+     */
+    ConstantInferenceRule: {
+      /** Rule Id */
+      rule_id: string;
+      /**
+       * Target Field
+       * @constant
+       */
+      target_field: "currency";
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "constant";
+      /** Value */
+      value: string;
+    };
+    /**
      * CurrentUser
      * @description 当前登录用户。
      */
@@ -281,6 +431,39 @@ export interface components {
      */
     DependencyStatus: "up" | "down";
     /**
+     * DirectAvailabilityEvidence
+     * @description 直接映射的非空率证据。
+     */
+    DirectAvailabilityEvidence: {
+      /** Configured */
+      configured: boolean;
+      /** Non Null Count */
+      non_null_count: number;
+      /** Non Null Rate */
+      non_null_rate: string;
+      /** Source Columns */
+      source_columns: string[];
+      /** Threshold */
+      threshold: string;
+    };
+    /**
+     * ErrorDetail
+     * @description 错误详情。
+     */
+    ErrorDetail: {
+      /** Code */
+      code: string;
+      /** Message */
+      message: string;
+    };
+    /**
+     * ErrorResponse
+     * @description 统一错误响应体。注册进 OpenAPI，使前端能生成对应类型。
+     */
+    ErrorResponse: {
+      error: components["schemas"]["ErrorDetail"];
+    };
+    /**
      * ExpenseRowResponse
      * @description 原始报销行摘要。
      */
@@ -294,10 +477,103 @@ export interface components {
       /** Row No */
       row_no: number;
     };
+    /** FieldAvailabilityItemResponse */
+    FieldAvailabilityItemResponse: {
+      evidence: components["schemas"]["AvailabilityEvidence"];
+      /** Field Name */
+      field_name: string;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "available" | "inferred" | "missing";
+    };
+    /** FieldAvailabilityResponse */
+    FieldAvailabilityResponse: {
+      /**
+       * File Version Id
+       * Format: uuid
+       */
+      file_version_id: string;
+      /** Items */
+      items: components["schemas"]["FieldAvailabilityItemResponse"][];
+      /**
+       * Mapping Version Id
+       * Format: uuid
+       */
+      mapping_version_id: string;
+    };
+    /**
+     * FieldError
+     * @description 一个稳定、用户安全的字段解析错误。
+     */
+    FieldError: {
+      /**
+       * Code
+       * @enum {string}
+       */
+      code:
+        | "REQUIRED_VALUE_MISSING"
+        | "AMOUNT_INVALID_FORMAT"
+        | "AMOUNT_OUT_OF_RANGE"
+        | "DATE_INVALID_FORMAT"
+        | "DATE_OUT_OF_RANGE"
+        | "TEXT_TOO_LONG"
+        | "CURRENCY_INVALID";
+      field: components["schemas"]["UnifiedField"];
+      /** Message */
+      message: string;
+      /** Source Column */
+      source_column: string;
+    };
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
       detail?: components["schemas"]["ValidationError"][];
+    };
+    /**
+     * InferenceAvailabilityEvidence
+     * @description 确定性推断的成功率证据。
+     */
+    InferenceAvailabilityEvidence: {
+      /** Configured */
+      configured: boolean;
+      /** Rule Ids */
+      rule_ids: string[];
+      /** Success Count */
+      success_count: number;
+      /** Success Rate */
+      success_rate: string;
+      /** Threshold */
+      threshold: string;
+    };
+    /**
+     * LiteralLookupCase
+     * @description 字面量包含匹配的一项；列表顺序决定优先级。
+     */
+    LiteralLookupCase: {
+      /** Literal */
+      literal: string;
+      /** Value */
+      value: string;
+    };
+    /**
+     * LiteralLookupInferenceRule
+     * @description 从已直接映射字段做 NFKC 字面量包含匹配。
+     */
+    LiteralLookupInferenceRule: {
+      /** Cases */
+      cases: components["schemas"]["LiteralLookupCase"][];
+      /** Rule Id */
+      rule_id: string;
+      /** Source Fields */
+      source_fields: components["schemas"]["UnifiedField"][];
+      target_field: components["schemas"]["UnifiedField"];
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "literal_lookup";
     };
     /**
      * LivenessResponse
@@ -322,6 +598,132 @@ export interface components {
       /** Username */
       username: string;
     };
+    /** MappingEntryRequest */
+    MappingEntryRequest: {
+      /** Source Column */
+      source_column: string;
+      /** Target Field */
+      target_field: string;
+    };
+    /** MappingEntryResponse */
+    MappingEntryResponse: {
+      /** Source Column */
+      source_column: string;
+      target_field: components["schemas"]["UnifiedField"];
+    };
+    /** MappingVersionResponse */
+    MappingVersionResponse: {
+      availability_thresholds: components["schemas"]["AvailabilityThresholdsResponse"];
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Created By */
+      created_by: string | null;
+      /** Currency Aliases */
+      currency_aliases: {
+        [key: string]: string;
+      };
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Inference Rules */
+      inference_rules: (
+        | components["schemas"]["ConstantInferenceRule"]
+        | components["schemas"]["LiteralLookupInferenceRule"]
+      )[];
+      /** Is Current For Batch */
+      is_current_for_batch: boolean;
+      /** Mappings */
+      mappings: components["schemas"]["MappingEntryResponse"][];
+      /** Version */
+      version: number;
+    };
+    /**
+     * ParseBatchRequest
+     * @description 触发解析所需的不可变映射版本。
+     */
+    ParseBatchRequest: {
+      /**
+       * Mapping Version Id
+       * Format: uuid
+       */
+      mapping_version_id: string;
+    };
+    /**
+     * ParseBatchResponse
+     * @description 解析计数与当前版本状态。
+     */
+    ParseBatchResponse: {
+      /** Error Count */
+      error_count: number;
+      /**
+       * File Version Id
+       * Format: uuid
+       */
+      file_version_id: string;
+      /** Mapping Version */
+      mapping_version: number;
+      /**
+       * Mapping Version Id
+       * Format: uuid
+       */
+      mapping_version_id: string;
+      /** Parsed At */
+      parsed_at: string;
+      /** Reused Existing */
+      reused_existing: boolean;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "parsed" | "parsed_with_errors";
+      /** Success Count */
+      success_count: number;
+      /** Total Rows */
+      total_rows: number;
+    };
+    /**
+     * ParseErrorItemResponse
+     * @description 解析失败行；raw_json 仅返回给同租户 BATCH_READ 用户。
+     */
+    ParseErrorItemResponse: {
+      /** Parse Error */
+      parse_error: string;
+      /** Parse Error Code */
+      parse_error_code: string;
+      parse_error_detail: components["schemas"]["RowErrorDetail"];
+      /** Raw Json */
+      raw_json: {
+        [key: string]: unknown;
+      };
+      /** Row No */
+      row_no: number;
+    };
+    /** ParseErrorsResponse */
+    ParseErrorsResponse: {
+      /**
+       * File Version Id
+       * Format: uuid
+       */
+      file_version_id: string;
+      /** Items */
+      items: components["schemas"]["ParseErrorItemResponse"][];
+      /** Limit */
+      limit: number;
+      /**
+       * Mapping Version Id
+       * Format: uuid
+       */
+      mapping_version_id: string;
+      /** Offset */
+      offset: number;
+      /** Total */
+      total: number;
+    };
     /**
      * ReadinessResponse
      * @description 就绪响应。
@@ -338,6 +740,112 @@ export interface components {
      * @enum {string}
      */
     Role: "auditor" | "configurator" | "viewer";
+    /**
+     * RowErrorDetail
+     * @description 失败行写入 ``parse_error_detail`` 的版本化结构。
+     */
+    RowErrorDetail: {
+      /** Errors */
+      errors: components["schemas"]["FieldError"][];
+      /**
+       * Mapping Version Id
+       * Format: uuid
+       */
+      mapping_version_id: string;
+      /**
+       * Schema Version
+       * @default 1
+       * @constant
+       */
+      schema_version: 1;
+    };
+    /** SaveSchemaMappingRequest */
+    SaveSchemaMappingRequest: {
+      availability_thresholds?: components["schemas"]["AvailabilityThresholdsRequest"];
+      /** Currency Aliases */
+      currency_aliases?: {
+        [key: string]: string;
+      };
+      /**
+       * File Version Id
+       * Format: uuid
+       */
+      file_version_id: string;
+      /**
+       * Inference Rules
+       * @default []
+       */
+      inference_rules: {
+        [key: string]: unknown;
+      }[];
+      /** Mappings */
+      mappings: components["schemas"]["MappingEntryRequest"][];
+    };
+    /** SaveSchemaMappingResponse */
+    SaveSchemaMappingResponse: {
+      availability_thresholds: components["schemas"]["AvailabilityThresholdsResponse"];
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Created By */
+      created_by: string | null;
+      /** Currency Aliases */
+      currency_aliases: {
+        [key: string]: string;
+      };
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Inference Rules */
+      inference_rules: (
+        | components["schemas"]["ConstantInferenceRule"]
+        | components["schemas"]["LiteralLookupInferenceRule"]
+      )[];
+      /** Is Current For Batch */
+      is_current_for_batch: boolean;
+      /** Mappings */
+      mappings: components["schemas"]["MappingEntryResponse"][];
+      /** Reused Existing */
+      reused_existing: boolean;
+      /** Version */
+      version: number;
+    };
+    /** SchemaMappingsResponse */
+    SchemaMappingsResponse: {
+      /**
+       * File Version Id
+       * Format: uuid
+       */
+      file_version_id: string;
+      /** Header Signature */
+      header_signature: string;
+      /** Source Columns */
+      source_columns: string[];
+      /** Versions */
+      versions: components["schemas"]["MappingVersionResponse"][];
+    };
+    /**
+     * UnifiedField
+     * @description 固定的 12 个统一报销字段，顺序也是稳定输出顺序。
+     * @enum {string}
+     */
+    UnifiedField:
+      | "amount"
+      | "expense_date"
+      | "employee"
+      | "expense_type"
+      | "invoice_type"
+      | "invoice_no"
+      | "merchant"
+      | "invoice_title"
+      | "submission_date"
+      | "location"
+      | "currency"
+      | "description";
     /** ValidationError */
     ValidationError: {
       /** Context */
@@ -552,6 +1060,229 @@ export interface operations {
       };
     };
   };
+  batches_field_availability: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        file_version_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FieldAvailabilityResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  batches_parse: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        file_version_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ParseBatchRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ParseBatchResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  batches_parse_errors: {
+    parameters: {
+      query?: {
+        offset?: number;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        file_version_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ParseErrorsResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
   health_liveness: {
     parameters: {
       query?: never;
@@ -588,6 +1319,137 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ReadinessResponse"];
+        };
+      };
+    };
+  };
+  "schema-mappings_list": {
+    parameters: {
+      query: {
+        file_version_id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SchemaMappingsResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  "schema-mappings_save": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SaveSchemaMappingRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SaveSchemaMappingResponse"];
+        };
+      };
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SaveSchemaMappingResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
         };
       };
     };

@@ -42,6 +42,14 @@ LOCK_NOT_AVAILABLE_SQLSTATE = "55P03"
 class BatchParsingError(ExpenseGuardError):
     """可稳定映射到 API 的批次解析领域错误。"""
 
+    status_code = 409
+
+
+class BatchParseInternalError(BatchParsingError):
+    """未分类系统异常；响应与审计都不得暴露异常详情。"""
+
+    status_code = 500
+
 
 async def parse_batch(
     db: AsyncSession,
