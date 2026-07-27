@@ -109,6 +109,11 @@ class Settings(BaseSettings):
         """
         return str(self.database_url)
 
+    @property
+    def upload_root(self) -> Path:
+        """原始上传文件留存目录。该目录位于 gitignore 的 data/private 下。"""
+        return _REPO_ROOT / "data" / "private" / "uploads"
+
 
 @lru_cache
 def get_settings() -> Settings:

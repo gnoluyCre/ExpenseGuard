@@ -70,6 +70,50 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/batches": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List
+     * @description 列出当前租户批次。
+     */
+    get: operations["batches_list"];
+    put?: never;
+    /**
+     * Import
+     * @description 上传 Excel 并创建或复用文件版本。
+     */
+    post: operations["batches_import"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/batches/{file_version_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Detail
+     * @description 读取批次详情。
+     */
+    get: operations["batches_detail"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/health": {
     parameters: {
       query?: never;
@@ -115,6 +159,98 @@ export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
     /**
+     * BatchDetailResponse
+     * @description 批次详情响应。
+     */
+    BatchDetailResponse: {
+      /** Content Hash */
+      content_hash: string;
+      /**
+       * File Version Id
+       * Format: uuid
+       */
+      file_version_id: string;
+      /** Filename */
+      filename: string;
+      /** Row Count */
+      row_count: number;
+      /** Rows */
+      rows: components["schemas"]["ExpenseRowResponse"][];
+      /**
+       * Uploaded At
+       * Format: date-time
+       */
+      uploaded_at: string;
+      /**
+       * Uploaded By
+       * Format: uuid
+       */
+      uploaded_by: string;
+    };
+    /**
+     * BatchImportResponse
+     * @description 批次导入响应。
+     */
+    BatchImportResponse: {
+      /** Content Hash */
+      content_hash: string;
+      /**
+       * File Version Id
+       * Format: uuid
+       */
+      file_version_id: string;
+      /** Filename */
+      filename: string;
+      /** Reused Existing */
+      reused_existing: boolean;
+      /** Row Count */
+      row_count: number;
+      /** Stored Rows */
+      stored_rows: number;
+      /**
+       * Uploaded At
+       * Format: date-time
+       */
+      uploaded_at: string;
+      /**
+       * Uploaded By
+       * Format: uuid
+       */
+      uploaded_by: string;
+    };
+    /**
+     * BatchSummaryResponse
+     * @description 批次列表项。
+     */
+    BatchSummaryResponse: {
+      /** Content Hash */
+      content_hash: string;
+      /**
+       * File Version Id
+       * Format: uuid
+       */
+      file_version_id: string;
+      /** Filename */
+      filename: string;
+      /** Row Count */
+      row_count: number;
+      /**
+       * Uploaded At
+       * Format: date-time
+       */
+      uploaded_at: string;
+      /**
+       * Uploaded By
+       * Format: uuid
+       */
+      uploaded_by: string;
+    };
+    /** Body_batches_import */
+    Body_batches_import: {
+      /** File */
+      file: string;
+    };
+    /**
      * CurrentUser
      * @description 当前登录用户。
      */
@@ -144,6 +280,20 @@ export interface components {
      * @enum {string}
      */
     DependencyStatus: "up" | "down";
+    /**
+     * ExpenseRowResponse
+     * @description 原始报销行摘要。
+     */
+    ExpenseRowResponse: {
+      /** Parse Error */
+      parse_error: string | null;
+      /** Raw Json */
+      raw_json: {
+        [key: string]: unknown;
+      };
+      /** Row No */
+      row_no: number;
+    };
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
@@ -290,6 +440,105 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["CurrentUser"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  batches_list: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BatchSummaryResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  batches_import: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody: {
+      content: {
+        "multipart/form-data": components["schemas"]["Body_batches_import"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BatchImportResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  batches_detail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        file_version_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BatchDetailResponse"];
         };
       };
       /** @description Validation Error */

@@ -80,12 +80,12 @@
 
 ## 当前状态 📍
 **最近更新:** 2026-07-27
-**正在进行:** 阶段 1 已完成,准备进入阶段 2 F1(Excel 导入与文件版本管理)
-**最近完成:** CP0 仓库重置 / CP1 后端地基与 18 张表 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离 / **CP4 前端垂直切片 + OpenAPI 契约 + CI**(后端 49 passed + 1 skipped,前端 8 passed)
+**正在进行:** 阶段 2 F1 已完成,准备进入阶段 2 F2(Schema 映射与结构化解析)。
+**最近完成:** CP0 仓库重置 / CP1 后端地基与 18 张表 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离 / **CP4 前端垂直切片 + OpenAPI 契约 + CI** / **F1 Excel 导入 API + 前端批次页 + 契约同步**(后端集成 5 passed,前端 11 passed)
 **受阻于:** 无(W0 阻塞项:真实报销数据脱敏审批、制度文档到位 —— 见 `MEMORY.md`)
-**已知缺口(三项,均不阻塞 F1):**
+**已知缺口(三项,均不阻塞 F2):**
 1. **W0 spike 未做** —— `docker-compose.models.yml` 的 embedding 镜像**未实测**;客户内网访问不了 HuggingFace 时的离线权重供给路径未验证。留到上线周才发现会很贵。
-2. **CI 未在 GitHub 上真实跑过** —— 每一步都在本地跑通了等价命令,但仓库尚未 push。首次 push 后需确认:服务容器的 `CREATE DATABASE` 步骤、gitleaks 镜像可拉取、setup-uv/setup-node 的缓存键。
+2. **CI 远端状态待确认** —— 仓库已完成首次 push,但需确认 GitHub 上服务容器的 `CREATE DATABASE` 步骤、gitleaks 镜像可拉取、setup-uv/setup-node 的缓存键是否稳定。
 3. **开发工具接管完成** —— 已退役 ClaudeCode 专用入口;后续 Codex 以本文件 + `MEMORY.md` + 当前 `specs/` 为上下文入口。
 
 细节见 `specs/001-phase1-foundation.md` 的「已知问题」与「待办」。
@@ -101,7 +101,7 @@
 - [x] 合成数据生成器骨架(`backend/app/synth/`,一等交付物;只实现超限额一类,其余七类显式 `NotImplementedError`)
 
 ### 阶段 2:核心功能(P0 —— 串行依赖链)
-- [ ] **F1 · Excel 导入与文件版本管理** —— .xlsx 500–5000 行;内容哈希去重生成 `file_version_id`;同文件重复导入幂等
+- [x] **F1 · Excel 导入与文件版本管理** —— .xlsx 500–5000 行;内容哈希去重生成 `file_version_id`;同文件重复导入幂等
 - [ ] **F2 · Schema 映射与结构化解析** —— 列名映射配置可复用;金额 / 日期归一化;解析失败行进错误清单不静默丢弃;字段可用性三级自动探测(available/inferred/missing)
 - [ ] **F3 · 确定性校验** —— 限额 / 票种 / 时效 / 抬头 / 发票号查重五类硬规则(JSON Logic 配置化);阈值白名单为配置项;命中记录 rule_id + rule_version;可复现
 - [ ] **F4 · 报告生成(含制度条款引用)** —— 按风险分级;每条判定含规则 / 条款 ID + 逐字引用 + 原始行号;制度检索按费用发生日过滤生效版本;**LLM 引用须通过机械式逐字校验方可呈现**;报告可导出

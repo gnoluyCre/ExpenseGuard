@@ -23,12 +23,12 @@ import type { components, paths } from "./schema";
  * 而 Node/undici 的 Request 不接受相对 URL——空串会让所有测试直接报
  * "Failed to parse URL"。前后端分开部署时用 `VITE_API_BASE_URL` 覆盖。
  */
-const baseUrl =
+export const apiBaseUrl =
   import.meta.env.VITE_API_BASE_URL ||
   (typeof window === "undefined" ? "http://localhost" : window.location.origin);
 
 export const api = createClient<paths>({
-  baseUrl,
+  baseUrl: apiBaseUrl,
   // 会话 cookie 是 HttpOnly 的，不带这个选项浏览器根本不会发它。
   // 开发期靠 Vite proxy 做到同源，所以这里不需要处理跨域。
   credentials: "include",
@@ -47,6 +47,15 @@ export type Role = components["schemas"]["Role"];
 
 /** 就绪探针响应。 */
 export type ReadinessResponse = components["schemas"]["ReadinessResponse"];
+
+/** 批次列表项。 */
+export type BatchSummary = components["schemas"]["BatchSummaryResponse"];
+
+/** 批次导入响应。 */
+export type BatchImportResponse = components["schemas"]["BatchImportResponse"];
+
+/** 批次详情。 */
+export type BatchDetail = components["schemas"]["BatchDetailResponse"];
 
 /**
  * 后端权限标识。

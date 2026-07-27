@@ -5,7 +5,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 -->
 
 ## 🏗️ 当前阶段与目标
-**当前任务:阶段 1 已完成(CP0–CP4)。** 后端 `49 passed, 1 skipped`,前端 `8 passed`;ruff / mypy strict(`app scripts`)/ alembic check / oxlint / tsc / prettier / `pre-commit run --all-files` 全绿。完整落地记录与踩坑清单见 `specs/001-phase1-foundation.md`。
+**当前任务:阶段 2 F1 · Excel 导入与文件版本管理已完成。** 已新增 `.xlsx` 上传、内容哈希去重、`file_version` 创建/复用、`expense_row` 原始行落库、批次列表/详情 API、桌面端批次页与契约同步。F1 后端集成测试已通过。
 
 - CP0 仓库重置(干净历史、`.gitignore` 脱敏排除)
 - CP1 后端地基(uv + 18 张表 + Alembic 三层隔离)
@@ -13,18 +13,19 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - CP3 认证、RBAC、租户隔离(含反向验证)
 - CP4 前端垂直切片 + OpenAPI 契约门禁 + pre-commit/CI + 合成数据生成器(含反向验证)
 
-**下一步:阶段 2 F1 · Excel 导入与文件版本管理。** 串行依赖链 F1→F2→F3→F4→F5,不得跳步。
+**下一步:阶段 2 F2 · Schema 映射与结构化解析。** 串行依赖链 F1→F2→F3→F4→F5,不得跳步。
 `process_row_once` 至今**一个生产调用方都没有** —— 第一个是 F3,刻意如此。
 
 **开工前必读的两件事:**
 1. 契约同步是硬要求:改了 Pydantic 模型 → `cd backend && uv run python scripts/export_openapi.py` + `cd frontend && npm run gen:api`,两个生成物都要提交,否则 CI 的 contract job 直接红。
 2. 评测门禁已就位但处于待命:`backend/evals/baseline.json` 的 `thresholds` 一填数值就自动开始阻断,**不需要改任何 workflow YAML**。
 
-**遗留缺口（不阻塞 F1，但别忘）:** W0 spike 未做 —— `docker-compose.models.yml` 的 embedding 镜像未实测、离线模型供给路径未验证;CI 尚未在 GitHub 上真实跑过（仓库未 push）。
+**遗留缺口（不阻塞 F2，但别忘）:** W0 spike 未做 —— `docker-compose.models.yml` 的 embedding 镜像未实测、离线模型供给路径未验证;GitHub CI 远端状态待确认。
 
 ## 📂 架构决策
 *(把构建过程中做出的具体选择记录在此,便于后续 agent 遵循)*
 - 2026-07-27 — **开发工具入口从 ClaudeCode 切换为 Codex。** `AGENTS.md` 继续作为唯一事实来源,Codex 原生读取;ClaudeCode 专用的 `.claude/` 与 `CLAUDE.md` 退役。后续新会话按 `AGENTS.md` → `MEMORY.md` → 当前 `specs/` → `agent_docs/` 的顺序加载上下文。
+- 2026-07-27 — **F1 保持纯原始证据链导入,不启动 LangGraph workflow。** Excel 第一行只作为原始列头,数据行按物理行号写入 `expense_row.raw_json`;`parse_error` 默认为空。字段映射、金额/日期归一化、字段可用性探测与正式解析失败语义全部留到 F2。
 - 2026-07-27 — 形态选 **agent-in-workflow**:确定性 workflow 主干 + 单点 ReAct 取证 agent。原因:审计结论必须可复现、经得起内审质询,不能把整条链路交给概率性推理。不采用多智能体协作(研究阶段明确排除)。
 - 2026-07-27 — 编排选 **LangGraph + PostgresSaver**。已知风险:节点从中断恢复时从头重放,`interrupt()` 前副作用会重复 → 用**行级幂等结果表**兜底(W1 最高优先级工程项,非可选优化)。
 - 2026-07-27 — 向量库选 **Qdrant**。原因:检索必然带复合过滤(tenant + 制度版本 + 费用发生日落在生效区间),payload 过滤在 HNSW 遍历内执行是其相对优势场景。退路:`VectorStore` 接口抽象,可切回 PGVector。
@@ -79,6 +80,10 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 
 - `cd backend && uv run pytest` 应为 **49 passed, 1 skipped**（skip 的是常驻待命的评测门禁）
 - `cd frontend && npm run test` 应为 **8 passed**
+
+### F1 验证统计
+
+- 已通过:后端 F1 单元测试、后端 F1 集成测试、后端 unit/eval 回归、`ruff check`、`mypy app scripts`、OpenAPI check、前端批次页测试、前端全量测试、`npm run typecheck`、`npm run lint`、`npm run build`。
 
 若数量对不上,说明环境或代码有问题,先排查再继续。
 

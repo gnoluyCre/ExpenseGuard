@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router";
 import { RequireAuth } from "@/auth/RequireAuth";
 import { useCurrentUser } from "@/auth/useAuth";
 import { AppShell } from "@/components/AppShell";
+import { BatchesPage } from "@/pages/BatchesPage";
 import { HealthPage } from "@/pages/HealthPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { PlaceholderPage } from "@/pages/PlaceholderPage";
@@ -28,10 +29,7 @@ export function App() {
       >
         <Route index element={<Navigate to="/health" replace />} />
         <Route path="health" element={<HealthPage />} />
-        <Route
-          path="batches"
-          element={<PlaceholderPage title="批次" feature="F1 · Excel 导入与文件版本管理" />}
-        />
+        <Route path="batches" element={<BatchesPage />} />
         <Route
           path="review"
           element={<PlaceholderPage title="复核台" feature="F5 · 人工复核台" />}

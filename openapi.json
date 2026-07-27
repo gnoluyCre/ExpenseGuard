@@ -1,6 +1,164 @@
 {
   "components": {
     "schemas": {
+      "BatchDetailResponse": {
+        "description": "批次详情响应。",
+        "properties": {
+          "content_hash": {
+            "title": "Content Hash",
+            "type": "string"
+          },
+          "file_version_id": {
+            "format": "uuid",
+            "title": "File Version Id",
+            "type": "string"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "row_count": {
+            "title": "Row Count",
+            "type": "integer"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/ExpenseRowResponse"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "uploaded_at": {
+            "format": "date-time",
+            "title": "Uploaded At",
+            "type": "string"
+          },
+          "uploaded_by": {
+            "format": "uuid",
+            "title": "Uploaded By",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file_version_id",
+          "filename",
+          "content_hash",
+          "row_count",
+          "uploaded_at",
+          "uploaded_by",
+          "rows"
+        ],
+        "title": "BatchDetailResponse",
+        "type": "object"
+      },
+      "BatchImportResponse": {
+        "description": "批次导入响应。",
+        "properties": {
+          "content_hash": {
+            "title": "Content Hash",
+            "type": "string"
+          },
+          "file_version_id": {
+            "format": "uuid",
+            "title": "File Version Id",
+            "type": "string"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "reused_existing": {
+            "title": "Reused Existing",
+            "type": "boolean"
+          },
+          "row_count": {
+            "title": "Row Count",
+            "type": "integer"
+          },
+          "stored_rows": {
+            "title": "Stored Rows",
+            "type": "integer"
+          },
+          "uploaded_at": {
+            "format": "date-time",
+            "title": "Uploaded At",
+            "type": "string"
+          },
+          "uploaded_by": {
+            "format": "uuid",
+            "title": "Uploaded By",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file_version_id",
+          "filename",
+          "content_hash",
+          "row_count",
+          "uploaded_at",
+          "uploaded_by",
+          "reused_existing",
+          "stored_rows"
+        ],
+        "title": "BatchImportResponse",
+        "type": "object"
+      },
+      "BatchSummaryResponse": {
+        "description": "批次列表项。",
+        "properties": {
+          "content_hash": {
+            "title": "Content Hash",
+            "type": "string"
+          },
+          "file_version_id": {
+            "format": "uuid",
+            "title": "File Version Id",
+            "type": "string"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "row_count": {
+            "title": "Row Count",
+            "type": "integer"
+          },
+          "uploaded_at": {
+            "format": "date-time",
+            "title": "Uploaded At",
+            "type": "string"
+          },
+          "uploaded_by": {
+            "format": "uuid",
+            "title": "Uploaded By",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file_version_id",
+          "filename",
+          "content_hash",
+          "row_count",
+          "uploaded_at",
+          "uploaded_by"
+        ],
+        "title": "BatchSummaryResponse",
+        "type": "object"
+      },
+      "Body_batches_import": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_batches_import",
+        "type": "object"
+      },
       "CurrentUser": {
         "description": "当前登录用户。",
         "properties": {
@@ -69,6 +227,38 @@
         ],
         "title": "DependencyStatus",
         "type": "string"
+      },
+      "ExpenseRowResponse": {
+        "description": "原始报销行摘要。",
+        "properties": {
+          "parse_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parse Error"
+          },
+          "raw_json": {
+            "additionalProperties": true,
+            "title": "Raw Json",
+            "type": "object"
+          },
+          "row_no": {
+            "title": "Row No",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "row_no",
+          "raw_json",
+          "parse_error"
+        ],
+        "title": "ExpenseRowResponse",
+        "type": "object"
       },
       "HTTPValidationError": {
         "properties": {
@@ -337,6 +527,178 @@
         "summary": "Me",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/api/batches": {
+      "get": {
+        "description": "列出当前租户批次。",
+        "operationId": "batches_list",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BatchSummaryResponse"
+                  },
+                  "title": "Response Batches List",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List",
+        "tags": [
+          "batches"
+        ]
+      },
+      "post": {
+        "description": "上传 Excel 并创建或复用文件版本。",
+        "operationId": "batches_import",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_batches_import"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchImportResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import",
+        "tags": [
+          "batches"
+        ]
+      }
+    },
+    "/api/batches/{file_version_id}": {
+      "get": {
+        "description": "读取批次详情。",
+        "operationId": "batches_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_version_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "File Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchDetailResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Detail",
+        "tags": [
+          "batches"
         ]
       }
     },
