@@ -80,8 +80,8 @@
 
 ## 当前状态 📍
 **最近更新:** 2026-07-27
-**正在进行:** 阶段 2 F2 的 CP-F2.3 已完成,准备进入 CP-F2.4(桌面端批次工作流)。
-**最近完成:** CP0 仓库重置 / CP1 后端地基 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离 / **CP4 前端垂直切片 + OpenAPI 契约 + CI** / **F1 Excel 导入** / **CP-F2.0 规格 + CP-F2.1 持久化 schema + CP-F2.2 解析核心 + CP-F2.3 API、权限与审计**(F2.3 API 集成 14 passed；后端全量 142 passed + 1 skipped；Ruff、格式与 strict mypy 通过)
+**正在进行:** 阶段 2 F2 的 CP-F2.4 已完成,准备进入 CP-F2.5(契约与交付门禁)。
+**最近完成:** CP0 仓库重置 / CP1 后端地基 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离 / **CP4 前端垂直切片 + OpenAPI 契约 + CI** / **F1 Excel 导入** / **CP-F2.0 规格 + CP-F2.1 持久化 schema + CP-F2.2 解析核心 + CP-F2.3 API、权限与审计 + CP-F2.4 桌面端批次工作流**(F2.4 前端定向 6 passed、全量 14 passed；typecheck、lint、格式、build 与 1440×1000 Chrome 视觉验证通过)
 **受阻于:** 无(W0 阻塞项:真实报销数据脱敏审批、制度文档到位 —— 见 `MEMORY.md`)
 **已知缺口(三项,均不阻塞 F2):**
 1. **W0 spike 未做** —— `docker-compose.models.yml` 的 embedding 镜像**未实测**;客户内网访问不了 HuggingFace 时的离线权重供给路径未验证。留到上线周才发现会很贵。

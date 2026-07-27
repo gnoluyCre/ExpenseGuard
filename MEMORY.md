@@ -87,7 +87,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 ### 已完成阶段的测试统计(便于新会话快速判断状态)
 
 - `cd backend && uv run python -m pytest --basetemp <可写临时目录>` 应为 **142 passed, 1 skipped**（skip 的是常驻待命的评测门禁）；其中 CP-F2.2 纯逻辑 **51 passed**、解析服务 PostgreSQL 集成 **6 passed**、CP-F2.3 API 集成 **14 passed**，解析包定向覆盖率 **91%**；迁移目录测试为 **20 passed**。
-- `cd frontend && npm run test` 应为 **8 passed**
+- `cd frontend && npm run test` 应为 **14 passed**；其中 CP-F2.4 批次工作流定向测试 **6 passed**。
 
 ### F1 验证统计
 
@@ -101,6 +101,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - [x] F2 CP-F2.1（映射版本、结构化解析持久化列、legacy 回填与双向迁移）
 - [x] F2 CP-F2.2（严格归一化、映射/推断校验、12 字段可用性、原子解析/复用/重解析）
 - [x] F2 CP-F2.3（五个 API、RBAC、租户隔离、无 PII 审计与失败独立事务）
+- [x] F2 CP-F2.4（批次页原始数据/字段映射/错误清单/字段可用性四视图、三角色权限、映射复用/保存、解析触发与缓存刷新）
 - [x] 认证集成（server-side session + RBAC 三角色 + 租户过滤 fail-closed）
 - [x] 前端垂直切片（登录 / 路由守卫 / 三角色外壳 / 系统状态页）
 - [x] OpenAPI 契约门禁 + pre-commit + GitHub Actions CI

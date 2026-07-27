@@ -57,6 +57,22 @@ export type BatchImportResponse = components["schemas"]["BatchImportResponse"];
 /** 批次详情。 */
 export type BatchDetail = components["schemas"]["BatchDetailResponse"];
 
+/** F2 不可变映射版本列表。 */
+export type SchemaMappings = components["schemas"]["SchemaMappingsResponse"];
+
+/** F2 单个映射版本。 */
+export type MappingVersion = components["schemas"]["MappingVersionResponse"];
+
+/** F2 保存映射请求与响应。 */
+export type SaveSchemaMappingRequest = components["schemas"]["SaveSchemaMappingRequest"];
+export type SaveSchemaMappingResponse = components["schemas"]["SaveSchemaMappingResponse"];
+
+/** F2 批次解析与结果视图。 */
+export type ParseBatchResponse = components["schemas"]["ParseBatchResponse"];
+export type ParseErrorsResponse = components["schemas"]["ParseErrorsResponse"];
+export type FieldAvailabilityResponse = components["schemas"]["FieldAvailabilityResponse"];
+export type UnifiedField = components["schemas"]["UnifiedField"];
+
 /**
  * 后端权限标识。
  *
