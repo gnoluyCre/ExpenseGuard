@@ -16,6 +16,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -45,6 +46,13 @@ class ParseStatus(StrEnum):
     FAILED = "failed"
 
 
+class RevisionReason(StrEnum):
+    """创建派生文件版本的显式原因。"""
+
+    RULESET_CHANGE = "ruleset_change"
+    MAPPING_CHANGE = "mapping_change"
+
+
 class FileVersion(Base, TenantScopedMixin, TimestampMixin):
     """一次 Excel 导入。
 
@@ -54,7 +62,27 @@ class FileVersion(Base, TenantScopedMixin, TimestampMixin):
 
     __tablename__ = "file_version"
     __table_args__ = (
-        UniqueConstraint("tenant_id", "content_hash"),
+        UniqueConstraint(
+            "tenant_id",
+            "content_hash",
+            "revision_no",
+            name="uq_file_version_tenant_id_content_hash_revision_no",
+        ),
+        Index(
+            "uq_file_version_revision_one_content_hash",
+            "tenant_id",
+            "content_hash",
+            unique=True,
+            postgresql_where=text("revision_no = 1"),
+        ),
+        Index(
+            "uq_file_version_source_request_key",
+            "tenant_id",
+            "source_file_version_id",
+            "revision_request_key_hash",
+            unique=True,
+            postgresql_where=text("revision_request_key_hash IS NOT NULL"),
+        ),
         # 冗余唯一约束：供子表的复合外键 (file_version_id, tenant_id) 引用。
         # PostgreSQL 要求外键目标列组合上存在唯一约束。
         UniqueConstraint("id", "tenant_id", name="uq_file_version_id_tenant_id"),
@@ -64,9 +92,37 @@ class FileVersion(Base, TenantScopedMixin, TimestampMixin):
             name="fk_file_version_mapping_version_tenant",
             ondelete="RESTRICT",
         ),
+        ForeignKeyConstraint(
+            ["source_file_version_id", "tenant_id"],
+            ["file_version.id", "file_version.tenant_id"],
+            name="fk_file_version_source_file_version_tenant",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["root_file_version_id", "tenant_id"],
+            ["file_version.id", "file_version.tenant_id"],
+            name="fk_file_version_root_file_version_tenant",
+            ondelete="RESTRICT",
+        ),
         CheckConstraint(
             "parse_status IN ('unparsed', 'parsed', 'parsed_with_errors', 'failed')",
             name="parse_status_values",
+        ),
+        CheckConstraint("revision_no > 0", name="revision_no_positive"),
+        CheckConstraint(
+            "revision_reason IS NULL OR revision_reason IN ('ruleset_change', 'mapping_change')",
+            name="revision_reason_values",
+        ),
+        CheckConstraint(
+            "(revision_no = 1 AND source_file_version_id IS NULL "
+            "AND root_file_version_id IS NULL AND revision_reason IS NULL "
+            "AND revision_request_key_hash IS NULL "
+            "AND revision_request_fingerprint IS NULL) OR "
+            "(revision_no > 1 AND source_file_version_id IS NOT NULL "
+            "AND root_file_version_id IS NOT NULL AND revision_reason IS NOT NULL "
+            "AND revision_request_key_hash IS NOT NULL "
+            "AND revision_request_fingerprint IS NOT NULL)",
+            name="revision_lineage",
         ),
     )
 
@@ -89,6 +145,14 @@ class FileVersion(Base, TenantScopedMixin, TimestampMixin):
         server_default=ParseStatus.UNPARSED.value,
     )
     parsed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revision_no: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    source_file_version_id: Mapped[uuid.UUID | None] = mapped_column(nullable=True, index=True)
+    root_file_version_id: Mapped[uuid.UUID | None] = mapped_column(nullable=True, index=True)
+    revision_reason: Mapped[RevisionReason | None] = mapped_column(
+        str_enum(RevisionReason, "revision_reason_enum"), nullable=True
+    )
+    revision_request_key_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    revision_request_fingerprint: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
 class ExpenseRow(Base, TenantScopedMixin, TimestampMixin):

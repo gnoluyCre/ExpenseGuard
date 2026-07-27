@@ -11,6 +11,7 @@ from app.db.models.batch import (
     FieldStatus,
     FileVersion,
     ParseStatus,
+    RevisionReason,
     RowResult,
 )
 from app.db.models.config import RuleConfig, SchemaMapping, SchemaMappingVersion
@@ -22,10 +23,12 @@ from app.db.models.findings import (
     Finding,
     Review,
     ReviewDecision,
+    RuleKind,
     SamplingAudit,
 )
 from app.db.models.policy import PolicyClause, PolicyDocument
 from app.db.models.tenancy import AppUser, Role, Tenant, UserSession
+from app.db.models.validation import ValidationDependency, ValidationRun, ValidationRunStatus
 
 __all__ = [
     "AppUser",
@@ -44,12 +47,17 @@ __all__ = [
     "PolicyDocument",
     "Review",
     "ReviewDecision",
+    "RevisionReason",
     "Role",
     "RowResult",
     "RuleConfig",
+    "RuleKind",
     "SamplingAudit",
     "SchemaMapping",
     "SchemaMappingVersion",
     "Tenant",
     "UserSession",
+    "ValidationDependency",
+    "ValidationRun",
+    "ValidationRunStatus",
 ]

@@ -582,3 +582,12 @@ reasoning 文本由稳定模板从 evidence 渲染，不接收配置提供的任
 - 规格经过两轮独立审查，派生 revision 自重复、查重依赖冻结、F2 reparse 锁、effective_from 指纹、租户复合外键、降级拒绝、例外顺序与 evidence 体积问题均已闭环；最终无 P0/P1 未决项。
 - 实现偏差：相对旧 TechDesign 的开放式 JSON Logic，最终采用五类 Pydantic 判别联合 + 决策表；相对旧 `/api/tenants/{id}/rules`，最终采用会话注入租户的 `/api/rules`。
 - 验证仅为文档与现有架构审查；未执行 CP-F3.1–3.5 的代码测试，也未预填测试数量。
+
+### CP-F3.1 实际落地记录（2026-07-28）
+
+- 新增且仅新增迁移 `0004_f3_deterministic_validation.py`：建立 `validation_run`、`validation_dependency`，扩展 `file_version`、`rule_config`、`finding`，同步 ORM、枚举、关系、复合租户外键、CHECK、唯一约束与部分唯一索引；`0001`–`0003` 未修改。
+- legacy 回填已机械验证：既有 `file_version` 统一为 revision 1 且 lineage/request 字段为空；既有 `rule_config` 为 `backfilled_legacy=true` 且 fingerprint/creator 为空；既有非 F3 finding 的新增字段保持为空。隔离数据库已验证无派生数据的 `0003 → 0004 → 0003 → 0004`，以及存在 revision 2 时 downgrade 在任何 DDL 前拒绝、版本仍为 `0004` 且派生行保留。
+- 关键决策：`validation_run.status` 固定为最小状态域 `in_progress|completed`，系统失败仍整批回滚而不持久化 failed run；manifest 列名固定为 `ruleset_manifest`；六项计数使用非负与两条恒等式 CHECK；所有 CP-F3.1 新增业务引用使用 `RESTRICT`，并新增 `app_user(id, tenant_id)` 冗余唯一约束，使 `created_by/triggered_by` 也由复合租户外键保护。
+- 实现偏差/覆盖决定：无业务范围偏差；未添加可选的 `normalized_json->>'invoice_no'` 表达式索引，因为 §8 将其限定为性能门禁不足时才添加且本检查点没有不足证据。未实现 Pydantic/evaluator、服务、API、前端或 F4 功能。
+- 默认开发库在停写状态下从 `0003` 升至 `0004`。升级前备份位于 gitignored 的 `data/private/backups/cp-f3.1/pre-0004-20260728-010204/`：完整库、public schema-only、受影响表 data-only 三份 custom archive 均通过 `pg_restore --list`，容器与本地副本 SHA-256 分别为 `a0ab28e50778295f049fbeba7fed25886c53bedb0ab0d3d121f9203ec1e65955`、`dd55c8c24a4b7262bf8b77245b7d02668ac2ad2b93f1cc70f1f5b495542b355c`、`4aa5a1935ae05f45ec28cee9bd08068affe4cbea2edc242340126b2ad174184a`。
+- 验证结果：迁移目录 `27 passed`；后端全量 `149 passed, 1 skipped`（skip 为常驻待命 eval gate）；`ruff check .`、`ruff format --check .`、`python -m mypy app scripts`（67 个源文件）、测试库及默认开发库 `alembic check` 全部通过。Windows 上 `uv run alembic/mypy` 的 trampoline 路径解析失败，使用同一 uv 环境的 `uv run python -m alembic/mypy` 等价执行；无测试或门禁被跳过。

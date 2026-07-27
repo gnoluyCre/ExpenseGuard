@@ -10,12 +10,14 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     String,
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -44,6 +46,16 @@ class CapabilityStatus(StrEnum):
     UNAVAILABLE = "unavailable"
 
 
+class RuleKind(StrEnum):
+    """F3 的五类确定性规则。"""
+
+    LIMIT = "limit"
+    INVOICE_TYPE = "invoice_type"
+    TIMELINESS = "timeliness"
+    INVOICE_TITLE = "invoice_title"
+    INVOICE_DUPLICATE = "invoice_duplicate"
+
+
 class Finding(Base, TenantScopedMixin, TimestampMixin):
     """单行判定结果。
 
@@ -56,7 +68,35 @@ class Finding(Base, TenantScopedMixin, TimestampMixin):
     __tablename__ = "finding"
     __table_args__ = (
         file_version_fk(),
+        ForeignKeyConstraint(
+            ["validation_run_id", "tenant_id"],
+            ["validation_run.id", "validation_run.tenant_id"],
+            name="fk_finding_validation_run_tenant",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["rule_config_id", "tenant_id"],
+            ["rule_config.id", "rule_config.tenant_id"],
+            name="fk_finding_rule_config_tenant",
+            ondelete="RESTRICT",
+        ),
         Index("ix_finding_file_version_id_severity", "file_version_id", "severity_impact"),
+        Index("ix_finding_validation_run_id", "validation_run_id"),
+        Index("ix_finding_rule_config_id", "rule_config_id"),
+        Index(
+            "uq_finding_deterministic_rule",
+            "validation_run_id",
+            "row_no",
+            "rule_id",
+            "rule_kind",
+            unique=True,
+            postgresql_where=text("validation_run_id IS NOT NULL"),
+        ),
+        CheckConstraint(
+            "rule_kind IS NULL OR rule_kind IN "
+            "('limit', 'invoice_type', 'timeliness', 'invoice_title', 'invoice_duplicate')",
+            name="rule_kind_values",
+        ),
         CheckConstraint(
             "severity_impact >= 0 AND severity_impact <= 3",
             name="severity_impact_range",
@@ -89,6 +129,12 @@ class Finding(Base, TenantScopedMixin, TimestampMixin):
     #: 条款逐字引用。**只有通过机械式逐字校验的引用才允许写入这里。**
     quote: Mapped[str | None] = mapped_column(Text, nullable=True)
     reasoning: Mapped[str | None] = mapped_column(Text, nullable=True)
+    validation_run_id: Mapped[uuid.UUID | None] = mapped_column(nullable=True)
+    rule_kind: Mapped[RuleKind | None] = mapped_column(
+        str_enum(RuleKind, "rule_kind_enum"), nullable=True
+    )
+    rule_config_id: Mapped[uuid.UUID | None] = mapped_column(nullable=True)
+    evidence_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
 
 class CorrelationFinding(Base, TenantScopedMixin, TimestampMixin):

@@ -80,8 +80,8 @@
 
 ## 当前状态 📍
 **最近更新:** 2026-07-28
-**正在进行:** 阶段 2 F3 的 CP-F3.0 规格与 CP-F3.1–F3.5 实施契约已固化,准备进入 CP-F3.1(持久化 schema 与 ORM)。
-**最近完成:** CP0 仓库重置 / CP1 后端地基 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离 / **CP4 前端垂直切片 + OpenAPI 契约 + CI** / **F1 Excel 导入** / **F2 CP-F2.0–CP-F2.5** / **F3 CP-F3.0 统一规格**(默认开发库经完整/schema/定向数据三重备份后升级至 `0003`；`specs/004` 已覆盖规则快照、五类强类型规则、租户全历史查重、幂等/并发、API、验收及 CP-F3.1–F3.5 实施契约)
+**正在进行:** 阶段 2 F3 的 CP-F3.1 持久化 schema 与 ORM 已完成,准备进入 CP-F3.2(强类型规则与纯确定性核心)。
+**最近完成:** CP0 仓库重置 / CP1 后端地基 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离 / **CP4 前端垂直切片 + OpenAPI 契约 + CI** / **F1 Excel 导入** / **F2 CP-F2.0–CP-F2.5** / **F3 CP-F3.0 统一规格** / **F3 CP-F3.1 持久化 schema 与 ORM**(`0004` 已落地 validation run/dependency、file revision、规则/finding 扩展、legacy 回填、租户复合外键与安全 downgrade；默认开发库经三份 pre-0004 custom archive 验证后升级，迁移目录 27 passed、后端全量 149 passed/1 skipped)
 **受阻于:** 无(W0 阻塞项:真实报销数据脱敏审批、制度文档到位 —— 见 `MEMORY.md`)
 **已知缺口(三项,均不阻塞进入 F3):**
 1. **W0 spike 未做** —— `docker-compose.models.yml` 的 embedding 镜像**未实测**;客户内网访问不了 HuggingFace 时的离线权重供给路径未验证。留到上线周才发现会很贵。

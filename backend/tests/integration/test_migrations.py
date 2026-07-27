@@ -35,11 +35,13 @@ EXPECTED_TABLES = {
     "schema_mapping_version",
     "tenant",
     "user_session",
+    "validation_dependency",
+    "validation_run",
 }
 
 
 async def test_all_business_tables_exist(engine: AsyncEngine) -> None:
-    """18 张业务表齐备。"""
+    """20 张业务表齐备。"""
     async with engine.connect() as conn:
         rows = await conn.execute(
             text(
@@ -90,8 +92,6 @@ async def test_row_result_idempotency_constraint_exists(engine: AsyncEngine) -> 
 @pytest.mark.parametrize(
     ("table", "constraint"),
     [
-        # 内容哈希去重:同一文件重复上传复用批次，不产生第二份平行数据
-        ("file_version", "uq_file_version_tenant_id_content_hash"),
         # 冗余唯一约束:供子表的复合外键引用
         ("file_version", "uq_file_version_id_tenant_id"),
         # 防重复复核:复核结论是回流评测集唯一的真实标签来源

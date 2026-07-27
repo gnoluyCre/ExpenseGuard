@@ -5,7 +5,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 -->
 
 ## 🏗️ 当前阶段与目标
-**当前任务:阶段 2 F3 · CP-F3.0 规格已完成。** 五类确定性规则、不可变规则快照、行级 verdict、租户全历史发票号查重、并发/幂等、API、权限、审计和 `0004` 迁移边界已在 `specs/004-phase2-f3-deterministic-validation.md` 固化。
+**当前任务:阶段 2 F3 · CP-F3.1 持久化 schema 与 ORM 已完成。** `0004`、validation run/dependency、file revision、规则/finding 扩展、legacy 回填、租户复合约束与安全 downgrade 已落地并通过门禁。
 
 - CP0 仓库重置(干净历史、`.gitignore` 脱敏排除)
 - CP1 后端地基(uv + 18 张表 + Alembic 三层隔离)
@@ -13,7 +13,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - CP3 认证、RBAC、租户隔离(含反向验证)
 - CP4 前端垂直切片 + OpenAPI 契约门禁 + pre-commit/CI + 合成数据生成器(含反向验证)
 
-**下一步:CP-F3.1 · 持久化 schema 与 ORM。** 新增 `0004_f3_deterministic_validation.py`、不可变 validation run/dependency、file revision、规则/finding 持久化字段与租户复合约束；强类型 Pydantic 判别联合属于 CP-F3.2，不修改 `0001`–`0003`，不提前进入 F4/F5。
+**下一步:CP-F3.2 · 强类型规则与纯确定性核心。** 实现五类冻结 Pydantic 判别联合、canonical 指纹、纯 evaluator 与 evidence/reasoning；不得把数据库编排、API、前端或 F4 提前带入。
 `process_row_once` 至今**一个生产调用方都没有** —— 第一个是 F3,刻意如此。
 
 **开工前必读的两件事:**
@@ -24,6 +24,8 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 
 ## 📂 架构决策
 *(把构建过程中做出的具体选择记录在此,便于后续 agent 遵循)*
+- 2026-07-28 — **CP-F3.1 的 validation run 只持久化 `in_progress|completed`。** 系统失败整批回滚并用独立审计记录，不保留猜测性的 failed run；`ruleset_manifest` 与六项非负/恒等计数 CHECK 成为 CP-F3.2/3.3 的存储契约。新增 F3 引用统一 `ON DELETE RESTRICT`；通过新增 `app_user(id, tenant_id)` 冗余唯一约束，让规则创建人和校验触发人也使用租户复合外键。
+- 2026-07-28 — **`0004` downgrade 对派生 revision fail closed。** 任何 DDL 前先检测 `revision_no > 1`，存在即拒绝且由事务保持 schema/数据不变；生产降级只允许从已验证 pre-0004 完整归档恢复到隔离库。发票号 JSONB 表达式索引暂不添加，只有真实性能门禁证明需要时才添加。
 - 2026-07-28 — **F3 CP-F3.0–F3.5 共用 `specs/004-phase2-f3-deterministic-validation.md` 一份规范。** §1–§12 是唯一业务/接口定义，§13 给出五个实施契约，§14 只追加已经完成的落地事实；不为各 CP 创建重复规格，独立运维 runbook 也不得成为第二事实来源。
 - 2026-07-27 — **F3 使用五类强类型规则配置，不开放任意 JSON Logic。** 限额、票种、时效、抬头和发票号查重分别使用冻结的 Pydantic 判别联合；阈值、允许集合和 OR-of-AND 精确例外均为数据，未知字段/运算符直接拒绝。
 - 2026-07-27 — **F3 首次成功校验冻结规则集快照。** 每行按 `expense_date` 选择生效版本，规则集 manifest 同时绑定 `mapping_version_id`；同批重复调用只复用，新规则或新映射必须通过显式派生 `file_version` revision 应用，普通重复上传仍复用 revision 1。`row_result.rule_version` 存规则集指纹，finding 存具体规则 ID/版本。
@@ -91,6 +93,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 
 ### 已完成阶段的测试统计(便于新会话快速判断状态)
 
+- CP-F3.1 实测：迁移目录 **27 passed**；后端全量 **149 passed, 1 skipped**；Ruff lint/格式、strict mypy（67 个源文件）、测试库与默认开发库 `alembic check` 全部通过。默认开发库已在三份 custom archive 经 `pg_restore --list` 与 SHA-256 验证后升级至 `0004`。
 - CP-F2.5 实测：`cd backend && uv run python -m pytest --basetemp <可写临时目录>` 为 **142 passed, 1 skipped**（skip 的是常驻待命的评测门禁）；其中 CP-F2.2 纯逻辑 **51 passed**、解析服务 PostgreSQL 集成 **6 passed**、CP-F2.3 API 集成 **14 passed**，解析包定向覆盖率 **91%**；迁移目录测试为 **20 passed**。
 - CP-F2.5 实测：`cd frontend && npm run test` 为 **14 passed**；其中 CP-F2.4 批次工作流定向测试 **6 passed**。
 - CP-F2.5 其余门禁：Ruff lint/格式检查、strict mypy、OpenAPI 导出与客户端生成、前端 typecheck/oxlint/Prettier/生产构建及测试库 `alembic check` 全部通过；契约生成物无漂移。
@@ -110,6 +113,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - [x] F2 CP-F2.4（批次页原始数据/字段映射/错误清单/字段可用性四视图、三角色权限、映射复用/保存、解析触发与缓存刷新）
 - [x] F2 CP-F2.5（全量测试、契约同步、静态检查、生产构建与 Alembic 零漂移）
 - [x] F3 CP-F3.0（五类强类型规则、不可变快照、verdict、全历史查重、并发/幂等、API 与迁移边界规格）
+- [x] F3 CP-F3.1（`0004` 持久化 schema/ORM、legacy 回填、租户复合外键、安全 downgrade 与 pre-0004 备份）
 - [x] 认证集成（server-side session + RBAC 三角色 + 租户过滤 fail-closed）
 - [x] 前端垂直切片（登录 / 路由守卫 / 三角色外壳 / 系统状态页）
 - [x] OpenAPI 契约门禁 + pre-commit + GitHub Actions CI

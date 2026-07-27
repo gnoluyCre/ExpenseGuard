@@ -46,7 +46,10 @@ class AppUser(Base, TenantScopedMixin, TimestampMixin):
     """
 
     __tablename__ = "app_user"
-    __table_args__ = (UniqueConstraint("tenant_id", "username"),)
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "username"),
+        UniqueConstraint("id", "tenant_id", name="uq_app_user_id_tenant_id"),
+    )
 
     id: Mapped[uuid.UUID] = uuid_pk()
     username: Mapped[str] = mapped_column(String(128), nullable=False)

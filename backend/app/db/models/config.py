@@ -98,7 +98,16 @@ class RuleConfig(Base, TenantScopedMixin, TimestampMixin):
     """
 
     __tablename__ = "rule_config"
-    __table_args__ = (UniqueConstraint("tenant_id", "rule_id", "version"),)
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "rule_id", "version"),
+        UniqueConstraint("id", "tenant_id", name="uq_rule_config_id_tenant_id"),
+        ForeignKeyConstraint(
+            ["created_by", "tenant_id"],
+            ["app_user.id", "app_user.tenant_id"],
+            name="fk_rule_config_created_by_tenant",
+            ondelete="RESTRICT",
+        ),
+    )
 
     id: Mapped[uuid.UUID] = uuid_pk()
     #: 规则的稳定标识，如 "limit.taxi.per_trip"
@@ -108,3 +117,8 @@ class RuleConfig(Base, TenantScopedMixin, TimestampMixin):
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     effective_from: Mapped[date | None] = mapped_column(Date, nullable=True)
     is_active: Mapped[bool] = mapped_column(nullable=False, default=True)
+    config_fingerprint: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(nullable=True)
+    backfilled_legacy: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
