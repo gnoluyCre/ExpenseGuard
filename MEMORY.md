@@ -5,7 +5,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 -->
 
 ## 🏗️ 当前阶段与目标
-**当前任务:阶段 2 F3 · CP-F3.2 强类型规则与纯确定性核心已完成。** 五类冻结 Pydantic 判别联合、canonical/配置与规则集指纹、有效版本与发票首条选择、纯 evaluator、强类型 evidence、稳定 reasoning 和三态 verdict 已落地。
+**当前任务:阶段 2 F3 · CP-F3.3 快照、编排、幂等与审计已完成。** 租户/批次 NOWAIT 锁、规则版本追加、首次成功快照、历史最高 revision dependency、`process_row_once` 首个生产调用、整批事务、失败独立审计和两类派生 revision 已落地。
 
 - CP0 仓库重置(干净历史、`.gitignore` 脱敏排除)
 - CP1 后端地基(uv + 18 张表 + Alembic 三层隔离)
@@ -13,8 +13,8 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - CP3 认证、RBAC、租户隔离(含反向验证)
 - CP4 前端垂直切片 + OpenAPI 契约门禁 + pre-commit/CI + 合成数据生成器(含反向验证)
 
-**下一步:CP-F3.3 · 快照、编排、幂等与审计。** 启动 Docker Desktop 后，让服务层装载冻结的租户候选与规则版本并编排 CP-F3.2 纯函数；实现整批事务、dependency、派生 revision 与失败审计。不得提前带入 API、前端或 F4。
-`process_row_once` 至今**一个生产调用方都没有** —— CP-F3.3 将成为第一个，刻意如此。
+**下一步:CP-F3.4 · API、契约与桌面工作流。** 为 CP-F3.3 服务层增加 §9–§10 的类型化路由、OpenAPI/前端客户端同步、规则版本页和批次校验视图；不得提前实现 F4、F5、LangGraph 或 F6。
+`process_row_once` 的首个生产调用方现为 `app.core.validation.batch_service.validate_batch`；行内 finding 与 `row_result` 使用同一 session/事务，`row_result.rule_version` 固定保存规则集指纹。
 
 **开工前必读的两件事:**
 1. 契约同步是硬要求:改了 Pydantic 模型 → `cd backend && uv run python scripts/export_openapi.py` + `cd frontend && npm run gen:api`,两个生成物都要提交,否则 CI 的 contract job 直接红。
@@ -24,6 +24,10 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 
 ## 📂 架构决策
 *(把构建过程中做出的具体选择记录在此,便于后续 agent 遵循)*
+- 2026-07-28 — **CP-F3.3 统一使用 `Tenant FOR UPDATE NOWAIT → FileVersion FOR UPDATE NOWAIT` 锁序。** 规则保存、批次校验和 F2 parse/reparse 共享租户锁；同租户冲突稳定返回领域 409，不同租户可并行。F2 在锁内拒绝已校验批次和被 `validation_dependency` 引用的来源，消除 dependency 检查与重解析交错提交窗口。
+- 2026-07-28 — **查重 dependency 冻结完整候选来源，而非只冻结实际命中来源。** 快照时排除当前 root lineage，对每个其他 lineage 选择最高成功解析 revision 并全部写入 dependency；编排层只构造 `InvoiceOccurrence`，唯一首条仍由 CP-F3.2 `select_duplicate_match` 决定。
+- 2026-07-28 — **F3 成功副作用整批一次提交，系统失败只保留独立无 PII 审计。** validation run、dependencies、findings、row_results、完成计数和 `batch.validate` 同一事务；任一故障先回滚主事务、释放锁，再用绑定租户的新 session 追加 `batch.validate_failed`。completed 重放在锁内早退且不新增任何副作用。
+- 2026-07-28 — **派生 revision 的幂等请求只按规格约束 8–128 字符。** key 保存 SHA-256，canonical 请求指纹绑定 source/reason/schema；`ruleset_change` 复制解析快照，`mapping_change` 只复制原始证据。普通 F1 上传显式只查询 revision 1，派生版本不会改变默认内容哈希复用语义。
 - 2026-07-28 — **Docker Desktop 未启动是可自动恢复的本地环境状态,不是默认人工阻塞。** Docker 相关开发/测试先用官方 `docker desktop start` + 最多 120 秒 `docker info` 轮询恢复引擎,再只启动最小 Compose 服务；当前数据库测试只启动 `postgres`。不自动启动 embedding/trace,不停止既有容器,不执行 `down`/删卷；仅提权、交互许可或有界启动失败时转人工。本次机械验证从 Desktop stopped 到 PostgreSQL healthy 约 28 秒,随后后端全量 `202 passed, 1 skipped`。
 - 2026-07-28 — **CP-F3.2 把发票号“唯一首条”保留在纯规则核心。** CP-F3.3 只负责按租户/快照装载当前批与其他 lineage 的最高成功 revision occurrence；`select_duplicate_match` 排除当前 lineage 的历史候选，并按 root revision 1 的 `(uploaded_at, id, row_no)` 稳定选择，输入冲突时 fail closed，不猜测。
 - 2026-07-28 — **F3 evidence 自身校验 kind/outcome/reason 与命中字段完整性。** `RULE_NOT_EFFECTIVE` 通过纯 selection-to-evaluation 路径生成；passed 固定无 evidence，exempted 不提升 verdict，大型允许集合仅写指纹。F2 `NormalizedExpenseRecord` 同步补上 ISO 日期语义校验，避免非法日历日期进入时效 evaluator 形成未分类异常。
@@ -118,6 +122,8 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - [x] F2 CP-F2.5（全量测试、契约同步、静态检查、生产构建与 Alembic 零漂移）
 - [x] F3 CP-F3.0（五类强类型规则、不可变快照、verdict、全历史查重、并发/幂等、API 与迁移边界规格）
 - [x] F3 CP-F3.1（`0004` 持久化 schema/ORM、legacy 回填、租户复合外键、安全 downgrade 与 pre-0004 备份）
+- [x] F3 CP-F3.2（五类强类型规则、纯确定性 evaluator、canonical/规则集指纹、evidence/reasoning 与稳定查重首条）
+- [x] F3 CP-F3.3（快照、编排、租户级并发、行级幂等、失败审计与派生 revision）
 - [x] 认证集成（server-side session + RBAC 三角色 + 租户过滤 fail-closed）
 - [x] 前端垂直切片（登录 / 路由守卫 / 三角色外壳 / 系统状态页）
 - [x] OpenAPI 契约门禁 + pre-commit + GitHub Actions CI

@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.security.password import hash_password
 from app.core.tenancy.scope import bind_tenant
-from app.db.models.batch import ExpenseRow, FileVersion
+from app.db.models.batch import ExpenseRow, FileVersion, RevisionReason
 from app.db.models.tenancy import AppUser, Role, Tenant
 from app.main import create_app
 
@@ -165,6 +165,52 @@ async def test_重复上传复用既有批次且不重复插入行(
         row_count = await session.scalar(select(func.count()).select_from(ExpenseRow))
     assert file_count == 1
     assert row_count == 500
+
+
+async def test_普通重复上传只复用_revision_1_而不返回派生版本(
+    client: AsyncClient,
+    session_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    async with session_factory() as session:
+        tenant_id, _ = await _seed_tenant(session, slug="acme")
+
+    await _login(client, slug="acme", username="auditor")
+    content = _xlsx_bytes()
+    first = await _upload(client, content)
+    root_id = uuid.UUID(first.json()["file_version_id"])
+
+    async with session_factory() as session:
+        bind_tenant(session.sync_session, tenant_id)
+        root = await session.get(FileVersion, root_id)
+        assert root is not None
+        derived = FileVersion(
+            tenant_id=tenant_id,
+            filename=root.filename,
+            content_hash=root.content_hash,
+            row_count=root.row_count,
+            uploaded_by=root.uploaded_by,
+            revision_no=2,
+            source_file_version_id=root.id,
+            root_file_version_id=root.id,
+            revision_reason=RevisionReason.MAPPING_CHANGE,
+            revision_request_key_hash="a" * 64,
+            revision_request_fingerprint="b" * 64,
+        )
+        session.add(derived)
+        await session.commit()
+        derived_id = derived.id
+
+    repeated = await _upload(client, content)
+
+    assert repeated.status_code == 200
+    assert repeated.json()["file_version_id"] == str(root_id)
+    assert repeated.json()["file_version_id"] != str(derived_id)
+    assert repeated.json()["reused_existing"] is True
+
+    async with session_factory() as session:
+        bind_tenant(session.sync_session, tenant_id)
+        file_count = await session.scalar(select(func.count()).select_from(FileVersion))
+    assert file_count == 2
 
 
 async def test_跨租户同文件各自生成批次(

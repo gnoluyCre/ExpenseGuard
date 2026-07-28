@@ -12,10 +12,17 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 import app.core.parsing.service as parsing_service
 from app.core.parsing.mapping import compute_header_signature
 from app.core.parsing.service import BatchParsingError, parse_batch
+from app.core.tenancy.locking import lock_tenant_nowait
 from app.core.tenancy.scope import bind_tenant
+from app.db.base import utc_now
 from app.db.models.batch import ExpenseRow, FieldAvailability, FileVersion, ParseStatus
 from app.db.models.config import SchemaMapping, SchemaMappingVersion
 from app.db.models.tenancy import AppUser, Role, Tenant
+from app.db.models.validation import (
+    ValidationDependency,
+    ValidationRun,
+    ValidationRunStatus,
+)
 
 pytestmark = [pytest.mark.integration, pytest.mark.usefixtures("clean_db")]
 
@@ -129,6 +136,36 @@ def _rows() -> tuple[dict[str, object], ...]:
         {"金额": "bad", "日期": "2026-07-02", "商户": "上海酒店", "备用金额": "20"},
         {"金额": "300", "日期": "2026-07-03", "商户": "普通商店", "备用金额": "30"},
     )
+
+
+async def _add_validation_run(
+    session: AsyncSession,
+    *,
+    tenant_id: uuid.UUID,
+    file_version_id: uuid.UUID,
+    mapping_version_id: uuid.UUID,
+    triggered_by: uuid.UUID,
+    total_rows: int,
+) -> ValidationRun:
+    run = ValidationRun(
+        tenant_id=tenant_id,
+        file_version_id=file_version_id,
+        mapping_version_id=mapping_version_id,
+        ruleset_fingerprint="f" * 64,
+        ruleset_manifest={"schema_version": 1},
+        status=ValidationRunStatus.COMPLETED,
+        total_row_count=total_rows,
+        evaluated_row_count=total_rows,
+        passed_count=total_rows,
+        flagged_count=0,
+        manual_review_count=0,
+        parse_failed_count=0,
+        completed_at=utc_now(),
+        triggered_by=triggered_by,
+    )
+    session.add(run)
+    await session.flush()
+    return run
 
 
 async def test_批次解析持久化成功行失败行与十二项可用性(
@@ -364,6 +401,31 @@ async def test_初次解析系统异常在提交外层事务后仍无半批数�
     assert availability == ()
 
 
+async def test_并发解析在租户行锁冲突时立即失败(
+    session_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    async with session_factory() as session:
+        tenant_id, batch_id, mapping_id = await _seed_tenant_and_batch(session, raw_rows=_rows())
+
+    async with session_factory() as lock_session, session_factory() as parse_session:
+        bind_tenant(lock_session.sync_session, tenant_id)
+        bind_tenant(parse_session.sync_session, tenant_id)
+        locked = await lock_session.scalar(
+            select(Tenant).where(Tenant.id == tenant_id).with_for_update(nowait=True)
+        )
+        assert locked is not None
+
+        with pytest.raises(BatchParsingError) as exc:
+            await parse_batch(
+                parse_session,
+                file_version_id=batch_id,
+                mapping_version_id=mapping_id,
+            )
+        assert exc.value.code == "BATCH_PARSE_IN_PROGRESS"
+        await parse_session.rollback()
+        await lock_session.rollback()
+
+
 async def test_并发解析在批次行锁冲突时立即失败(
     session_factory: async_sessionmaker[AsyncSession],
 ) -> None:
@@ -387,3 +449,93 @@ async def test_并发解析在批次行锁冲突时立即失败(
         assert exc.value.code == "BATCH_PARSE_IN_PROGRESS"
         await parse_session.rollback()
         await lock_session.rollback()
+
+
+async def test_已有校验运行时拒绝原地重解析(
+    session_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    async with session_factory() as session:
+        tenant_id, batch_id, mapping_id = await _seed_tenant_and_batch(session, raw_rows=_rows())
+        user_id = await session.scalar(select(AppUser.id))
+        assert user_id is not None
+        await _add_validation_run(
+            session,
+            tenant_id=tenant_id,
+            file_version_id=batch_id,
+            mapping_version_id=mapping_id,
+            triggered_by=user_id,
+            total_rows=len(_rows()),
+        )
+        await session.commit()
+
+    async with session_factory() as session:
+        bind_tenant(session.sync_session, tenant_id)
+        with pytest.raises(BatchParsingError) as exc:
+            await parse_batch(
+                session,
+                file_version_id=batch_id,
+                mapping_version_id=mapping_id,
+            )
+        assert exc.value.code == "BATCH_ALREADY_VALIDATED"
+
+
+async def test_被校验依赖引用时拒绝原地重解析(
+    session_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    async with session_factory() as session:
+        tenant_id, batch_id, mapping_id = await _seed_tenant_and_batch(session, raw_rows=_rows())
+        user_id = await session.scalar(select(AppUser.id))
+        assert user_id is not None
+        validating_batch = FileVersion(
+            tenant_id=tenant_id,
+            filename="校验来源.xlsx",
+            content_hash=uuid.uuid4().hex.ljust(64, "0")[:64],
+            row_count=1,
+            uploaded_by=user_id,
+            mapping_version_id=mapping_id,
+            parse_status=ParseStatus.PARSED,
+            parsed_at=utc_now(),
+        )
+        session.add(validating_batch)
+        await session.flush()
+        run = await _add_validation_run(
+            session,
+            tenant_id=tenant_id,
+            file_version_id=validating_batch.id,
+            mapping_version_id=mapping_id,
+            triggered_by=user_id,
+            total_rows=1,
+        )
+        session.add(
+            ValidationDependency(
+                tenant_id=tenant_id,
+                validation_run_id=run.id,
+                depended_file_version_id=batch_id,
+            )
+        )
+        await session.commit()
+
+    async with session_factory() as session:
+        bind_tenant(session.sync_session, tenant_id)
+        with pytest.raises(BatchParsingError) as exc:
+            await parse_batch(
+                session,
+                file_version_id=batch_id,
+                mapping_version_id=mapping_id,
+            )
+        assert exc.value.code == "BATCH_USED_BY_VALIDATION"
+
+
+async def test_租户锁拒绝与会话上下文不一致(
+    session_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    async with session_factory() as session:
+        tenant_id, _, _ = await _seed_tenant_and_batch(session, raw_rows=_rows())
+        other_tenant = Tenant(slug=f"other-{uuid.uuid4().hex[:8]}", name="其他租户")
+        session.add(other_tenant)
+        await session.flush()
+
+        bind_tenant(session.sync_session, tenant_id)
+        with pytest.raises(RuntimeError, match="租户锁请求与会话租户上下文不一致"):
+            await lock_tenant_nowait(session, other_tenant.id)
+        await session.rollback()

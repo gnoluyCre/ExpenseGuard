@@ -25,6 +25,8 @@ from app.core.parsing.models import (
     MappingVersionConfig,
     RowParseResult,
 )
+from app.core.tenancy.locking import lock_tenant_nowait
+from app.core.tenancy.scope import current_tenant
 from app.db.base import utc_now
 from app.db.models.batch import (
     ExpenseRow,
@@ -34,6 +36,7 @@ from app.db.models.batch import (
     ParseStatus,
 )
 from app.db.models.config import SchemaMapping, SchemaMappingVersion
+from app.db.models.validation import ValidationDependency, ValidationRun
 
 ROW_VALIDATION_FAILED = "ROW_VALIDATION_FAILED"
 LOCK_NOT_AVAILABLE_SQLSTATE = "55P03"
@@ -64,7 +67,12 @@ async def parse_batch(
     """
     try:
         async with db.begin_nested():
+            tenant_id = current_tenant(db.sync_session)
+            if tenant_id is None:
+                raise RuntimeError("批次解析缺少租户上下文")
+            await lock_tenant_nowait(db, tenant_id)
             file_version = await _lock_file_version(db, file_version_id)
+            await _validate_not_frozen_by_validation(db, file_version_id)
             mapping_version = await db.get(SchemaMappingVersion, mapping_version_id)
             if mapping_version is None:
                 raise NotFoundError(code="MAPPING_VERSION_NOT_FOUND", message="映射版本不存在")
@@ -148,6 +156,28 @@ async def _lock_file_version(db: AsyncSession, file_version_id: uuid.UUID) -> Fi
     if file_version is None:
         raise NotFoundError(code="BATCH_NOT_FOUND", message="批次不存在")
     return file_version
+
+
+async def _validate_not_frozen_by_validation(db: AsyncSession, file_version_id: uuid.UUID) -> None:
+    validation_run_id = await db.scalar(
+        select(ValidationRun.id).where(ValidationRun.file_version_id == file_version_id).limit(1)
+    )
+    if validation_run_id is not None:
+        raise BatchParsingError(
+            code="BATCH_ALREADY_VALIDATED",
+            message="该批次已完成或正在进行确定性校验，不能原地重解析",
+        )
+
+    dependency_id = await db.scalar(
+        select(ValidationDependency.id)
+        .where(ValidationDependency.depended_file_version_id == file_version_id)
+        .limit(1)
+    )
+    if dependency_id is not None:
+        raise BatchParsingError(
+            code="BATCH_USED_BY_VALIDATION",
+            message="该批次已被确定性校验引用，不能原地重解析",
+        )
 
 
 async def _load_mapping_config(

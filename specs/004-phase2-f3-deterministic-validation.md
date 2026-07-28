@@ -1,8 +1,8 @@
 # Spec 004 — Phase 2 F3 确定性校验
 
-**状态：** CP-F3.0 规格已固化
+**状态：** CP-F3.3 已完成
 **最近更新：** 2026-07-28
-**后续检查点：** CP-F3.1 持久化 schema 与 ORM
+**后续检查点：** CP-F3.4 API、契约与桌面工作流
 
 ## 1. 目标与范围
 
@@ -599,3 +599,13 @@ reasoning 文本由稳定模板从 evidence 渲染，不接收配置提供的任
 - evidence 使用按 kind 判别的冻结模型，并机械校验 outcome/reason code、provenance 范围和 flagged 专用字段完整性；passed 固定无 evidence，允许集合只存指纹。reasoning 由稳定模板从 evidence 重建；行级聚合固定为 `flagged > manual_review > passed`，exempted 不提升 verdict。为防非法日历日期形成 evaluator 未分类异常，F2 `NormalizedExpenseRecord` 补充 ISO 日期语义校验。
 - 实现偏差/覆盖决定：无业务范围偏差；相对最初只把 `DuplicateMatch|None` 交给 evaluator 的草案，最终把 root 证据排序也纳入纯核心，使 CP-F3.3 只负责租户过滤、最高 revision 查询和 dependency 冻结。未访问数据库/网络/当前时间，未实现持久化、API、LangGraph、前端或 F4。
 - 验证结果：CP-F3.2 定向 `52 passed`，`app.core.rules` 语句覆盖率 `93%`；后端全量 `202 passed, 1 skipped`（skip 为常驻待命 eval gate）；`ruff check .`、`ruff format --check .`（92 个文件）和 `python -m mypy app scripts`（72 个源文件）通过；OpenAPI 与前端客户端连续两次生成无 diff。Docker Desktop stopped 状态已通过官方 CLI 自动启动,只拉起最小 `postgres` 服务并等待 healthy；系统 Temp ACL 通过把 pytest 临时根指向 gitignored `data/private/` 解决,未修改或跳过测试。
+
+### CP-F3.3 实际落地记录（2026-07-28）
+
+- 新增 `app/core/tenancy/locking.py`、`app/core/validation/{rule_service,batch_service}.py` 和 `app/core/batches/revisions.py`。规则保存直接复用 CP-F3.2 的 definition 校验与配置指纹；批次服务直接复用有效版本选择、五类 evaluator、查重首条、evidence/reasoning 和 verdict 聚合，未复制判定逻辑。
+- `validate_batch` 成为 `process_row_once` 的首个生产调用方。锁序固定为租户父行再批次行，锁均为 NOWAIT；每行非 passed 规则在 compute 内写 finding，随后由幂等原语写唯一 row_result，后者的 `rule_version` 固定保存完整 ruleset fingerprint。completed run 在锁内直接复用，不刷新时间或增加 finding、row_result、dependency、审计。
+- 查重快照排除当前 root lineage，对每个其他 lineage 选择最高 `parsed|parsed_with_errors` revision；完整候选来源均写 `validation_dependency`，即使当时没有同号命中也冻结，避免后续重解析改变历史未命中证据。F2 parse/reparse 同步使用租户锁并拒绝已校验或已被依赖的来源。
+- 派生服务实现 `ruleset_change` 的解析快照复制与 `mapping_change` 的原始证据复制/解析状态清空；Idempotency-Key 按规格只约束 8–128 字符，保存 UTF-8 SHA-256 和绑定 source/reason/schema 的请求指纹。同 key 同请求复用、异请求冲突；普通 F1 上传显式只复用 revision 1。
+- 整批成功事务包含 validation run、dependencies、findings、row_results、计数和 `batch.validate`；规则求值、dependency、finding、row_result、run 完成或成功审计后的系统故障均回滚全部业务写入，再由独立绑定租户的短事务追加白名单 payload 的 `batch.validate_failed`。审计不含 definition、例外值、normalized/raw JSON、发票号或异常文本。
+- 实现偏差/覆盖决定：无业务范围偏差；未增加 invoice_no 表达式索引，因为当前门禁没有性能不足证据。未实现 API、OpenAPI 变更、前端、LangGraph、F4 或 F6。
+- 验证结果：规则保存 `7 passed`、派生 revision `12 passed`、批次快照/编排 `10 passed`，受影响 F1/F2 集成 `16 passed`，既有幂等/恢复 `8 passed`；后端全量 `236 passed, 1 skipped`（skip 为常驻待命 eval gate）。`ruff check .`、`ruff format --check .`（100 个文件）、strict `mypy app scripts`（77 个源文件）、`git diff --check` 与 `pre-commit run --all-files` 全部通过。Docker API、PostgreSQL health check 和真实测试连接均验证可用，仅启动最小 `postgres` 服务。

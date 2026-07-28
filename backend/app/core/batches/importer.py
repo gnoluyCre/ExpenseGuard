@@ -323,7 +323,12 @@ def _store_original_file(
 async def _get_existing(db: AsyncSession, content_hash: str) -> FileVersion | None:
     return cast(
         "FileVersion | None",
-        await db.scalar(select(FileVersion).where(FileVersion.content_hash == content_hash)),
+        await db.scalar(
+            select(FileVersion).where(
+                FileVersion.content_hash == content_hash,
+                FileVersion.revision_no == 1,
+            )
+        ),
     )
 
 

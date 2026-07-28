@@ -86,8 +86,8 @@
 
 ## 当前状态 📍
 **最近更新:** 2026-07-28
-**正在进行:** 阶段 2 F3 的 CP-F3.2 强类型规则与纯确定性核心已完成,准备进入 CP-F3.3(快照、编排、幂等与审计)。
-**最近完成:** CP0 仓库重置 / CP1 后端地基 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离 / **CP4 前端垂直切片 + OpenAPI 契约 + CI** / **F1 Excel 导入** / **F2 CP-F2.0–CP-F2.5** / **F3 CP-F3.0 统一规格** / **F3 CP-F3.1 持久化 schema 与 ORM** / **F3 CP-F3.2 强类型规则与纯确定性核心**(五类冻结判别联合、canonical/两级指纹、有效版本与查重首条选择、强类型 evidence/reasoning、三态 verdict；规则包 93% 覆盖率，后端全量 202 passed/1 skipped，契约二次生成无漂移)
+**正在进行:** 阶段 2 F3 的 CP-F3.3 快照、编排、幂等与审计已完成,准备进入 CP-F3.4(API、契约与桌面工作流)。
+**最近完成:** CP0 仓库重置 / CP1 后端地基 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离 / **CP4 前端垂直切片 + OpenAPI 契约 + CI** / **F1 Excel 导入** / **F2 CP-F2.0–CP-F2.5** / **F3 CP-F3.0 统一规格** / **F3 CP-F3.1 持久化 schema 与 ORM** / **F3 CP-F3.2 强类型规则与纯确定性核心** / **F3 CP-F3.3 快照、编排、幂等与审计**(租户/批次 NOWAIT 锁、规则快照与 dependency、`process_row_once` 首个生产调用、整批事务与失败独立审计、两类派生 revision；后端全量 236 passed/1 skipped，Ruff/格式/strict mypy/pre-commit 通过)
 **受阻于:** 无(Docker Desktop/最小 Compose 服务已纳入 Agent 自动恢复；W0 外部输入项见 `MEMORY.md`)
 **已知缺口(三项,均不阻塞进入 F3):**
 1. **W0 spike 未做** —— `docker-compose.models.yml` 的 embedding 镜像**未实测**;客户内网访问不了 HuggingFace 时的离线权重供给路径未验证。留到上线周才发现会很贵。
