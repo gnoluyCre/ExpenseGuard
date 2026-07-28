@@ -609,3 +609,11 @@ reasoning 文本由稳定模板从 evidence 渲染，不接收配置提供的任
 - 整批成功事务包含 validation run、dependencies、findings、row_results、计数和 `batch.validate`；规则求值、dependency、finding、row_result、run 完成或成功审计后的系统故障均回滚全部业务写入，再由独立绑定租户的短事务追加白名单 payload 的 `batch.validate_failed`。审计不含 definition、例外值、normalized/raw JSON、发票号或异常文本。
 - 实现偏差/覆盖决定：无业务范围偏差；未增加 invoice_no 表达式索引，因为当前门禁没有性能不足证据。未实现 API、OpenAPI 变更、前端、LangGraph、F4 或 F6。
 - 验证结果：规则保存 `7 passed`、派生 revision `12 passed`、批次快照/编排 `10 passed`，受影响 F1/F2 集成 `16 passed`，既有幂等/恢复 `8 passed`；后端全量 `236 passed, 1 skipped`（skip 为常驻待命 eval gate）。`ruff check .`、`ruff format --check .`（100 个文件）、strict `mypy app scripts`（77 个源文件）、`git diff --check` 与 `pre-commit run --all-files` 全部通过。Docker API、PostgreSQL health check 和真实测试连接均验证可用，仅启动最小 `postgres` 服务。
+
+### CP-F3.4 实际落地记录（2026-07-28）
+
+- 新增 `/api/rules` GET/PUT，以及批次 validate、validation、findings、revisions 五个端点；请求/响应直接复用五类 `RuleDefinition`、`RuleEvidence`、三态 `RowVerdict` 等 Pydantic 类型。规则输入校验、RBAC、会话租户注入、跨租户 404、校验未执行、分页/筛选、幂等 key 和稳定错误 shape 均在 API 边界落地；路由只调用既有服务或新增只读查询服务。
+- OpenAPI 与前端客户端同步提交。规则保存的 generated schema 保持判别联合而非裸 JSON；findings 响应允许 exempted finding 所属的 `passed` verdict，查询筛选仍只接受 `flagged|manual_review`。连续二次生成 SHA-256 稳定为 OpenAPI `0b70574bdaac7f056328dc31019dd50f536b978a1ee24824cd5b07d7589e660c`、前端 schema `fdaae1ddfa09c812d945c081aa8994c14318b39ce1b599243055594141e1b59d`。
+- `/rules` 占位页已替换为五类不可变规则版本控制台，展示最新/历史、生效日、启停、指纹及追加版本结果；批次工作台增加“确定性校验”第五视图，展示规则集指纹、映射版本、四类计数、三态 verdict、分页 findings/evidence、validate 与两类显式派生操作。菜单和按钮只按 permission 判断，`CONFIG_READ` 可见规则页，写操作分别要求 `CONFIG_WRITE` 或 `BATCH_IMPORT`；mutation 会失效规则、批次、解析、validation 和 findings 缓存。
+- 实现偏差/覆盖决定：无范围偏差；未实现 F4 报告/引用、F5 复核、LangGraph、F6 或移动端。前端沿用现有依赖与桌面审计工作台，不新增包；临时视觉数据、Chrome profile 和截图仅位于 gitignored `data/private/visual-cp-f3.4/`，不含真实 PII。
+- 验证结果：后端 API 与既有 F3 服务定向 `33 passed`，Ruff lint/format、strict mypy（79 个源文件）通过；前端 `6` 个测试文件 `20 passed`，strict TypeScript、oxlint、Prettier、生产构建通过。1440×1000 Chrome 验证规则页和批次校验视图，覆盖长规则名、64 位指纹、5000 行摘要、分页与结构化 evidence，无页面级横向溢出；契约二次生成无漂移。

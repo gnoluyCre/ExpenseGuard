@@ -5,7 +5,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 -->
 
 ## 🏗️ 当前阶段与目标
-**当前任务:阶段 2 F3 · CP-F3.3 快照、编排、幂等与审计已完成。** 租户/批次 NOWAIT 锁、规则版本追加、首次成功快照、历史最高 revision dependency、`process_row_once` 首个生产调用、整批事务、失败独立审计和两类派生 revision 已落地。
+**当前任务:阶段 2 F3 · CP-F3.4 API、契约与桌面工作流已完成。** 六个类型化 API 路由、OpenAPI/前端 schema、五类规则版本控制台、批次确定性校验视图、permission 驱动操作和分页 evidence 已落地。
 
 - CP0 仓库重置(干净历史、`.gitignore` 脱敏排除)
 - CP1 后端地基(uv + 18 张表 + Alembic 三层隔离)
@@ -13,7 +13,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - CP3 认证、RBAC、租户隔离(含反向验证)
 - CP4 前端垂直切片 + OpenAPI 契约门禁 + pre-commit/CI + 合成数据生成器(含反向验证)
 
-**下一步:CP-F3.4 · API、契约与桌面工作流。** 为 CP-F3.3 服务层增加 §9–§10 的类型化路由、OpenAPI/前端客户端同步、规则版本页和批次校验视图；不得提前实现 F4、F5、LangGraph 或 F6。
+**下一步:CP-F3.5 · 契约与交付门禁。** 执行 F3 全量回归、迁移/受保护约束、pre-commit/secret、5000 行性能与最终桌面视觉门禁；通过后才把 F3 标记完成并进入 F4 规格固化。
 `process_row_once` 的首个生产调用方现为 `app.core.validation.batch_service.validate_batch`；行内 finding 与 `row_result` 使用同一 session/事务，`row_result.rule_version` 固定保存规则集指纹。
 
 **开工前必读的两件事:**
@@ -24,6 +24,8 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 
 ## 📂 架构决策
 *(把构建过程中做出的具体选择记录在此,便于后续 agent 遵循)*
+- 2026-07-28 — **CP-F3.4 的 API 与前端只消费同一组判别联合契约。** `SaveRuleRequest.definition` 直接使用 `RuleDefinition`，finding evidence 使用 `RuleEvidence`，关联 verdict 使用完整 `RowVerdict`；只有查询筛选仍限制为 `flagged|manual_review`。规则 PUT 的 Pydantic 边界错误统一映射 `RULE_CONFIG_INVALID`，前端不复制手写 DTO。
+- 2026-07-28 — **F3 桌面入口按 permission 而非角色控制。** `CONFIG_READ` 显示规则版本页，`CONFIG_WRITE` 才显示保存；`BATCH_READ` 可查看 validation/findings，`BATCH_IMPORT` 才可 validate/派生。mutation 统一失效批次、解析、validation、findings 和规则缓存；两类派生请求各自携带 8–128 字符 Idempotency-Key。
 - 2026-07-28 — **CP-F3.3 统一使用 `Tenant FOR UPDATE NOWAIT → FileVersion FOR UPDATE NOWAIT` 锁序。** 规则保存、批次校验和 F2 parse/reparse 共享租户锁；同租户冲突稳定返回领域 409，不同租户可并行。F2 在锁内拒绝已校验批次和被 `validation_dependency` 引用的来源，消除 dependency 检查与重解析交错提交窗口。
 - 2026-07-28 — **查重 dependency 冻结完整候选来源，而非只冻结实际命中来源。** 快照时排除当前 root lineage，对每个其他 lineage 选择最高成功解析 revision 并全部写入 dependency；编排层只构造 `InvoiceOccurrence`，唯一首条仍由 CP-F3.2 `select_duplicate_match` 决定。
 - 2026-07-28 — **F3 成功副作用整批一次提交，系统失败只保留独立无 PII 审计。** validation run、dependencies、findings、row_results、完成计数和 `batch.validate` 同一事务；任一故障先回滚主事务、释放锁，再用绑定租户的新 session 追加 `batch.validate_failed`。completed 重放在锁内早退且不新增任何副作用。

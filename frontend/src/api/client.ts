@@ -73,6 +73,21 @@ export type ParseErrorsResponse = components["schemas"]["ParseErrorsResponse"];
 export type FieldAvailabilityResponse = components["schemas"]["FieldAvailabilityResponse"];
 export type UnifiedField = components["schemas"]["UnifiedField"];
 
+/** F3 强类型规则配置与不可变版本。 */
+export type RuleDefinition = components["schemas"]["RuleDefinition"];
+export type RuleKind = components["schemas"]["RuleKind"];
+export type RuleVersion = components["schemas"]["RuleVersionResponse"];
+export type SaveRuleRequest = components["schemas"]["SaveRuleRequest"];
+export type SaveRuleResponse = components["schemas"]["SaveRuleResponse"];
+
+/** F3 确定性校验摘要、证据与派生版本。 */
+export type ValidationSummary = components["schemas"]["ValidationSummaryResponse"];
+export type FindingItem = components["schemas"]["FindingItemResponse"];
+export type FindingsResponse = components["schemas"]["FindingsResponse"];
+export type CreateRevisionRequest = components["schemas"]["CreateRevisionRequest"];
+export type CreateRevisionResponse = components["schemas"]["CreateRevisionResponse"];
+export type RevisionReason = components["schemas"]["RevisionRequestReason"];
+
 /**
  * 后端权限标识。
  *

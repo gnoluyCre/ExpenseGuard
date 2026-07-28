@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.errors import ExpenseGuardError
+from app.core.errors import ExpenseGuardError, NotFoundError
 from app.core.rules import rule_config_fingerprint, validate_rule_definition
 from app.core.security.auth_service import write_audit
 from app.core.tenancy.locking import lock_tenant_nowait
@@ -32,6 +32,31 @@ class SavedRuleVersion(BaseModel):
 
     rule_config: RuleConfig
     created: bool
+
+
+async def list_rule_versions(
+    db: AsyncSession,
+    *,
+    rule_id: str | None = None,
+    latest_only: bool = True,
+) -> tuple[RuleConfig, ...]:
+    """稳定列出当前租户的 F3 强类型规则版本。"""
+    statement = (
+        select(RuleConfig)
+        .where(RuleConfig.backfilled_legacy.is_(False))
+        .order_by(RuleConfig.rule_id, RuleConfig.version, RuleConfig.id)
+    )
+    if rule_id is not None:
+        statement = statement.where(RuleConfig.rule_id == rule_id)
+    versions = tuple((await db.scalars(statement)).all())
+    if rule_id is not None and not versions:
+        raise NotFoundError(code="RULE_NOT_FOUND", message="规则不存在")
+    if not latest_only:
+        return versions
+    latest: dict[str, RuleConfig] = {}
+    for version in versions:
+        latest[version.rule_id] = version
+    return tuple(latest[key] for key in sorted(latest))
 
 
 async def save_rule_version(

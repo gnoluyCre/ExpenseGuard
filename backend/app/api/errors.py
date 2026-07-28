@@ -53,11 +53,15 @@ async def _handle_request_validation_error(request: Request, exc: Exception) -> 
     if not isinstance(exc, RequestValidationError):  # pragma: no cover
         raise exc
     logger.info("request validation error", extra={"path": request.url.path})
+    if request.method == "PUT" and request.url.path == "/api/rules":
+        code = "RULE_CONFIG_INVALID"
+        message = "规则配置无效"
+    else:
+        code = "REQUEST_VALIDATION_ERROR"
+        message = "请求参数无效"
     return JSONResponse(
         status_code=422,
-        content=ErrorResponse(
-            error=ErrorDetail(code="REQUEST_VALIDATION_ERROR", message="请求参数无效")
-        ).model_dump(),
+        content=ErrorResponse(error=ErrorDetail(code=code, message=message)).model_dump(),
     )
 
 

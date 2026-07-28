@@ -291,6 +291,82 @@
         "title": "ConstantInferenceRule",
         "type": "object"
       },
+      "CreateRevisionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "$ref": "#/components/schemas/RevisionRequestReason"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "CreateRevisionRequest",
+        "type": "object"
+      },
+      "CreateRevisionResponse": {
+        "properties": {
+          "file_version_id": {
+            "format": "uuid",
+            "title": "File Version Id",
+            "type": "string"
+          },
+          "mapping_version_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mapping Version Id"
+          },
+          "parse_status": {
+            "enum": [
+              "unparsed",
+              "parsed",
+              "parsed_with_errors"
+            ],
+            "title": "Parse Status",
+            "type": "string"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/RevisionRequestReason"
+          },
+          "reused_existing": {
+            "title": "Reused Existing",
+            "type": "boolean"
+          },
+          "revision_no": {
+            "title": "Revision No",
+            "type": "integer"
+          },
+          "root_file_version_id": {
+            "format": "uuid",
+            "title": "Root File Version Id",
+            "type": "string"
+          },
+          "source_file_version_id": {
+            "format": "uuid",
+            "title": "Source File Version Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file_version_id",
+          "source_file_version_id",
+          "root_file_version_id",
+          "revision_no",
+          "reason",
+          "parse_status",
+          "mapping_version_id",
+          "reused_existing"
+        ],
+        "title": "CreateRevisionResponse",
+        "type": "object"
+      },
       "CurrentUser": {
         "description": "当前登录用户。",
         "properties": {
@@ -433,6 +509,61 @@
         "title": "ErrorResponse",
         "type": "object"
       },
+      "ExemptionCondition": {
+        "additionalProperties": false,
+        "properties": {
+          "field": {
+            "$ref": "#/components/schemas/ExemptionField"
+          },
+          "value": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "field",
+          "value"
+        ],
+        "title": "ExemptionCondition",
+        "type": "object"
+      },
+      "ExemptionField": {
+        "enum": [
+          "expense_type",
+          "invoice_type",
+          "currency"
+        ],
+        "title": "ExemptionField",
+        "type": "string"
+      },
+      "ExemptionGroup": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "items": {
+              "$ref": "#/components/schemas/ExemptionCondition"
+            },
+            "maxItems": 3,
+            "minItems": 1,
+            "title": "All",
+            "type": "array"
+          },
+          "exemption_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Exemption Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "exemption_id",
+          "all"
+        ],
+        "title": "ExemptionGroup",
+        "type": "object"
+      },
       "ExpenseRowResponse": {
         "description": "原始报销行摘要。",
         "properties": {
@@ -558,6 +689,137 @@
         "title": "FieldError",
         "type": "object"
       },
+      "FieldProvenance": {
+        "additionalProperties": false,
+        "description": "不复制原始值的字段证据。",
+        "properties": {
+          "inference_rule_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inference Rule Id"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/ProvenanceMode"
+          },
+          "source_columns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Source Columns",
+            "type": "array"
+          }
+        },
+        "required": [
+          "mode",
+          "source_columns"
+        ],
+        "title": "FieldProvenance",
+        "type": "object"
+      },
+      "FindingItemResponse": {
+        "properties": {
+          "evidence": {
+            "$ref": "#/components/schemas/RuleEvidence"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/RuleOutcome"
+          },
+          "reason_code": {
+            "$ref": "#/components/schemas/ReasonCode"
+          },
+          "reasoning": {
+            "title": "Reasoning",
+            "type": "string"
+          },
+          "row_no": {
+            "title": "Row No",
+            "type": "integer"
+          },
+          "rule_id": {
+            "title": "Rule Id",
+            "type": "string"
+          },
+          "rule_kind": {
+            "$ref": "#/components/schemas/RuleKind"
+          },
+          "rule_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule Version"
+          },
+          "verdict": {
+            "$ref": "#/components/schemas/RowVerdict"
+          }
+        },
+        "required": [
+          "id",
+          "row_no",
+          "rule_id",
+          "rule_version",
+          "rule_kind",
+          "outcome",
+          "reason_code",
+          "reasoning",
+          "evidence",
+          "verdict"
+        ],
+        "title": "FindingItemResponse",
+        "type": "object"
+      },
+      "FindingsResponse": {
+        "properties": {
+          "file_version_id": {
+            "format": "uuid",
+            "title": "File Version Id",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/FindingItemResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "file_version_id",
+          "total",
+          "page",
+          "page_size",
+          "items"
+        ],
+        "title": "FindingsResponse",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -610,6 +872,663 @@
           "threshold"
         ],
         "title": "InferenceAvailabilityEvidence",
+        "type": "object"
+      },
+      "InvoiceDuplicateEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "duplicate_of_file_version_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duplicate Of File Version Id"
+          },
+          "duplicate_of_root_file_version_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duplicate Of Root File Version Id"
+          },
+          "duplicate_of_row_no": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duplicate Of Row No"
+          },
+          "exemption_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exemption Id"
+          },
+          "invoice_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice No"
+          },
+          "outcome": {
+            "enum": [
+              "flagged",
+              "unavailable",
+              "exempted"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "provenance": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FieldProvenance"
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/UnifiedField"
+            },
+            "title": "Provenance",
+            "type": "object"
+          },
+          "reason_code": {
+            "$ref": "#/components/schemas/ReasonCode"
+          },
+          "required_fields": {
+            "items": {
+              "$ref": "#/components/schemas/UnifiedField"
+            },
+            "title": "Required Fields",
+            "type": "array"
+          },
+          "rule_kind": {
+            "const": "invoice_duplicate",
+            "title": "Rule Kind",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "outcome",
+          "rule_kind",
+          "reason_code",
+          "required_fields",
+          "provenance"
+        ],
+        "title": "InvoiceDuplicateEvidence",
+        "type": "object"
+      },
+      "InvoiceDuplicateRuleDefinition": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "exemptions": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ExemptionGroup"
+            },
+            "maxItems": 100,
+            "title": "Exemptions",
+            "type": "array"
+          },
+          "kind": {
+            "const": "invoice_duplicate",
+            "title": "Kind",
+            "type": "string"
+          },
+          "require_direct": {
+            "default": false,
+            "title": "Require Direct",
+            "type": "boolean"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "InvoiceDuplicateRuleDefinition",
+        "type": "object"
+      },
+      "InvoiceTitleEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "allowed_titles_fingerprint": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allowed Titles Fingerprint"
+          },
+          "exemption_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exemption Id"
+          },
+          "invoice_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Title"
+          },
+          "outcome": {
+            "enum": [
+              "flagged",
+              "unavailable",
+              "exempted"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "provenance": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FieldProvenance"
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/UnifiedField"
+            },
+            "title": "Provenance",
+            "type": "object"
+          },
+          "reason_code": {
+            "$ref": "#/components/schemas/ReasonCode"
+          },
+          "required_fields": {
+            "items": {
+              "$ref": "#/components/schemas/UnifiedField"
+            },
+            "title": "Required Fields",
+            "type": "array"
+          },
+          "rule_kind": {
+            "const": "invoice_title",
+            "title": "Rule Kind",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "outcome",
+          "rule_kind",
+          "reason_code",
+          "required_fields",
+          "provenance"
+        ],
+        "title": "InvoiceTitleEvidence",
+        "type": "object"
+      },
+      "InvoiceTitleRuleDefinition": {
+        "additionalProperties": false,
+        "properties": {
+          "allowed_titles": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Allowed Titles",
+            "type": "array"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "exemptions": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ExemptionGroup"
+            },
+            "maxItems": 100,
+            "title": "Exemptions",
+            "type": "array"
+          },
+          "kind": {
+            "const": "invoice_title",
+            "title": "Kind",
+            "type": "string"
+          },
+          "require_direct": {
+            "default": false,
+            "title": "Require Direct",
+            "type": "boolean"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "allowed_titles"
+        ],
+        "title": "InvoiceTitleRuleDefinition",
+        "type": "object"
+      },
+      "InvoiceTypeAllowance": {
+        "additionalProperties": false,
+        "properties": {
+          "allowed_invoice_types": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Allowed Invoice Types",
+            "type": "array"
+          },
+          "expense_type": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Expense Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expense_type",
+          "allowed_invoice_types"
+        ],
+        "title": "InvoiceTypeAllowance",
+        "type": "object"
+      },
+      "InvoiceTypeEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "allowed_invoice_types_fingerprint": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allowed Invoice Types Fingerprint"
+          },
+          "exemption_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exemption Id"
+          },
+          "expense_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expense Type"
+          },
+          "invoice_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Type"
+          },
+          "outcome": {
+            "enum": [
+              "flagged",
+              "unavailable",
+              "exempted"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "provenance": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FieldProvenance"
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/UnifiedField"
+            },
+            "title": "Provenance",
+            "type": "object"
+          },
+          "reason_code": {
+            "$ref": "#/components/schemas/ReasonCode"
+          },
+          "required_fields": {
+            "items": {
+              "$ref": "#/components/schemas/UnifiedField"
+            },
+            "title": "Required Fields",
+            "type": "array"
+          },
+          "rule_kind": {
+            "const": "invoice_type",
+            "title": "Rule Kind",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "outcome",
+          "rule_kind",
+          "reason_code",
+          "required_fields",
+          "provenance"
+        ],
+        "title": "InvoiceTypeEvidence",
+        "type": "object"
+      },
+      "InvoiceTypeRuleDefinition": {
+        "additionalProperties": false,
+        "properties": {
+          "allowances": {
+            "items": {
+              "$ref": "#/components/schemas/InvoiceTypeAllowance"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Allowances",
+            "type": "array"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "exemptions": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ExemptionGroup"
+            },
+            "maxItems": 100,
+            "title": "Exemptions",
+            "type": "array"
+          },
+          "kind": {
+            "const": "invoice_type",
+            "title": "Kind",
+            "type": "string"
+          },
+          "require_direct": {
+            "default": false,
+            "title": "Require Direct",
+            "type": "boolean"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "allowances"
+        ],
+        "title": "InvoiceTypeRuleDefinition",
+        "type": "object"
+      },
+      "LimitEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "exemption_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exemption Id"
+          },
+          "expense_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expense Type"
+          },
+          "max_amount": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Amount"
+          },
+          "operator": {
+            "const": "gt",
+            "default": "gt",
+            "title": "Operator",
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "flagged",
+              "unavailable",
+              "exempted"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "provenance": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FieldProvenance"
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/UnifiedField"
+            },
+            "title": "Provenance",
+            "type": "object"
+          },
+          "reason_code": {
+            "$ref": "#/components/schemas/ReasonCode"
+          },
+          "required_fields": {
+            "items": {
+              "$ref": "#/components/schemas/UnifiedField"
+            },
+            "title": "Required Fields",
+            "type": "array"
+          },
+          "rule_kind": {
+            "const": "limit",
+            "title": "Rule Kind",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "outcome",
+          "rule_kind",
+          "reason_code",
+          "required_fields",
+          "provenance"
+        ],
+        "title": "LimitEvidence",
+        "type": "object"
+      },
+      "LimitRuleDefinition": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "exemptions": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ExemptionGroup"
+            },
+            "maxItems": 100,
+            "title": "Exemptions",
+            "type": "array"
+          },
+          "kind": {
+            "const": "limit",
+            "title": "Kind",
+            "type": "string"
+          },
+          "require_direct": {
+            "default": false,
+            "title": "Require Direct",
+            "type": "boolean"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "thresholds": {
+            "items": {
+              "$ref": "#/components/schemas/LimitThreshold"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Thresholds",
+            "type": "array"
+          }
+        },
+        "required": [
+          "kind",
+          "thresholds"
+        ],
+        "title": "LimitRuleDefinition",
+        "type": "object"
+      },
+      "LimitThreshold": {
+        "additionalProperties": false,
+        "properties": {
+          "currency": {
+            "pattern": "^[A-Z]{3}$",
+            "title": "Currency",
+            "type": "string"
+          },
+          "expense_type": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Expense Type",
+            "type": "string"
+          },
+          "max_amount": {
+            "title": "Max Amount",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expense_type",
+          "currency",
+          "max_amount"
+        ],
+        "title": "LimitThreshold",
         "type": "object"
       },
       "LiteralLookupCase": {
@@ -996,6 +1915,15 @@
         "title": "ParseErrorsResponse",
         "type": "object"
       },
+      "ProvenanceMode": {
+        "description": "规范化字段的取值来源。",
+        "enum": [
+          "mapped",
+          "inferred"
+        ],
+        "title": "ProvenanceMode",
+        "type": "string"
+      },
       "ReadinessResponse": {
         "description": "就绪响应。",
         "properties": {
@@ -1017,6 +1945,36 @@
         ],
         "title": "ReadinessResponse",
         "type": "object"
+      },
+      "ReasonCode": {
+        "enum": [
+          "limit_exceeded",
+          "invoice_type_not_allowed",
+          "claim_submitted_late",
+          "invoice_title_not_allowed",
+          "invoice_duplicate",
+          "MISSING_REQUIRED_FIELD",
+          "INFERRED_FIELD_NOT_ALLOWED",
+          "RULE_NOT_EFFECTIVE",
+          "RULE_DISABLED",
+          "LIMIT_THRESHOLD_NOT_CONFIGURED",
+          "INVOICE_TYPE_POLICY_NOT_CONFIGURED",
+          "SUBMISSION_BEFORE_EXPENSE_DATE",
+          "TIMELINESS_POLICY_NOT_CONFIGURED",
+          "INVOICE_TITLE_MISSING",
+          "INVOICE_NO_MISSING",
+          "EXEMPTION_MATCHED"
+        ],
+        "type": "string"
+      },
+      "RevisionRequestReason": {
+        "description": "服务层接受的派生原因。",
+        "enum": [
+          "ruleset_change",
+          "mapping_change"
+        ],
+        "title": "RevisionRequestReason",
+        "type": "string"
       },
       "Role": {
         "description": "RBAC 三角色。权限矩阵定义在 `app.core.security.permissions`。",
@@ -1056,6 +2014,227 @@
           "errors"
         ],
         "title": "RowErrorDetail",
+        "type": "object"
+      },
+      "RowVerdict": {
+        "enum": [
+          "passed",
+          "manual_review",
+          "flagged"
+        ],
+        "title": "RowVerdict",
+        "type": "string"
+      },
+      "RuleDefinition": {
+        "discriminator": {
+          "mapping": {
+            "invoice_duplicate": "#/components/schemas/InvoiceDuplicateRuleDefinition",
+            "invoice_title": "#/components/schemas/InvoiceTitleRuleDefinition",
+            "invoice_type": "#/components/schemas/InvoiceTypeRuleDefinition",
+            "limit": "#/components/schemas/LimitRuleDefinition",
+            "timeliness": "#/components/schemas/TimelinessRuleDefinition"
+          },
+          "propertyName": "kind"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/LimitRuleDefinition"
+          },
+          {
+            "$ref": "#/components/schemas/InvoiceTypeRuleDefinition"
+          },
+          {
+            "$ref": "#/components/schemas/TimelinessRuleDefinition"
+          },
+          {
+            "$ref": "#/components/schemas/InvoiceTitleRuleDefinition"
+          },
+          {
+            "$ref": "#/components/schemas/InvoiceDuplicateRuleDefinition"
+          }
+        ]
+      },
+      "RuleEvidence": {
+        "discriminator": {
+          "mapping": {
+            "invoice_duplicate": "#/components/schemas/InvoiceDuplicateEvidence",
+            "invoice_title": "#/components/schemas/InvoiceTitleEvidence",
+            "invoice_type": "#/components/schemas/InvoiceTypeEvidence",
+            "limit": "#/components/schemas/LimitEvidence",
+            "timeliness": "#/components/schemas/TimelinessEvidence"
+          },
+          "propertyName": "rule_kind"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/LimitEvidence"
+          },
+          {
+            "$ref": "#/components/schemas/InvoiceTypeEvidence"
+          },
+          {
+            "$ref": "#/components/schemas/TimelinessEvidence"
+          },
+          {
+            "$ref": "#/components/schemas/InvoiceTitleEvidence"
+          },
+          {
+            "$ref": "#/components/schemas/InvoiceDuplicateEvidence"
+          }
+        ]
+      },
+      "RuleKind": {
+        "enum": [
+          "limit",
+          "invoice_type",
+          "timeliness",
+          "invoice_title",
+          "invoice_duplicate"
+        ],
+        "title": "RuleKind",
+        "type": "string"
+      },
+      "RuleOutcome": {
+        "enum": [
+          "passed",
+          "flagged",
+          "unavailable",
+          "exempted"
+        ],
+        "title": "RuleOutcome",
+        "type": "string"
+      },
+      "RuleVersionResponse": {
+        "properties": {
+          "config_fingerprint": {
+            "title": "Config Fingerprint",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "format": "uuid",
+            "title": "Created By",
+            "type": "string"
+          },
+          "definition": {
+            "$ref": "#/components/schemas/RuleDefinition"
+          },
+          "effective_from": {
+            "format": "date",
+            "title": "Effective From",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "rule_id": {
+            "title": "Rule Id",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "rule_id",
+          "version",
+          "effective_from",
+          "config_fingerprint",
+          "definition",
+          "created_by",
+          "created_at"
+        ],
+        "title": "RuleVersionResponse",
+        "type": "object"
+      },
+      "SaveRuleRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "definition": {
+            "$ref": "#/components/schemas/RuleDefinition"
+          },
+          "effective_from": {
+            "format": "date",
+            "title": "Effective From",
+            "type": "string"
+          },
+          "rule_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Rule Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rule_id",
+          "effective_from",
+          "definition"
+        ],
+        "title": "SaveRuleRequest",
+        "type": "object"
+      },
+      "SaveRuleResponse": {
+        "properties": {
+          "config_fingerprint": {
+            "title": "Config Fingerprint",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "format": "uuid",
+            "title": "Created By",
+            "type": "string"
+          },
+          "definition": {
+            "$ref": "#/components/schemas/RuleDefinition"
+          },
+          "effective_from": {
+            "format": "date",
+            "title": "Effective From",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "reused_existing": {
+            "title": "Reused Existing",
+            "type": "boolean"
+          },
+          "rule_id": {
+            "title": "Rule Id",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "rule_id",
+          "version",
+          "effective_from",
+          "config_fingerprint",
+          "definition",
+          "created_by",
+          "created_at",
+          "reused_existing"
+        ],
+        "title": "SaveRuleResponse",
         "type": "object"
       },
       "SaveSchemaMappingRequest": {
@@ -1225,6 +2404,199 @@
         "title": "SchemaMappingsResponse",
         "type": "object"
       },
+      "TimelinessEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "actual_calendar_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actual Calendar Days"
+          },
+          "exemption_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exemption Id"
+          },
+          "expense_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expense Date"
+          },
+          "expense_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expense Type"
+          },
+          "max_calendar_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Calendar Days"
+          },
+          "outcome": {
+            "enum": [
+              "flagged",
+              "unavailable",
+              "exempted"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "provenance": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FieldProvenance"
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/UnifiedField"
+            },
+            "title": "Provenance",
+            "type": "object"
+          },
+          "reason_code": {
+            "$ref": "#/components/schemas/ReasonCode"
+          },
+          "required_fields": {
+            "items": {
+              "$ref": "#/components/schemas/UnifiedField"
+            },
+            "title": "Required Fields",
+            "type": "array"
+          },
+          "rule_kind": {
+            "const": "timeliness",
+            "title": "Rule Kind",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "submission_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submission Date"
+          }
+        },
+        "required": [
+          "outcome",
+          "rule_kind",
+          "reason_code",
+          "required_fields",
+          "provenance"
+        ],
+        "title": "TimelinessEvidence",
+        "type": "object"
+      },
+      "TimelinessPolicy": {
+        "additionalProperties": false,
+        "properties": {
+          "expense_type": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Expense Type",
+            "type": "string"
+          },
+          "max_calendar_days": {
+            "maximum": 3660.0,
+            "minimum": 0.0,
+            "title": "Max Calendar Days",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expense_type",
+          "max_calendar_days"
+        ],
+        "title": "TimelinessPolicy",
+        "type": "object"
+      },
+      "TimelinessRuleDefinition": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "exemptions": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ExemptionGroup"
+            },
+            "maxItems": 100,
+            "title": "Exemptions",
+            "type": "array"
+          },
+          "kind": {
+            "const": "timeliness",
+            "title": "Kind",
+            "type": "string"
+          },
+          "policies": {
+            "items": {
+              "$ref": "#/components/schemas/TimelinessPolicy"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Policies",
+            "type": "array"
+          },
+          "require_direct": {
+            "default": false,
+            "title": "Require Direct",
+            "type": "boolean"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "policies"
+        ],
+        "title": "TimelinessRuleDefinition",
+        "type": "object"
+      },
       "UnifiedField": {
         "description": "固定的 12 个统一报销字段，顺序也是稳定输出顺序。",
         "enum": [
@@ -1282,6 +2654,66 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "ValidationSummaryResponse": {
+        "properties": {
+          "evaluated_row_count": {
+            "title": "Evaluated Row Count",
+            "type": "integer"
+          },
+          "file_version_id": {
+            "format": "uuid",
+            "title": "File Version Id",
+            "type": "string"
+          },
+          "flagged_count": {
+            "title": "Flagged Count",
+            "type": "integer"
+          },
+          "manual_review_count": {
+            "title": "Manual Review Count",
+            "type": "integer"
+          },
+          "mapping_version_id": {
+            "format": "uuid",
+            "title": "Mapping Version Id",
+            "type": "string"
+          },
+          "parse_failed_count": {
+            "title": "Parse Failed Count",
+            "type": "integer"
+          },
+          "passed_count": {
+            "title": "Passed Count",
+            "type": "integer"
+          },
+          "reused_existing": {
+            "title": "Reused Existing",
+            "type": "boolean"
+          },
+          "ruleset_fingerprint": {
+            "title": "Ruleset Fingerprint",
+            "type": "string"
+          },
+          "total_row_count": {
+            "title": "Total Row Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "file_version_id",
+          "mapping_version_id",
+          "ruleset_fingerprint",
+          "total_row_count",
+          "evaluated_row_count",
+          "passed_count",
+          "flagged_count",
+          "manual_review_count",
+          "parse_failed_count",
+          "reused_existing"
+        ],
+        "title": "ValidationSummaryResponse",
         "type": "object"
       }
     }
@@ -1700,6 +3132,138 @@
         ]
       }
     },
+    "/api/batches/{file_version_id}/findings": {
+      "get": {
+        "operationId": "batches_findings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_version_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "File Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "verdict",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "flagged",
+                    "manual_review"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Verdict"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FindingsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Findings",
+        "tags": [
+          "batches"
+        ]
+      }
+    },
     "/api/batches/{file_version_id}/parse": {
       "post": {
         "description": "按指定不可变映射版本原子解析批次。",
@@ -1943,6 +3507,339 @@
         ]
       }
     },
+    "/api/batches/{file_version_id}/revisions": {
+      "post": {
+        "operationId": "batches_create_revision",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_version_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "File Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRevisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateRevisionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateRevisionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Create Revision",
+        "tags": [
+          "batches"
+        ]
+      }
+    },
+    "/api/batches/{file_version_id}/validate": {
+      "post": {
+        "operationId": "batches_validate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_version_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "File Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationSummaryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Validate",
+        "tags": [
+          "batches"
+        ]
+      }
+    },
+    "/api/batches/{file_version_id}/validation": {
+      "get": {
+        "operationId": "batches_validation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_version_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "File Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationSummaryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Validation",
+        "tags": [
+          "batches"
+        ]
+      }
+    },
     "/api/health": {
       "get": {
         "description": "存活探针。刻意不碰任何外部依赖。",
@@ -1984,6 +3881,214 @@
         "summary": "Readiness",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/api/rules": {
+      "get": {
+        "operationId": "rules_list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "rule_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rule Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "latest_only",
+            "required": false,
+            "schema": {
+              "default": true,
+              "title": "Latest Only",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RuleVersionResponse"
+                  },
+                  "title": "Response Rules List",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List",
+        "tags": [
+          "rules"
+        ]
+      },
+      "put": {
+        "operationId": "rules_save",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveRuleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveRuleResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveRuleResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Save",
+        "tags": [
+          "rules"
         ]
       }
     },

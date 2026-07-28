@@ -134,6 +134,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/batches/{file_version_id}/findings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Findings */
+    get: operations["batches_findings"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/batches/{file_version_id}/parse": {
     parameters: {
       query?: never;
@@ -166,6 +183,57 @@ export interface paths {
      * @description 分页读取解析失败行，保留原始证据链。
      */
     get: operations["batches_parse_errors"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/batches/{file_version_id}/revisions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create Revision */
+    post: operations["batches_create_revision"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/batches/{file_version_id}/validate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Validate */
+    post: operations["batches_validate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/batches/{file_version_id}/validation": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Validation */
+    get: operations["batches_validation"];
     put?: never;
     post?: never;
     delete?: never;
@@ -207,6 +275,24 @@ export interface paths {
      */
     get: operations["health_readiness"];
     put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/rules": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List */
+    get: operations["rules_list"];
+    /** Save */
+    put: operations["rules_save"];
     post?: never;
     delete?: never;
     options?: never;
@@ -400,6 +486,40 @@ export interface components {
       /** Value */
       value: string;
     };
+    /** CreateRevisionRequest */
+    CreateRevisionRequest: {
+      reason: components["schemas"]["RevisionRequestReason"];
+    };
+    /** CreateRevisionResponse */
+    CreateRevisionResponse: {
+      /**
+       * File Version Id
+       * Format: uuid
+       */
+      file_version_id: string;
+      /** Mapping Version Id */
+      mapping_version_id: string | null;
+      /**
+       * Parse Status
+       * @enum {string}
+       */
+      parse_status: "unparsed" | "parsed" | "parsed_with_errors";
+      reason: components["schemas"]["RevisionRequestReason"];
+      /** Reused Existing */
+      reused_existing: boolean;
+      /** Revision No */
+      revision_no: number;
+      /**
+       * Root File Version Id
+       * Format: uuid
+       */
+      root_file_version_id: string;
+      /**
+       * Source File Version Id
+       * Format: uuid
+       */
+      source_file_version_id: string;
+    };
     /**
      * CurrentUser
      * @description 当前登录用户。
@@ -462,6 +582,24 @@ export interface components {
      */
     ErrorResponse: {
       error: components["schemas"]["ErrorDetail"];
+    };
+    /** ExemptionCondition */
+    ExemptionCondition: {
+      field: components["schemas"]["ExemptionField"];
+      /** Value */
+      value: string;
+    };
+    /**
+     * ExemptionField
+     * @enum {string}
+     */
+    ExemptionField: "expense_type" | "invoice_type" | "currency";
+    /** ExemptionGroup */
+    ExemptionGroup: {
+      /** All */
+      all: components["schemas"]["ExemptionCondition"][];
+      /** Exemption Id */
+      exemption_id: string;
     };
     /**
      * ExpenseRowResponse
@@ -526,6 +664,54 @@ export interface components {
       /** Source Column */
       source_column: string;
     };
+    /**
+     * FieldProvenance
+     * @description 不复制原始值的字段证据。
+     */
+    FieldProvenance: {
+      /** Inference Rule Id */
+      inference_rule_id?: string | null;
+      mode: components["schemas"]["ProvenanceMode"];
+      /** Source Columns */
+      source_columns: string[];
+    };
+    /** FindingItemResponse */
+    FindingItemResponse: {
+      evidence: components["schemas"]["RuleEvidence"];
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      outcome: components["schemas"]["RuleOutcome"];
+      reason_code: components["schemas"]["ReasonCode"];
+      /** Reasoning */
+      reasoning: string;
+      /** Row No */
+      row_no: number;
+      /** Rule Id */
+      rule_id: string;
+      rule_kind: components["schemas"]["RuleKind"];
+      /** Rule Version */
+      rule_version: string | null;
+      verdict: components["schemas"]["RowVerdict"];
+    };
+    /** FindingsResponse */
+    FindingsResponse: {
+      /**
+       * File Version Id
+       * Format: uuid
+       */
+      file_version_id: string;
+      /** Items */
+      items: components["schemas"]["FindingItemResponse"][];
+      /** Page */
+      page: number;
+      /** Page Size */
+      page_size: number;
+      /** Total */
+      total: number;
+    };
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
@@ -546,6 +732,288 @@ export interface components {
       success_rate: string;
       /** Threshold */
       threshold: string;
+    };
+    /** InvoiceDuplicateEvidence */
+    InvoiceDuplicateEvidence: {
+      /** Duplicate Of File Version Id */
+      duplicate_of_file_version_id?: string | null;
+      /** Duplicate Of Root File Version Id */
+      duplicate_of_root_file_version_id?: string | null;
+      /** Duplicate Of Row No */
+      duplicate_of_row_no?: number | null;
+      /** Exemption Id */
+      exemption_id?: string | null;
+      /** Invoice No */
+      invoice_no?: string | null;
+      /**
+       * Outcome
+       * @enum {string}
+       */
+      outcome: "flagged" | "unavailable" | "exempted";
+      /** Provenance */
+      provenance: {
+        [key: string]: components["schemas"]["FieldProvenance"];
+      };
+      reason_code: components["schemas"]["ReasonCode"];
+      /** Required Fields */
+      required_fields: components["schemas"]["UnifiedField"][];
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      rule_kind: "invoice_duplicate";
+      /**
+       * Schema Version
+       * @default 1
+       * @constant
+       */
+      schema_version: 1;
+    };
+    /** InvoiceDuplicateRuleDefinition */
+    InvoiceDuplicateRuleDefinition: {
+      /**
+       * Enabled
+       * @default true
+       */
+      enabled: boolean;
+      /**
+       * Exemptions
+       * @default []
+       */
+      exemptions: components["schemas"]["ExemptionGroup"][];
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: "invoice_duplicate";
+      /**
+       * Require Direct
+       * @default false
+       */
+      require_direct: boolean;
+      /**
+       * Schema Version
+       * @default 1
+       * @constant
+       */
+      schema_version: 1;
+    };
+    /** InvoiceTitleEvidence */
+    InvoiceTitleEvidence: {
+      /** Allowed Titles Fingerprint */
+      allowed_titles_fingerprint?: string | null;
+      /** Exemption Id */
+      exemption_id?: string | null;
+      /** Invoice Title */
+      invoice_title?: string | null;
+      /**
+       * Outcome
+       * @enum {string}
+       */
+      outcome: "flagged" | "unavailable" | "exempted";
+      /** Provenance */
+      provenance: {
+        [key: string]: components["schemas"]["FieldProvenance"];
+      };
+      reason_code: components["schemas"]["ReasonCode"];
+      /** Required Fields */
+      required_fields: components["schemas"]["UnifiedField"][];
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      rule_kind: "invoice_title";
+      /**
+       * Schema Version
+       * @default 1
+       * @constant
+       */
+      schema_version: 1;
+    };
+    /** InvoiceTitleRuleDefinition */
+    InvoiceTitleRuleDefinition: {
+      /** Allowed Titles */
+      allowed_titles: string[];
+      /**
+       * Enabled
+       * @default true
+       */
+      enabled: boolean;
+      /**
+       * Exemptions
+       * @default []
+       */
+      exemptions: components["schemas"]["ExemptionGroup"][];
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: "invoice_title";
+      /**
+       * Require Direct
+       * @default false
+       */
+      require_direct: boolean;
+      /**
+       * Schema Version
+       * @default 1
+       * @constant
+       */
+      schema_version: 1;
+    };
+    /** InvoiceTypeAllowance */
+    InvoiceTypeAllowance: {
+      /** Allowed Invoice Types */
+      allowed_invoice_types: string[];
+      /** Expense Type */
+      expense_type: string;
+    };
+    /** InvoiceTypeEvidence */
+    InvoiceTypeEvidence: {
+      /** Allowed Invoice Types Fingerprint */
+      allowed_invoice_types_fingerprint?: string | null;
+      /** Exemption Id */
+      exemption_id?: string | null;
+      /** Expense Type */
+      expense_type?: string | null;
+      /** Invoice Type */
+      invoice_type?: string | null;
+      /**
+       * Outcome
+       * @enum {string}
+       */
+      outcome: "flagged" | "unavailable" | "exempted";
+      /** Provenance */
+      provenance: {
+        [key: string]: components["schemas"]["FieldProvenance"];
+      };
+      reason_code: components["schemas"]["ReasonCode"];
+      /** Required Fields */
+      required_fields: components["schemas"]["UnifiedField"][];
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      rule_kind: "invoice_type";
+      /**
+       * Schema Version
+       * @default 1
+       * @constant
+       */
+      schema_version: 1;
+    };
+    /** InvoiceTypeRuleDefinition */
+    InvoiceTypeRuleDefinition: {
+      /** Allowances */
+      allowances: components["schemas"]["InvoiceTypeAllowance"][];
+      /**
+       * Enabled
+       * @default true
+       */
+      enabled: boolean;
+      /**
+       * Exemptions
+       * @default []
+       */
+      exemptions: components["schemas"]["ExemptionGroup"][];
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: "invoice_type";
+      /**
+       * Require Direct
+       * @default false
+       */
+      require_direct: boolean;
+      /**
+       * Schema Version
+       * @default 1
+       * @constant
+       */
+      schema_version: 1;
+    };
+    /** LimitEvidence */
+    LimitEvidence: {
+      /** Amount */
+      amount?: string | null;
+      /** Currency */
+      currency?: string | null;
+      /** Exemption Id */
+      exemption_id?: string | null;
+      /** Expense Type */
+      expense_type?: string | null;
+      /** Max Amount */
+      max_amount?: string | null;
+      /**
+       * Operator
+       * @default gt
+       * @constant
+       */
+      operator: "gt";
+      /**
+       * Outcome
+       * @enum {string}
+       */
+      outcome: "flagged" | "unavailable" | "exempted";
+      /** Provenance */
+      provenance: {
+        [key: string]: components["schemas"]["FieldProvenance"];
+      };
+      reason_code: components["schemas"]["ReasonCode"];
+      /** Required Fields */
+      required_fields: components["schemas"]["UnifiedField"][];
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      rule_kind: "limit";
+      /**
+       * Schema Version
+       * @default 1
+       * @constant
+       */
+      schema_version: 1;
+    };
+    /** LimitRuleDefinition */
+    LimitRuleDefinition: {
+      /**
+       * Enabled
+       * @default true
+       */
+      enabled: boolean;
+      /**
+       * Exemptions
+       * @default []
+       */
+      exemptions: components["schemas"]["ExemptionGroup"][];
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: "limit";
+      /**
+       * Require Direct
+       * @default false
+       */
+      require_direct: boolean;
+      /**
+       * Schema Version
+       * @default 1
+       * @constant
+       */
+      schema_version: 1;
+      /** Thresholds */
+      thresholds: components["schemas"]["LimitThreshold"][];
+    };
+    /** LimitThreshold */
+    LimitThreshold: {
+      /** Currency */
+      currency: string;
+      /** Expense Type */
+      expense_type: string;
+      /** Max Amount */
+      max_amount: string;
     };
     /**
      * LiteralLookupCase
@@ -725,6 +1193,12 @@ export interface components {
       total: number;
     };
     /**
+     * ProvenanceMode
+     * @description 规范化字段的取值来源。
+     * @enum {string}
+     */
+    ProvenanceMode: "mapped" | "inferred";
+    /**
      * ReadinessResponse
      * @description 就绪响应。
      */
@@ -734,6 +1208,30 @@ export interface components {
       /** Ready */
       ready: boolean;
     };
+    /** @enum {string} */
+    ReasonCode:
+      | "limit_exceeded"
+      | "invoice_type_not_allowed"
+      | "claim_submitted_late"
+      | "invoice_title_not_allowed"
+      | "invoice_duplicate"
+      | "MISSING_REQUIRED_FIELD"
+      | "INFERRED_FIELD_NOT_ALLOWED"
+      | "RULE_NOT_EFFECTIVE"
+      | "RULE_DISABLED"
+      | "LIMIT_THRESHOLD_NOT_CONFIGURED"
+      | "INVOICE_TYPE_POLICY_NOT_CONFIGURED"
+      | "SUBMISSION_BEFORE_EXPENSE_DATE"
+      | "TIMELINESS_POLICY_NOT_CONFIGURED"
+      | "INVOICE_TITLE_MISSING"
+      | "INVOICE_NO_MISSING"
+      | "EXEMPTION_MATCHED";
+    /**
+     * RevisionRequestReason
+     * @description 服务层接受的派生原因。
+     * @enum {string}
+     */
+    RevisionRequestReason: "ruleset_change" | "mapping_change";
     /**
      * Role
      * @description RBAC 三角色。权限矩阵定义在 `app.core.security.permissions`。
@@ -758,6 +1256,106 @@ export interface components {
        * @constant
        */
       schema_version: 1;
+    };
+    /**
+     * RowVerdict
+     * @enum {string}
+     */
+    RowVerdict: "passed" | "manual_review" | "flagged";
+    RuleDefinition:
+      | components["schemas"]["LimitRuleDefinition"]
+      | components["schemas"]["InvoiceTypeRuleDefinition"]
+      | components["schemas"]["TimelinessRuleDefinition"]
+      | components["schemas"]["InvoiceTitleRuleDefinition"]
+      | components["schemas"]["InvoiceDuplicateRuleDefinition"];
+    RuleEvidence:
+      | components["schemas"]["LimitEvidence"]
+      | components["schemas"]["InvoiceTypeEvidence"]
+      | components["schemas"]["TimelinessEvidence"]
+      | components["schemas"]["InvoiceTitleEvidence"]
+      | components["schemas"]["InvoiceDuplicateEvidence"];
+    /**
+     * RuleKind
+     * @enum {string}
+     */
+    RuleKind: "limit" | "invoice_type" | "timeliness" | "invoice_title" | "invoice_duplicate";
+    /**
+     * RuleOutcome
+     * @enum {string}
+     */
+    RuleOutcome: "passed" | "flagged" | "unavailable" | "exempted";
+    /** RuleVersionResponse */
+    RuleVersionResponse: {
+      /** Config Fingerprint */
+      config_fingerprint: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Created By
+       * Format: uuid
+       */
+      created_by: string;
+      definition: components["schemas"]["RuleDefinition"];
+      /**
+       * Effective From
+       * Format: date
+       */
+      effective_from: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Rule Id */
+      rule_id: string;
+      /** Version */
+      version: number;
+    };
+    /** SaveRuleRequest */
+    SaveRuleRequest: {
+      definition: components["schemas"]["RuleDefinition"];
+      /**
+       * Effective From
+       * Format: date
+       */
+      effective_from: string;
+      /** Rule Id */
+      rule_id: string;
+    };
+    /** SaveRuleResponse */
+    SaveRuleResponse: {
+      /** Config Fingerprint */
+      config_fingerprint: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Created By
+       * Format: uuid
+       */
+      created_by: string;
+      definition: components["schemas"]["RuleDefinition"];
+      /**
+       * Effective From
+       * Format: date
+       */
+      effective_from: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Reused Existing */
+      reused_existing: boolean;
+      /** Rule Id */
+      rule_id: string;
+      /** Version */
+      version: number;
     };
     /** SaveSchemaMappingRequest */
     SaveSchemaMappingRequest: {
@@ -828,6 +1426,82 @@ export interface components {
       /** Versions */
       versions: components["schemas"]["MappingVersionResponse"][];
     };
+    /** TimelinessEvidence */
+    TimelinessEvidence: {
+      /** Actual Calendar Days */
+      actual_calendar_days?: number | null;
+      /** Exemption Id */
+      exemption_id?: string | null;
+      /** Expense Date */
+      expense_date?: string | null;
+      /** Expense Type */
+      expense_type?: string | null;
+      /** Max Calendar Days */
+      max_calendar_days?: number | null;
+      /**
+       * Outcome
+       * @enum {string}
+       */
+      outcome: "flagged" | "unavailable" | "exempted";
+      /** Provenance */
+      provenance: {
+        [key: string]: components["schemas"]["FieldProvenance"];
+      };
+      reason_code: components["schemas"]["ReasonCode"];
+      /** Required Fields */
+      required_fields: components["schemas"]["UnifiedField"][];
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      rule_kind: "timeliness";
+      /**
+       * Schema Version
+       * @default 1
+       * @constant
+       */
+      schema_version: 1;
+      /** Submission Date */
+      submission_date?: string | null;
+    };
+    /** TimelinessPolicy */
+    TimelinessPolicy: {
+      /** Expense Type */
+      expense_type: string;
+      /** Max Calendar Days */
+      max_calendar_days: number;
+    };
+    /** TimelinessRuleDefinition */
+    TimelinessRuleDefinition: {
+      /**
+       * Enabled
+       * @default true
+       */
+      enabled: boolean;
+      /**
+       * Exemptions
+       * @default []
+       */
+      exemptions: components["schemas"]["ExemptionGroup"][];
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: "timeliness";
+      /** Policies */
+      policies: components["schemas"]["TimelinessPolicy"][];
+      /**
+       * Require Direct
+       * @default false
+       */
+      require_direct: boolean;
+      /**
+       * Schema Version
+       * @default 1
+       * @constant
+       */
+      schema_version: 1;
+    };
     /**
      * UnifiedField
      * @description 固定的 12 个统一报销字段，顺序也是稳定输出顺序。
@@ -858,6 +1532,35 @@ export interface components {
       msg: string;
       /** Error Type */
       type: string;
+    };
+    /** ValidationSummaryResponse */
+    ValidationSummaryResponse: {
+      /** Evaluated Row Count */
+      evaluated_row_count: number;
+      /**
+       * File Version Id
+       * Format: uuid
+       */
+      file_version_id: string;
+      /** Flagged Count */
+      flagged_count: number;
+      /** Manual Review Count */
+      manual_review_count: number;
+      /**
+       * Mapping Version Id
+       * Format: uuid
+       */
+      mapping_version_id: string;
+      /** Parse Failed Count */
+      parse_failed_count: number;
+      /** Passed Count */
+      passed_count: number;
+      /** Reused Existing */
+      reused_existing: boolean;
+      /** Ruleset Fingerprint */
+      ruleset_fingerprint: string;
+      /** Total Row Count */
+      total_row_count: number;
     };
   };
   responses: never;
@@ -1129,6 +1832,70 @@ export interface operations {
       };
     };
   };
+  batches_findings: {
+    parameters: {
+      query?: {
+        page?: number;
+        page_size?: number;
+        verdict?: ("flagged" | "manual_review") | null;
+      };
+      header?: never;
+      path: {
+        file_version_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FindingsResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
   batches_parse: {
     parameters: {
       query?: never;
@@ -1283,6 +2050,228 @@ export interface operations {
       };
     };
   };
+  batches_create_revision: {
+    parameters: {
+      query?: never;
+      header?: {
+        "Idempotency-Key"?: string | null;
+      };
+      path: {
+        file_version_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateRevisionRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CreateRevisionResponse"];
+        };
+      };
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CreateRevisionResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  batches_validate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        file_version_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ValidationSummaryResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  batches_validation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        file_version_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ValidationSummaryResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   health_liveness: {
     parameters: {
       query?: never;
@@ -1319,6 +2308,138 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ReadinessResponse"];
+        };
+      };
+    };
+  };
+  rules_list: {
+    parameters: {
+      query?: {
+        rule_id?: string | null;
+        latest_only?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RuleVersionResponse"][];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  rules_save: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SaveRuleRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SaveRuleResponse"];
+        };
+      };
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SaveRuleResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
         };
       };
     };

@@ -16,6 +16,7 @@ import {
   useSaveSchemaMapping,
   useSchemaMappings,
 } from "@/batches/useBatchParsing";
+import { BatchValidationView } from "@/batches/BatchValidationView";
 import { useBatchDetail, useBatches, useImportBatch } from "@/batches/useBatches";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -53,7 +54,7 @@ const FIELD_LABELS: Record<UnifiedField, string> = {
   description: "费用说明",
 };
 
-type WorkspaceTab = "raw" | "mapping" | "errors" | "availability";
+type WorkspaceTab = "raw" | "mapping" | "errors" | "availability" | "validation";
 type MappingDraft = Record<string, UnifiedField | "">;
 
 function formatDateTime(value: string): string {
@@ -367,6 +368,7 @@ function BatchWorkspace({
     { id: "mapping", label: "字段映射", count: mappings.data?.versions.length },
     { id: "errors", label: "错误清单", count: parseErrors.data?.total },
     { id: "availability", label: "字段可用性", count: availability.data?.items.length },
+    { id: "validation", label: "确定性校验", count: undefined },
   ];
 
   return (
@@ -475,6 +477,9 @@ function BatchWorkspace({
           <ErrorsView query={parseErrors} offset={errorOffset} setOffset={setErrorOffset} />
         ) : null}
         {activeTab === "availability" ? <AvailabilityView query={availability} /> : null}
+        {activeTab === "validation" ? (
+          <BatchValidationView fileVersionId={batch.file_version_id} user={user} />
+        ) : null}
       </CardContent>
     </Card>
   );

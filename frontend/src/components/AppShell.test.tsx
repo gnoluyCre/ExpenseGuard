@@ -36,7 +36,7 @@ function renderShell(user: CurrentUser) {
   );
 }
 
-describe("AppShell 的角色菜单", () => {
+describe("AppShell 的权限菜单", () => {
   it("configurator 能看到规则配置", () => {
     renderShell(CONFIGURATOR);
     expect(screen.getByRole("link", { name: "规则配置" })).toBeInTheDocument();
@@ -44,11 +44,9 @@ describe("AppShell 的角色菜单", () => {
     expect(screen.getByText("配置管理员")).toBeInTheDocument();
   });
 
-  it("auditor 看不到规则配置", () => {
-    // auditor 有 config:read 但没有 config:write。菜单按**权限**过滤，
-    // 所以少一个 config:write 就少一个入口——不需要在前端复述角色规则。
+  it("有 config:read 的 auditor 能查看规则配置", () => {
     renderShell(makeUser());
-    expect(screen.queryByRole("link", { name: "规则配置" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "规则配置" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "复核台" })).toBeInTheDocument();
   });
 

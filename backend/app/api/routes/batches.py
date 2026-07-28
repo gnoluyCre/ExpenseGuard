@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, File, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Header, Query, Response, UploadFile, status
 from pydantic import BaseModel, ConfigDict
 
 from app.api.deps import (
@@ -25,6 +25,7 @@ from app.core.batches.importer import (
     import_batch,
     list_batches,
 )
+from app.core.batches.revisions import RevisionRequestReason, create_file_revision
 from app.core.errors import ExpenseGuardError
 from app.core.parsing.api_service import (
     get_field_availability,
@@ -34,7 +35,11 @@ from app.core.parsing.api_service import (
 )
 from app.core.parsing.models import AvailabilityEvidence, BatchParseResult, RowErrorDetail
 from app.core.parsing.service import BatchParseInternalError, parse_batch
+from app.core.rules import RowVerdict, RuleKind, RuleOutcome
+from app.core.rules.models import ReasonCode, RuleEvidence
 from app.core.security.permissions import Permission
+from app.core.validation.batch_service import ValidationSummary, validate_batch
+from app.core.validation.query_service import get_validation_summary, list_findings
 
 router = APIRouter(prefix="/api/batches", tags=["batches"])
 
@@ -126,6 +131,56 @@ class FieldAvailabilityResponse(BaseModel):
     items: list[FieldAvailabilityItemResponse]
 
 
+class ValidationSummaryResponse(BaseModel):
+    file_version_id: uuid.UUID
+    mapping_version_id: uuid.UUID
+    ruleset_fingerprint: str
+    total_row_count: int
+    evaluated_row_count: int
+    passed_count: int
+    flagged_count: int
+    manual_review_count: int
+    parse_failed_count: int
+    reused_existing: bool
+
+
+class FindingItemResponse(BaseModel):
+    id: uuid.UUID
+    row_no: int
+    rule_id: str
+    rule_version: str | None
+    rule_kind: RuleKind
+    outcome: RuleOutcome
+    reason_code: ReasonCode
+    reasoning: str
+    evidence: RuleEvidence
+    verdict: RowVerdict
+
+
+class FindingsResponse(BaseModel):
+    file_version_id: uuid.UUID
+    total: int
+    page: int
+    page_size: int
+    items: list[FindingItemResponse]
+
+
+class CreateRevisionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reason: RevisionRequestReason
+
+
+class CreateRevisionResponse(BaseModel):
+    file_version_id: uuid.UUID
+    source_file_version_id: uuid.UUID
+    root_file_version_id: uuid.UUID
+    revision_no: int
+    reason: RevisionRequestReason
+    parse_status: Literal["unparsed", "parsed", "parsed_with_errors"]
+    mapping_version_id: uuid.UUID | None
+    reused_existing: bool
+
+
 def _summary_response(summary: BatchSummary) -> BatchSummaryResponse:
     return BatchSummaryResponse.model_validate(summary)
 
@@ -150,6 +205,10 @@ def _detail_response(detail: BatchDetail) -> BatchDetailResponse:
             for row in detail.rows
         ],
     )
+
+
+def _validation_response(summary: ValidationSummary) -> ValidationSummaryResponse:
+    return ValidationSummaryResponse(**summary.__dict__)
 
 
 @router.post(
@@ -327,6 +386,115 @@ async def field_availability_endpoint(
             for item in result.items
         ],
     )
+
+
+@router.post(
+    "/{file_version_id}/validate",
+    response_model=ValidationSummaryResponse,
+    responses={code: {"model": ErrorResponse} for code in (401, 403, 404, 409, 500)},
+    name="validate",
+    dependencies=[Depends(require_permission(Permission.BATCH_IMPORT))],
+)
+async def validate_batch_endpoint(
+    file_version_id: uuid.UUID,
+    db: TenantDbDep,
+    auth: AuthDep,
+    session_factory: SessionFactoryDep,
+) -> ValidationSummaryResponse:
+    result = await validate_batch(
+        db,
+        session_factory,
+        tenant_id=auth.tenant_id,
+        actor_id=auth.user_id,
+        file_version_id=file_version_id,
+    )
+    return _validation_response(result)
+
+
+@router.get(
+    "/{file_version_id}/validation",
+    response_model=ValidationSummaryResponse,
+    responses={code: {"model": ErrorResponse} for code in (401, 403, 404)},
+    name="validation",
+    dependencies=[Depends(require_permission(Permission.BATCH_READ))],
+)
+async def validation_endpoint(
+    file_version_id: uuid.UUID, db: TenantDbDep
+) -> ValidationSummaryResponse:
+    run = await get_validation_summary(db, file_version_id)
+    return ValidationSummaryResponse(
+        file_version_id=run.file_version_id,
+        mapping_version_id=run.mapping_version_id,
+        ruleset_fingerprint=run.ruleset_fingerprint,
+        total_row_count=run.total_row_count,
+        evaluated_row_count=run.evaluated_row_count,
+        passed_count=run.passed_count,
+        flagged_count=run.flagged_count,
+        manual_review_count=run.manual_review_count,
+        parse_failed_count=run.parse_failed_count,
+        reused_existing=True,
+    )
+
+
+@router.get(
+    "/{file_version_id}/findings",
+    response_model=FindingsResponse,
+    responses={code: {"model": ErrorResponse} for code in (401, 403, 404, 422)},
+    name="findings",
+    dependencies=[Depends(require_permission(Permission.BATCH_READ))],
+)
+async def findings_endpoint(
+    file_version_id: uuid.UUID,
+    db: TenantDbDep,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=200)] = 50,
+    verdict: Literal["flagged", "manual_review"] | None = None,
+) -> FindingsResponse:
+    result = await list_findings(
+        db,
+        file_version_id=file_version_id,
+        page=page,
+        page_size=page_size,
+        verdict=verdict,
+    )
+    return FindingsResponse(
+        file_version_id=result.file_version_id,
+        total=result.total,
+        page=result.page,
+        page_size=result.page_size,
+        items=[FindingItemResponse(**item.__dict__) for item in result.items],
+    )
+
+
+@router.post(
+    "/{file_version_id}/revisions",
+    response_model=CreateRevisionResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        200: {"model": CreateRevisionResponse},
+        **{code: {"model": ErrorResponse} for code in (401, 403, 404, 409, 422)},
+    },
+    name="create_revision",
+    dependencies=[Depends(require_permission(Permission.BATCH_IMPORT))],
+)
+async def create_revision_endpoint(
+    file_version_id: uuid.UUID,
+    payload: CreateRevisionRequest,
+    response: Response,
+    db: TenantDbDep,
+    auth: AuthDep,
+    idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
+) -> CreateRevisionResponse:
+    result = await create_file_revision(
+        db,
+        tenant_id=auth.tenant_id,
+        actor_id=auth.user_id,
+        source_file_version_id=file_version_id,
+        reason=payload.reason,
+        idempotency_key=idempotency_key or "",
+    )
+    response.status_code = status.HTTP_200_OK if result.reused_existing else status.HTTP_201_CREATED
+    return CreateRevisionResponse.model_validate(result.model_dump())
 
 
 def _parse_response(result: BatchParseResult) -> ParseBatchResponse:
