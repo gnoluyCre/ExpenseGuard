@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import date
 from decimal import Decimal
 from enum import StrEnum
 from typing import Annotated, Literal
@@ -151,6 +152,16 @@ class NormalizedExpenseRecord(StrictModel):
     currency: str | None = Field(default=None, pattern=r"^[A-Z]{3}$")
     description: str | None = None
     field_provenance: dict[UnifiedField, FieldProvenance]
+
+    @field_validator("expense_date", "submission_date")
+    @classmethod
+    def iso_dates_must_be_semantically_valid(cls, value: str | None) -> str | None:
+        if value is not None:
+            try:
+                date.fromisoformat(value)
+            except ValueError as exc:
+                raise ValueError("日期必须是有效 ISO 日期") from exc
+        return value
 
     @model_validator(mode="after")
     def provenance_must_match_non_null_fields(self) -> NormalizedExpenseRecord:

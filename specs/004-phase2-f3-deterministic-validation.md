@@ -591,3 +591,11 @@ reasoning 文本由稳定模板从 evidence 渲染，不接收配置提供的任
 - 实现偏差/覆盖决定：无业务范围偏差；未添加可选的 `normalized_json->>'invoice_no'` 表达式索引，因为 §8 将其限定为性能门禁不足时才添加且本检查点没有不足证据。未实现 Pydantic/evaluator、服务、API、前端或 F4 功能。
 - 默认开发库在停写状态下从 `0003` 升至 `0004`。升级前备份位于 gitignored 的 `data/private/backups/cp-f3.1/pre-0004-20260728-010204/`：完整库、public schema-only、受影响表 data-only 三份 custom archive 均通过 `pg_restore --list`，容器与本地副本 SHA-256 分别为 `a0ab28e50778295f049fbeba7fed25886c53bedb0ab0d3d121f9203ec1e65955`、`dd55c8c24a4b7262bf8b77245b7d02668ac2ad2b93f1cc70f1f5b495542b355c`、`4aa5a1935ae05f45ec28cee9bd08068affe4cbea2edc242340126b2ad174184a`。
 - 验证结果：迁移目录 `27 passed`；后端全量 `149 passed, 1 skipped`（skip 为常驻待命 eval gate）；`ruff check .`、`ruff format --check .`、`python -m mypy app scripts`（67 个源文件）、测试库及默认开发库 `alembic check` 全部通过。Windows 上 `uv run alembic/mypy` 的 trampoline 路径解析失败，使用同一 uv 环境的 `uv run python -m alembic/mypy` 等价执行；无测试或门禁被跳过。
+
+### CP-F3.2 实际落地记录（2026-07-28）
+
+- 在 `backend/app/core/rules/` 落地五类冻结、`extra="forbid"` 的 Pydantic 判别联合及配置规模/重复键/精确例外校验；新增 canonical JSON、配置指纹、规则集 manifest/指纹、按费用发生日选择版本和 `RULE_NOT_EFFECTIVE` 的纯转换路径。legacy/未知字段、伪 operator、非法规模、空集合与不规范十进制均显式拒绝，不做猜测性迁移。
+- 五类 evaluator 只消费 F2 `NormalizedExpenseRecord` 和调用方显式提供的不可变上下文；金额使用 `Decimal`、日期使用语义有效 ISO date、文本不二次模糊处理。新增纯 `select_duplicate_match`，由 CP-F3.3 提供已冻结 occurrence 后，在核心内稳定决定唯一首条；同批候选跨 revision/root 或同一物理证据冲突时 fail closed。
+- evidence 使用按 kind 判别的冻结模型，并机械校验 outcome/reason code、provenance 范围和 flagged 专用字段完整性；passed 固定无 evidence，允许集合只存指纹。reasoning 由稳定模板从 evidence 重建；行级聚合固定为 `flagged > manual_review > passed`，exempted 不提升 verdict。为防非法日历日期形成 evaluator 未分类异常，F2 `NormalizedExpenseRecord` 补充 ISO 日期语义校验。
+- 实现偏差/覆盖决定：无业务范围偏差；相对最初只把 `DuplicateMatch|None` 交给 evaluator 的草案，最终把 root 证据排序也纳入纯核心，使 CP-F3.3 只负责租户过滤、最高 revision 查询和 dependency 冻结。未访问数据库/网络/当前时间，未实现持久化、API、LangGraph、前端或 F4。
+- 验证结果：CP-F3.2 定向 `52 passed`，`app.core.rules` 语句覆盖率 `93%`；全部非数据库测试 `127 passed, 1 skipped`（skip 为常驻待命 eval gate）；`ruff check .`、`ruff format --check .`（92 个文件）和 `python -m mypy app scripts`（72 个源文件）通过；OpenAPI 与前端客户端连续两次生成无 diff。全量 pytest 因本机 Docker Desktop 未运行、`expenseguard_test` 不可连接而停在数据库等待，确认环境原因后终止，未记为通过或测试失败；恢复 Docker 后应在 CP-F3.3 开工前补跑数据库全量回归。

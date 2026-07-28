@@ -194,3 +194,14 @@ def test_阈值越界由_pydantic_拒绝() -> None:
                 "inferred_min_success_rate": "0.8",
             }
         )
+
+
+def test_规范化记录拒绝语义非法_iso_日期() -> None:
+    result = parse_expense_row(
+        {"金额": "100", "日期": "2026-02-30", "商户": "正常"},
+        config=_config(),
+        uploaded_at=UPLOADED_AT,
+    )
+    assert result.normalized is None
+    assert result.error_detail is not None
+    assert result.error_detail.errors[0].code == "DATE_INVALID_FORMAT"

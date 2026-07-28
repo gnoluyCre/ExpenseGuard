@@ -5,7 +5,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 -->
 
 ## 🏗️ 当前阶段与目标
-**当前任务:阶段 2 F3 · CP-F3.1 持久化 schema 与 ORM 已完成。** `0004`、validation run/dependency、file revision、规则/finding 扩展、legacy 回填、租户复合约束与安全 downgrade 已落地并通过门禁。
+**当前任务:阶段 2 F3 · CP-F3.2 强类型规则与纯确定性核心已完成。** 五类冻结 Pydantic 判别联合、canonical/配置与规则集指纹、有效版本与发票首条选择、纯 evaluator、强类型 evidence、稳定 reasoning 和三态 verdict 已落地。
 
 - CP0 仓库重置(干净历史、`.gitignore` 脱敏排除)
 - CP1 后端地基(uv + 18 张表 + Alembic 三层隔离)
@@ -13,8 +13,8 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - CP3 认证、RBAC、租户隔离(含反向验证)
 - CP4 前端垂直切片 + OpenAPI 契约门禁 + pre-commit/CI + 合成数据生成器(含反向验证)
 
-**下一步:CP-F3.2 · 强类型规则与纯确定性核心。** 实现五类冻结 Pydantic 判别联合、canonical 指纹、纯 evaluator 与 evidence/reasoning；不得把数据库编排、API、前端或 F4 提前带入。
-`process_row_once` 至今**一个生产调用方都没有** —— 第一个是 F3,刻意如此。
+**下一步:CP-F3.3 · 快照、编排、幂等与审计。** 启动 Docker Desktop 后，让服务层装载冻结的租户候选与规则版本并编排 CP-F3.2 纯函数；实现整批事务、dependency、派生 revision 与失败审计。不得提前带入 API、前端或 F4。
+`process_row_once` 至今**一个生产调用方都没有** —— CP-F3.3 将成为第一个，刻意如此。
 
 **开工前必读的两件事:**
 1. 契约同步是硬要求:改了 Pydantic 模型 → `cd backend && uv run python scripts/export_openapi.py` + `cd frontend && npm run gen:api`,两个生成物都要提交,否则 CI 的 contract job 直接红。
@@ -24,6 +24,9 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 
 ## 📂 架构决策
 *(把构建过程中做出的具体选择记录在此,便于后续 agent 遵循)*
+- 2026-07-28 — **CP-F3.2 把发票号“唯一首条”保留在纯规则核心。** CP-F3.3 只负责按租户/快照装载当前批与其他 lineage 的最高成功 revision occurrence；`select_duplicate_match` 排除当前 lineage 的历史候选，并按 root revision 1 的 `(uploaded_at, id, row_no)` 稳定选择，输入冲突时 fail closed，不猜测。
+- 2026-07-28 — **F3 evidence 自身校验 kind/outcome/reason 与命中字段完整性。** `RULE_NOT_EFFECTIVE` 通过纯 selection-to-evaluation 路径生成；passed 固定无 evidence，exempted 不提升 verdict，大型允许集合仅写指纹。F2 `NormalizedExpenseRecord` 同步补上 ISO 日期语义校验，避免非法日历日期进入时效 evaluator 形成未分类异常。
+- 2026-07-28 — **CP-F3.2 纯逻辑门禁完成，数据库全量回归受本机 Docker 状态限制。** 规则定向 52 passed、包覆盖率 93%；非数据库套件 127 passed/1 skipped；Ruff、格式、strict mypy 与 OpenAPI/前端客户端二次生成无漂移。全量 pytest 在 Docker Desktop 未运行时等待 PostgreSQL，确认环境原因后终止，未记为通过或测试失败；CP-F3.3 开工前必须恢复数据库服务。
 - 2026-07-28 — **CP-F3.1 的 validation run 只持久化 `in_progress|completed`。** 系统失败整批回滚并用独立审计记录，不保留猜测性的 failed run；`ruleset_manifest` 与六项非负/恒等计数 CHECK 成为 CP-F3.2/3.3 的存储契约。新增 F3 引用统一 `ON DELETE RESTRICT`；通过新增 `app_user(id, tenant_id)` 冗余唯一约束，让规则创建人和校验触发人也使用租户复合外键。
 - 2026-07-28 — **`0004` downgrade 对派生 revision fail closed。** 任何 DDL 前先检测 `revision_no > 1`，存在即拒绝且由事务保持 schema/数据不变；生产降级只允许从已验证 pre-0004 完整归档恢复到隔离库。发票号 JSONB 表达式索引暂不添加，只有真实性能门禁证明需要时才添加。
 - 2026-07-28 — **F3 CP-F3.0–F3.5 共用 `specs/004-phase2-f3-deterministic-validation.md` 一份规范。** §1–§12 是唯一业务/接口定义，§13 给出五个实施契约，§14 只追加已经完成的落地事实；不为各 CP 创建重复规格，独立运维 runbook 也不得成为第二事实来源。
