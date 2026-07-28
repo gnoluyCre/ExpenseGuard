@@ -255,6 +255,95 @@ async def test_ruleset_change复制解析快照但不复制判定副作用(
     }
 
 
+async def test_policy_change复制原始解析与字段快照但不复制_f3_副作用(
+    session_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    async with session_factory() as session:
+        tenant_id, actor_id = await _seed_tenant(session, slug="revision-policy")
+        source = await _seed_source(session, tenant_id=tenant_id, actor_id=actor_id)
+        session.add(
+            FieldAvailability(
+                tenant_id=tenant_id,
+                file_version_id=source.id,
+                field_name="expense_date",
+                status=FieldStatus.AVAILABLE,
+                evidence={"non_null_count": 1},
+            )
+        )
+        session.add(
+            RowResult(
+                tenant_id=tenant_id,
+                file_version_id=source.id,
+                row_no=2,
+                verdict="flagged",
+                rule_version="source-ruleset",
+            )
+        )
+        session.add(
+            Finding(
+                tenant_id=tenant_id,
+                file_version_id=source.id,
+                row_no=2,
+                kind="source-policy-finding",
+                severity_impact=1,
+                severity_confidence=1,
+            )
+        )
+        await session.commit()
+
+    async with session_factory() as session:
+        bind_tenant(session.sync_session, tenant_id)
+        result = await _create(
+            session,
+            tenant_id=tenant_id,
+            actor_id=actor_id,
+            source_id=source.id,
+            reason=RevisionRequestReason.POLICY_CHANGE,
+            key="policy-change-key-0001",
+        )
+        await session.commit()
+
+    assert result.reason is RevisionRequestReason.POLICY_CHANGE
+    assert result.parse_status is ParseStatus.PARSED_WITH_ERRORS
+    assert result.mapping_version_id == source.mapping_version_id
+    async with session_factory() as session:
+        bind_tenant(session.sync_session, tenant_id)
+        derived_rows = tuple(
+            (
+                await session.scalars(
+                    select(ExpenseRow)
+                    .where(ExpenseRow.file_version_id == result.file_version_id)
+                    .order_by(ExpenseRow.row_no)
+                )
+            ).all()
+        )
+        availability_count = await session.scalar(
+            select(func.count())
+            .select_from(FieldAvailability)
+            .where(FieldAvailability.file_version_id == result.file_version_id)
+        )
+        row_result_count = await session.scalar(
+            select(func.count())
+            .select_from(RowResult)
+            .where(RowResult.file_version_id == result.file_version_id)
+        )
+        finding_count = await session.scalar(
+            select(func.count())
+            .select_from(Finding)
+            .where(Finding.file_version_id == result.file_version_id)
+        )
+
+    assert [row.raw_json for row in derived_rows] == [
+        {"金额": "100", "日期": "2026-07-01"},
+        {"金额": "bad", "日期": "2026-07-02"},
+    ]
+    assert derived_rows[0].normalized_json is not None
+    assert derived_rows[1].parse_error_code == "ROW_VALIDATION_FAILED"
+    assert availability_count == 1
+    assert row_result_count == 0
+    assert finding_count == 0
+
+
 async def test_mapping_change只复制原始证据并清空解析状态(
     session_factory: async_sessionmaker[AsyncSession],
 ) -> None:
@@ -573,7 +662,12 @@ async def test_key_hash与请求指纹稳定且区分请求() -> None:
         source_file_version_id=source_id,
         reason=RevisionRequestReason.MAPPING_CHANGE,
     )
+    policy = revision_request_fingerprint(
+        source_file_version_id=source_id,
+        reason=RevisionRequestReason.POLICY_CHANGE,
+    )
     assert ruleset != mapping
+    assert len({ruleset, mapping, policy}) == 3
     assert (
         RevisionRequest(
             reason=RevisionRequestReason.MAPPING_CHANGE,

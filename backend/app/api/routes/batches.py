@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from enum import StrEnum
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, File, Header, Query, Response, UploadFile, status
@@ -25,7 +26,7 @@ from app.core.batches.importer import (
     import_batch,
     list_batches,
 )
-from app.core.batches.revisions import RevisionRequestReason, create_file_revision
+from app.core.batches.revisions import create_file_revision
 from app.core.errors import ExpenseGuardError
 from app.core.parsing.api_service import (
     get_field_availability,
@@ -163,6 +164,13 @@ class FindingsResponse(BaseModel):
     page: int
     page_size: int
     items: list[FindingItemResponse]
+
+
+class RevisionRequestReason(StrEnum):
+    """服务层接受的派生原因。"""
+
+    RULESET_CHANGE = "ruleset_change"
+    MAPPING_CHANGE = "mapping_change"
 
 
 class CreateRevisionRequest(BaseModel):

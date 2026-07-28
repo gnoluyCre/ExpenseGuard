@@ -51,6 +51,7 @@ class RevisionReason(StrEnum):
 
     RULESET_CHANGE = "ruleset_change"
     MAPPING_CHANGE = "mapping_change"
+    POLICY_CHANGE = "policy_change"
 
 
 class FileVersion(Base, TenantScopedMixin, TimestampMixin):
@@ -110,7 +111,8 @@ class FileVersion(Base, TenantScopedMixin, TimestampMixin):
         ),
         CheckConstraint("revision_no > 0", name="revision_no_positive"),
         CheckConstraint(
-            "revision_reason IS NULL OR revision_reason IN ('ruleset_change', 'mapping_change')",
+            "revision_reason IS NULL OR revision_reason IN "
+            "('ruleset_change', 'mapping_change', 'policy_change')",
             name="revision_reason_values",
         ),
         CheckConstraint(

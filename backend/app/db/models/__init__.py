@@ -50,6 +50,7 @@ from app.db.models.reports import (
     ReportExportStatus,
     ReportItem,
     ReportParseError,
+    ReportRequest,
     ReportRun,
     ReportRunStatus,
 )
@@ -89,6 +90,7 @@ __all__ = [
     "ReportExportStatus",
     "ReportItem",
     "ReportParseError",
+    "ReportRequest",
     "ReportRun",
     "ReportRunStatus",
     "Review",

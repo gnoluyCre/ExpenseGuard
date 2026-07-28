@@ -86,10 +86,10 @@
 
 ## 当前状态 📍
 **最近更新:** 2026-07-28
-**正在进行:** 阶段 2 F4 的 CP-F4.2 制度导入、发布与本地检索已完成,准备进入 CP-F4.3 Binding、引用核心与报告编排。
-**最近完成:** CP0 仓库重置 / CP1 后端地基 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离 / **CP4 前端垂直切片 + OpenAPI 契约 + CI** / **F1 Excel 导入** / **F2 CP-F2.0–CP-F2.5** / **F3 CP-F3.0–CP-F3.5** / **F4 CP-F4.0 统一规格 + CP-F4.1 schema/ORM + CP-F4.2 制度导入/发布/本地检索**（私有内容寻址、PDF/DOCX/TXT 确定性解析、clause/chunk、Qdrant generation/outbox、worker 恢复、本地 embedding/rerank、候选 PG 双重校验）
-**受阻于:** 无(CP-F4.3 可继续；W0 模型容器运行态仍需外部镜像/离线权重输入,见 `MEMORY.md`)
-**已知缺口(三项,前两项需在 CP-F4.2/W0 收口):**
+**正在进行:** 阶段 2 F4 的 CP-F4.3 Binding、引用核心与报告编排已完成,准备进入 CP-F4.4 API、桌面工作流与 XLSX。
+**最近完成:** CP0 仓库重置 / CP1 后端地基 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离 / **CP4 前端垂直切片 + OpenAPI 契约 + CI** / **F1 Excel 导入** / **F2 CP-F2.0–CP-F2.5** / **F3 CP-F3.0–CP-F3.5** / **F4 CP-F4.0 统一规格 + CP-F4.1 schema/ORM + CP-F4.2 制度导入/发布/本地检索 + CP-F4.3 Binding/严格逐字引用/原子报告 snapshot**（configurator-confirmed binding、Unicode code point exact verifier、append-only report request 幂等账本、Tenant→FileVersion 锁序、整组 citation fail closed、policy_change revision）
+**受阻于:** 无(CP-F4.4 可继续；W0 模型容器运行态仍需外部镜像/离线权重输入,见 `MEMORY.md`)
+**已知缺口(三项):**
 1. **W0 运行态未闭环** —— 代码侧本地模型/Qdrant 私有化边界与真实 Qdrant 已验证；但 pinned Infinity 镜像在 registry layer 拉取无进展且 manifest 查询超时，实际 embed/rerank、资源占用及客户离线权重包仍待外部输入后验证。
 2. **CI 远端状态待确认** —— 仓库已完成首次 push,但需确认 GitHub 上服务容器的 `CREATE DATABASE` 步骤、gitleaks 镜像可拉取、setup-uv/setup-node 的缓存键是否稳定。
 3. **开发工具接管完成** —— 已退役 ClaudeCode 专用入口;后续 Codex 以本文件 + `MEMORY.md` + 当前 `specs/` 为上下文入口。

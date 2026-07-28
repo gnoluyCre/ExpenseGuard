@@ -140,6 +140,7 @@ async def test_f4_schema_constraints_and_restrict_actions_exist(engine: AsyncEng
         "policy_index_job",
         "rule_policy_binding",
         "report_run",
+        "report_request",
         "report_item",
         "report_parse_error",
         "report_citation",
@@ -153,11 +154,14 @@ async def test_f4_schema_constraints_and_restrict_actions_exist(engine: AsyncEng
         "fk_policy_index_job_chunk_tenant_document": "f",
         "fk_rule_policy_binding_document_tenant_family": "f",
         "fk_report_run_validation_tenant_file": "f",
+        "fk_report_request_file_version_tenant": "f",
+        "fk_report_request_report_tenant_file": "f",
         "fk_report_item_finding_tenant_file": "f",
         "fk_report_citation_binding_identity": "f",
         "fk_report_export_report_tenant": "f",
         "uq_rule_policy_binding_citation_identity": "u",
         "uq_report_run_file_version_id": "u",
+        "uq_report_request_tenant_id_idempotency_key_hash": "u",
         "ck_report_run_counts_nonnegative": "c",
         "ck_report_export_xlsx_only": "c",
     }
@@ -166,6 +170,8 @@ async def test_f4_schema_constraints_and_restrict_actions_exist(engine: AsyncEng
         "ix_policy_index_job_claim",
         "ix_report_item_report_attention_order",
         "ix_report_parse_error_report_order",
+        "ix_report_request_file_version_id",
+        "ix_report_request_report_run_id",
     }
     async with engine.connect() as conn:
         tables = {
@@ -198,6 +204,8 @@ async def test_f4_schema_constraints_and_restrict_actions_exist(engine: AsyncEng
                         "fk_policy_clause_document_tenant",
                         "fk_finding_clause_tenant",
                         "fk_report_citation_binding_identity",
+                        "fk_report_request_file_version_tenant",
+                        "fk_report_request_report_tenant_file",
                     ]
                 },
             )
@@ -238,11 +246,39 @@ async def test_f4_schema_constraints_and_restrict_actions_exist(engine: AsyncEng
         "fk_policy_clause_document_tenant": "r",
         "fk_finding_clause_tenant": "r",
         "fk_report_citation_binding_identity": "r",
+        "fk_report_request_file_version_tenant": "r",
+        "fk_report_request_report_tenant_file": "r",
     }
     assert old_fks == 0
     assert has_btree_gist is True
     assert indexes == expected_indexes
     assert forbidden_job_columns == 0
+
+
+async def test_cp_f43_policy_change_value_and_report_request_immutability_exist(
+    engine: AsyncEngine,
+) -> None:
+    async with engine.connect() as conn:
+        revision_check = await conn.scalar(
+            text(
+                "SELECT pg_get_constraintdef(oid) FROM pg_constraint "
+                "WHERE conname = 'ck_file_version_revision_reason_values'"
+            )
+        )
+        immutable_trigger = await conn.scalar(
+            text(
+                "SELECT EXISTS ("
+                "SELECT 1 FROM pg_trigger t "
+                "JOIN pg_class c ON c.oid = t.tgrelid "
+                "WHERE c.relname = 'report_request' "
+                "AND t.tgname = 'trg_report_request_immutable' "
+                "AND NOT t.tgisinternal)"
+            )
+        )
+
+    assert revision_check is not None
+    assert "policy_change" in revision_check
+    assert immutable_trigger is True
 
 
 async def test_policy_interval_tenant_closure_and_restrict_are_enforced(
@@ -797,6 +833,108 @@ def test_legacy_upgrade_round_trip_preflight_and_safe_downgrade(db_url: str) -> 
             assert (
                 conn.scalar(text("SELECT count(*) FROM policy_document WHERE status = 'published'"))
                 == 1
+            )
+    finally:
+        if temporary_engine is not None:
+            temporary_engine.dispose()
+        with admin_engine.connect() as conn:
+            conn.execute(
+                text(
+                    "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+                    "WHERE datname = :database_name AND pid <> pg_backend_pid()"
+                ),
+                {"database_name": database_name},
+            )
+            conn.execute(text(f'DROP DATABASE IF EXISTS "{database_name}"'))
+        admin_engine.dispose()
+
+
+def test_0006_round_trip_and_policy_change_downgrade_guard(db_url: str) -> None:
+    database_name = f"expenseguard_f43_{uuid.uuid4().hex[:12]}"
+    source_url = make_url(db_url)
+    admin_url = source_url.set(database="postgres")
+    temporary_url = source_url.set(database=database_name)
+    admin_engine = create_engine(admin_url, isolation_level="AUTOCOMMIT")
+    temporary_engine = None
+
+    with admin_engine.connect() as conn:
+        conn.execute(text(f'CREATE DATABASE "{database_name}"'))
+
+    try:
+        cfg = _migration_config(temporary_url.render_as_string(hide_password=False))
+        command.upgrade(cfg, "0006")
+        temporary_engine = create_engine(temporary_url)
+
+        command.downgrade(cfg, "0005")
+        command.upgrade(cfg, "0006")
+        tenant_id, user_id, source_id, derived_id = (uuid.uuid4() for _ in range(4))
+        with temporary_engine.begin() as conn:
+            conn.execute(
+                text("INSERT INTO tenant (id, slug, name) VALUES (:id, :slug, 'F4.3')"),
+                {"id": tenant_id, "slug": f"f43-{tenant_id.hex[:8]}"},
+            )
+            conn.execute(
+                text(
+                    "INSERT INTO app_user "
+                    "(id, tenant_id, username, password_hash, role, is_active) "
+                    "VALUES (:id, :tenant_id, 'f43-user', 'test', 'configurator', true)"
+                ),
+                {"id": user_id, "tenant_id": tenant_id},
+            )
+            conn.execute(
+                text(
+                    "INSERT INTO file_version "
+                    "(id, tenant_id, filename, content_hash, uploaded_by, revision_no, "
+                    "parse_status) VALUES "
+                    "(:id, :tenant_id, 'source.xlsx', :hash, :user_id, 1, 'unparsed')"
+                ),
+                {
+                    "id": source_id,
+                    "tenant_id": tenant_id,
+                    "hash": HASH_A,
+                    "user_id": user_id,
+                },
+            )
+            conn.execute(
+                text(
+                    "INSERT INTO file_version "
+                    "(id, tenant_id, filename, content_hash, uploaded_by, revision_no, "
+                    "source_file_version_id, root_file_version_id, revision_reason, "
+                    "revision_request_key_hash, revision_request_fingerprint, parse_status) "
+                    "VALUES (:id, :tenant_id, 'source.xlsx', :hash, :user_id, 2, "
+                    ":source_id, :source_id, 'policy_change', :key_hash, :fingerprint, "
+                    "'unparsed')"
+                ),
+                {
+                    "id": derived_id,
+                    "tenant_id": tenant_id,
+                    "hash": HASH_A,
+                    "user_id": user_id,
+                    "source_id": source_id,
+                    "key_hash": HASH_B,
+                    "fingerprint": HASH_C,
+                },
+            )
+
+        with pytest.raises(RuntimeError, match="cannot downgrade 0006"):
+            command.downgrade(cfg, "0005")
+        with temporary_engine.connect() as conn:
+            assert conn.scalar(text("SELECT version_num FROM alembic_version")) == "0006"
+            assert (
+                conn.scalar(
+                    text("SELECT revision_reason FROM file_version WHERE id = :id"),
+                    {"id": derived_id},
+                )
+                == "policy_change"
+            )
+            assert (
+                conn.scalar(
+                    text(
+                        "SELECT EXISTS (SELECT 1 FROM information_schema.tables "
+                        "WHERE table_name = 'report_request')"
+                    )
+                )
+                is True
             )
     finally:
         if temporary_engine is not None:
