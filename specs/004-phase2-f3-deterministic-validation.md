@@ -617,3 +617,13 @@ reasoning 文本由稳定模板从 evidence 渲染，不接收配置提供的任
 - `/rules` 占位页已替换为五类不可变规则版本控制台，展示最新/历史、生效日、启停、指纹及追加版本结果；批次工作台增加“确定性校验”第五视图，展示规则集指纹、映射版本、四类计数、三态 verdict、分页 findings/evidence、validate 与两类显式派生操作。菜单和按钮只按 permission 判断，`CONFIG_READ` 可见规则页，写操作分别要求 `CONFIG_WRITE` 或 `BATCH_IMPORT`；mutation 会失效规则、批次、解析、validation 和 findings 缓存。
 - 实现偏差/覆盖决定：无范围偏差；未实现 F4 报告/引用、F5 复核、LangGraph、F6 或移动端。前端沿用现有依赖与桌面审计工作台，不新增包；临时视觉数据、Chrome profile 和截图仅位于 gitignored `data/private/visual-cp-f3.4/`，不含真实 PII。
 - 验证结果：后端 API 与既有 F3 服务定向 `33 passed`，Ruff lint/format、strict mypy（79 个源文件）通过；前端 `6` 个测试文件 `20 passed`，strict TypeScript、oxlint、Prettier、生产构建通过。1440×1000 Chrome 验证规则页和批次校验视图，覆盖长规则名、64 位指纹、5000 行摘要、分页与结构化 evidence，无页面级横向溢出；契约二次生成无漂移。
+
+### CP-F3.5 实际落地记录（2026-07-28）
+
+- 后端最终回归为 `240 passed, 1 skipped`，唯一 skip 是阈值为空时按设计待命的 eval gate；迁移定向回归为 `27 passed`。`ruff check .`、`ruff format --check .`（103 个文件）、strict `mypy app scripts`（79 个源文件）全部通过。Windows 上继续使用同一 uv 环境的 `uv run python -m pytest/mypy/alembic` 等价入口；首次全量运行仅因新指定的 gitignored pytest 临时根尚未创建而出现 3 个 fixture setup error，创建目录后已从头完整重跑，未忽略或跳过失败。
+- 测试库与默认开发库 `alembic check` 均为零漂移。PostgreSQL catalog 与迁移测试双重核验 `0004` 的 revision/status/count CHECK、复合租户外键、`RESTRICT`、validation/dependency/finding 唯一约束，以及既有 `row_result`、`sampling_audit` 唯一约束和 `audit_log` 追加写触发器；`0001`–`0004`、Compose 与 CI 文件哈希前后一致。pre-0004 三份归档仍存在且 SHA-256 与 CP-F3.1 记录一致。
+- OpenAPI 导出与前端客户端连续两轮生成均无 diff，SHA-256 保持 OpenAPI `0b70574bdaac7f056328dc31019dd50f536b978a1ee24824cd5b07d7589e660c`、schema `fdaae1ddfa09c812d945c081aa8994c14318b39ce1b599243055594141e1b59d`。前端 `6` 个测试文件 `20 passed`，strict TypeScript、oxlint、Prettier `format:check` 和生产构建通过。
+- pre-commit 全量 hooks（含 gitleaks）全部通过且无自动改写；`.env`、`tenants/`、`data/private/` 的受跟踪文件数为 0，`git diff --check` 与 `uv lock --check` 通过；`npm audit --audit-level=high` 检查 250 个依赖且 0 项漏洞。后端当前没有项目既定的 `pip-audit` 工具或脚本，本检查点未新增依赖或发明替代门禁。
+- 5000 行固定 seed 合成批次完成 F1 导入、F2 解析与 F3 五类校验：存储/解析成功均为 5000，解析失败 0；五类 manifest 完整；校验耗时 `48.304265s`、SQL statement `11,056`、finding/flagged `1,045`、passed `3,955`、manual review `0`，ruleset fingerprint 为 `cc1e02876a98e25a62d1c0d222ba567e6d2f98171f9c1ca7e53c21bdce14b160`。包含生成、导入、解析的本机总耗时为 `81.402470s`；这些数值仅为本次证据，不提高或改变产品的 900 秒硬上限。证据保存在 gitignored `data/private/cp-f3.5/`。
+- 精确 1440×1000 Chrome 最终复核覆盖规则页 normal/empty/loading/error，以及批次校验 normal/loading/error、5000 行摘要、264 finding/6 页分页和结构化 evidence；全部无页面级横向溢出。长 rule ID 在输入控件内滚动承载，不构成页面溢出；证据保存在 gitignored `data/private/visual-cp-f3.4/`。
+- 实现偏差/覆盖决定：无范围或业务实现偏差，未修改受保护基础设施、既有迁移或幂等/审计约束，未降低任何门禁，也未实现 F4/F5/F6。CP-F3.5 仅新增本节与项目状态记录；F3 交付门禁完成，下一检查点为 F4 规格固化。

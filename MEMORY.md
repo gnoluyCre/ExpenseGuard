@@ -5,7 +5,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 -->
 
 ## 🏗️ 当前阶段与目标
-**当前任务:阶段 2 F3 · CP-F3.4 API、契约与桌面工作流已完成。** 六个类型化 API 路由、OpenAPI/前端 schema、五类规则版本控制台、批次确定性校验视图、permission 驱动操作和分页 evidence 已落地。
+**当前任务:阶段 2 F3 已完成。** CP-F3.5 已通过全量回归、迁移与受保护约束、契约二次生成、pre-commit/secret、5000 行性能及 1440×1000 桌面视觉门禁。
 
 - CP0 仓库重置(干净历史、`.gitignore` 脱敏排除)
 - CP1 后端地基(uv + 18 张表 + Alembic 三层隔离)
@@ -13,7 +13,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - CP3 认证、RBAC、租户隔离(含反向验证)
 - CP4 前端垂直切片 + OpenAPI 契约门禁 + pre-commit/CI + 合成数据生成器(含反向验证)
 
-**下一步:CP-F3.5 · 契约与交付门禁。** 执行 F3 全量回归、迁移/受保护约束、pre-commit/secret、5000 行性能与最终桌面视觉门禁；通过后才把 F3 标记完成并进入 F4 规格固化。
+**下一步:F4 · 报告生成（含制度条款引用）规格固化。** 在任何实现前先固定按费用发生日选择制度版本、逐字引用机械校验、原始行证据链与导出边界；不得提前进入 F5/F6。
 `process_row_once` 的首个生产调用方现为 `app.core.validation.batch_service.validate_batch`；行内 finding 与 `row_result` 使用同一 session/事务，`row_result.rule_version` 固定保存规则集指纹。
 
 **开工前必读的两件事:**
@@ -24,6 +24,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 
 ## 📂 架构决策
 *(把构建过程中做出的具体选择记录在此,便于后续 agent 遵循)*
+- 2026-07-28 — **CP-F3.5 交付门禁完成，F3 状态推进为已完成。** 后端全量 240 passed/1 skipped、迁移定向 27 passed；前端 20 passed；静态检查、双库 Alembic、受保护约束、OpenAPI 二次生成、pre-commit/gitleaks 和生产构建全部通过。5000 行五类校验耗时 48.304265 秒、11,056 条 SQL、1,045 个 finding，低于 900 秒硬上限；该本机数值仅作证据，不成为更严格产品承诺。1440×1000 Chrome 覆盖 normal/empty/loading/error，无页面级横向溢出。无业务范围偏差、无受保护文件改动、无 F4/F5/F6 提前实现。
 - 2026-07-28 — **CP-F3.4 的 API 与前端只消费同一组判别联合契约。** `SaveRuleRequest.definition` 直接使用 `RuleDefinition`，finding evidence 使用 `RuleEvidence`，关联 verdict 使用完整 `RowVerdict`；只有查询筛选仍限制为 `flagged|manual_review`。规则 PUT 的 Pydantic 边界错误统一映射 `RULE_CONFIG_INVALID`，前端不复制手写 DTO。
 - 2026-07-28 — **F3 桌面入口按 permission 而非角色控制。** `CONFIG_READ` 显示规则版本页，`CONFIG_WRITE` 才显示保存；`BATCH_READ` 可查看 validation/findings，`BATCH_IMPORT` 才可 validate/派生。mutation 统一失效批次、解析、validation、findings 和规则缓存；两类派生请求各自携带 8–128 字符 Idempotency-Key。
 - 2026-07-28 — **CP-F3.3 统一使用 `Tenant FOR UPDATE NOWAIT → FileVersion FOR UPDATE NOWAIT` 锁序。** 规则保存、批次校验和 F2 parse/reparse 共享租户锁；同租户冲突稳定返回领域 409，不同租户可并行。F2 在锁内拒绝已校验批次和被 `validation_dependency` 引用的来源，消除 dependency 检查与重解析交错提交窗口。
@@ -103,6 +104,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 
 ### 已完成阶段的测试统计(便于新会话快速判断状态)
 
+- CP-F3.5 实测：后端全量 **240 passed, 1 skipped**、迁移定向 **27 passed**；前端 **6 个文件、20 passed**；Ruff/格式、strict mypy（79 个源文件）、双库 `alembic check`、受保护约束、OpenAPI/客户端连续二次生成、TypeScript/oxlint/Prettier/build、pre-commit/gitleaks 全部通过。5000 行五类校验 **48.304265 秒**、SQL **11,056**、finding **1,045**；1440×1000 Chrome 全状态复核无页面级横向溢出。
 - CP-F3.1 实测：迁移目录 **27 passed**；后端全量 **149 passed, 1 skipped**；Ruff lint/格式、strict mypy（67 个源文件）、测试库与默认开发库 `alembic check` 全部通过。默认开发库已在三份 custom archive 经 `pg_restore --list` 与 SHA-256 验证后升级至 `0004`。
 - CP-F2.5 实测：`cd backend && uv run python -m pytest --basetemp <可写临时目录>` 为 **142 passed, 1 skipped**（skip 的是常驻待命的评测门禁）；其中 CP-F2.2 纯逻辑 **51 passed**、解析服务 PostgreSQL 集成 **6 passed**、CP-F2.3 API 集成 **14 passed**，解析包定向覆盖率 **91%**；迁移目录测试为 **20 passed**。
 - CP-F2.5 实测：`cd frontend && npm run test` 为 **14 passed**；其中 CP-F2.4 批次工作流定向测试 **6 passed**。
@@ -126,6 +128,8 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - [x] F3 CP-F3.1（`0004` 持久化 schema/ORM、legacy 回填、租户复合外键、安全 downgrade 与 pre-0004 备份）
 - [x] F3 CP-F3.2（五类强类型规则、纯确定性 evaluator、canonical/规则集指纹、evidence/reasoning 与稳定查重首条）
 - [x] F3 CP-F3.3（快照、编排、租户级并发、行级幂等、失败审计与派生 revision）
+- [x] F3 CP-F3.4（类型化 API、OpenAPI/前端 schema、规则版本控制台与批次确定性校验视图）
+- [x] F3 CP-F3.5（全量回归、迁移/受保护约束、契约、安全、5000 行性能与桌面视觉交付门禁）
 - [x] 认证集成（server-side session + RBAC 三角色 + 租户过滤 fail-closed）
 - [x] 前端垂直切片（登录 / 路由守卫 / 三角色外壳 / 系统状态页）
 - [x] OpenAPI 契约门禁 + pre-commit + GitHub Actions CI
