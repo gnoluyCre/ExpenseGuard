@@ -1,9 +1,9 @@
 # Spec 005 — Phase 2 F4 报告生成与制度条款引用
 
-**状态：** CP-F4.0 规格固化 ✅
+**状态：** CP-F4.2 制度导入、发布与本地检索 ✅
 **日期：** 2026-07-28
 **前置检查点：** F3 / CP-F3.5 已完成
-**下一实施检查点：** CP-F4.1 持久化 schema 与 ORM
+**下一实施检查点：** CP-F4.3 Binding、引用核心与报告编排
 
 ---
 
@@ -870,3 +870,12 @@ F4 UI 不出现复核 decision/note/assignee/queue，不出现 correlation findi
 - 不可变与恢复边界已落地：published document 仅允许一次 open-ended expiry 收口，published clause/chunk、source blob、binding、report snapshot 与 completed report/export 均由数据库触发器保护；downgrade 在 published policy、binding、report 或 export 存在时于任何 DDL 前拒绝。
 - pre-0005 默认开发库备份位于 gitignored 的 `data/private/backups/cp-f4.1/pre-0005-20260728-172329/`。full/schema/affected-data custom archive 均通过 `pg_restore --list` 与容器/本地 SHA-256 交叉校验，哈希分别为 `906d07f68c7a5d68576b0ea9f3665e6e17853e3c0062c60799ab02bf62c1b450`、`618e4816e5bd6069f89458e87c741af4203a24cb3bc2e6d48f2945e4b188419e`、`42e046aa3aabc46b41352f5635c2bd12be51278061d055b3e54c90d8d99d172d`。
 - 验证结果：CP-F4.1 定向 4 passed；迁移/幂等/恢复相关组 39 passed；后端全量 244 passed/1 skipped；Ruff lint/format、strict mypy（81 个源文件）、0005 往返、legacy/preflight/safe-downgrade、GiST expiry/重叠、跨租户 FK、RESTRICT、outbox unique、受保护约束反向测试及默认/测试双库 `alembic check` 全部通过。默认开发库与测试库均位于 `0005 (head)`。
+
+### CP-F4.2 实际落地记录（2026-07-28）
+
+- 新增 `core/policies/` 与 `core/retrieval/`：制度源文件按 tenant/SHA-256 存入私有目录，PG 仅保存相对 storage key；TXT 严格 UTF-8，PDF 拒绝加密/扫描文本层缺失，DOCX 做 zip 展开上限和确定性段落抽取。条款只接受显式编号边界，重复/空/歧义/越界/超限 fail closed；clause/chunk 均保留逐字切片、offset 与 hash。
+- family、document draft、preview/publish 服务只使用现有 0005 schema；上传按 family/version/content/interval 幂等，审计 payload 仅含 ID、hash、版本与计数。发布冻结 document manifest 并写 transactional outbox，不保存 binding、不生成 report，也未增加 API/UI。
+- `VectorStore` Protocol 与 Qdrant 实现强制 tenant/generation/epoch-day 半开区间过滤，使用 chunk UUID 作为稳定 point ID；既有 collection 会核对 vector size/distance 并创建 tenant/generation/date payload index。候选返回后按 PG tenant/document/clause/chunk 闭包、published 区间、generation/model/chunker/hash 与连续切片二次校验，随后用本地 rerank 稳定排序；缺日期、低于 cutoff 或任一 payload 漂移均显式 unavailable/空候选。
+- outbox worker 使用 `FOR UPDATE SKIP LOCKED`、lease token、attempt limit 与稳定 failure code；已覆盖“Qdrant upsert 成功后进程退出”的租约回收和同点重放。terminal failure 会冻结同文档兄弟 job，人工 retry 复用原 job；active 增量发布会同步刷新被收口前序版本的 expiry payload，building generation 使用 frozen manifest、显式 delta revision 和原子 active/retired 切换，active/building job 可按 generation 路由到不同 collection。
+- 本地模型提供 `fake`（仅 dev/test）和 Infinity HTTP 双路径；prod 禁止 fake，模型与 Qdrant URL 必须命中显式主机白名单且不得内嵌凭据。F4 路径没有云 LLM provider 或出网回退。
+- 新增运行时依赖 `pypdf 6.x` 与 `python-docx 1.2.x`。真实 PostgreSQL/Qdrant 定向测试覆盖内容幂等、跨租户隐藏、expiry end-exclusive、伪造 payload、worker kill/retry、terminal/manual retry、generation rebuild/delta 与 collection provenance。最终后端全量 `269 passed, 1 skipped`；Ruff lint/format、strict mypy（93 个源文件）、默认/测试双库 `alembic check`、OpenAPI/前端客户端连续二次生成、pre-commit/gitleaks 与 `pip-audit --strict` 全部通过。

@@ -33,6 +33,10 @@ dependencies = [
     "langgraph>=1.0.0,<1.1",
     "langgraph-checkpoint-postgres>=3.0.0,<3.1",
     "qdrant-client>=1.16,<1.17",
+    # —— 制度文档解析 ——
+    # F4 只解析已有文本层，不做 OCR；PDF/DOCX 均保留确定性纯文本抽取路径。
+    "pypdf>=6.0,<7",
+    "python-docx>=1.2,<2",
     # —— Excel ——
     # 合成数据生成器（app/synth）写 .xlsx 用它；F1 的导入侧也将复用，
     # 因此是运行时依赖而非 dev 依赖。纯 Python + wheel，无编译。

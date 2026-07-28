@@ -5,7 +5,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 -->
 
 ## 🏗️ 当前阶段与目标
-**当前任务:阶段 2 F4 已完成 CP-F4.1 持久化 schema 与 ORM。** `specs/005-phase2-f4-report-generation.md` 是 CP-F4.0–F4.5 的唯一规范来源；下一实施点为 CP-F4.2 制度导入、发布与本地检索。
+**当前任务:阶段 2 F4 已完成 CP-F4.2 制度导入、发布与本地检索。** `specs/005-phase2-f4-report-generation.md` 是 CP-F4.0–F4.5 的唯一规范来源；下一实施点为 CP-F4.3 Binding、引用核心与报告编排。
 
 - CP0 仓库重置(干净历史、`.gitignore` 脱敏排除)
 - CP1 后端地基(uv + 18 张表 + Alembic 三层隔离)
@@ -13,17 +13,18 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - CP3 认证、RBAC、租户隔离(含反向验证)
 - CP4 前端垂直切片 + OpenAPI 契约门禁 + pre-commit/CI + 合成数据生成器(含反向验证)
 
-**下一步:CP-F4.2 · 制度导入、发布与本地检索。** 基于 0005 的冻结 schema 实现私有文件存储、PDF/DOCX/TXT 确定性解析、clause/chunk、preview/publish、`VectorStore`、index generation/outbox worker、本地 embedding/rerank 与候选 binding query；不得提前保存 binding、生成报告或实现 API/UI/F5/F6。
+**下一步:CP-F4.3 · Binding、引用核心与报告编排。** 基于 CP-F4.2 已验证的候选检索，实现 exact quote verifier、configurator-confirmed binding、report/item/parse-error/citation 原子 snapshot、幂等键与 policy_change revision；不得提前实现 API/UI/XLSX/F5/F6。
 `process_row_once` 的首个生产调用方现为 `app.core.validation.batch_service.validate_batch`；行内 finding 与 `row_result` 使用同一 session/事务，`row_result.rule_version` 固定保存规则集指纹。
 
 **开工前必读的两件事:**
 1. 契约同步是硬要求:改了 Pydantic 模型 → `cd backend && uv run python scripts/export_openapi.py` + `cd frontend && npm run gen:api`,两个生成物都要提交,否则 CI 的 contract job 直接红。
 2. 评测门禁已就位但处于待命:`backend/evals/baseline.json` 的 `thresholds` 一填数值就自动开始阻断,**不需要改任何 workflow YAML**。
 
-**遗留缺口（不阻塞 F3，但别忘）:** W0 spike 未做 —— `docker-compose.models.yml` 的 embedding 镜像未实测、离线模型供给路径未验证;GitHub CI 远端状态待确认。
+**遗留缺口:** W0 运行态仍未闭环 —— 2026-07-28 已验证代码侧 fake/HTTP 双路径、prod 禁 fake、模型/Qdrant 主机白名单和真实 Qdrant；但 pinned Infinity 镜像拉取停在 registry layer，`docker manifest inspect` 也超时，按有界策略终止。官方支持把预下载模型目录挂入容器并以容器内路径作为 `--model-id`，但客户离线权重包、镜像可达性、实际 embed/rerank 质量与资源占用仍需外部网络/权重输入后实测。GitHub CI 远端状态也待确认。
 
 ## 📂 架构决策
 *(把构建过程中做出的具体选择记录在此,便于后续 agent 遵循)*
+- 2026-07-28 — **F4 CP-F4.2 本地制度检索闭包完成。** 私有源文件使用 tenant/SHA-256 内容寻址；解析只接受 PDF 文本层、DOCX 段落和 UTF-8 TXT 的显式编号条款，禁止 OCR/猜测边界。Qdrant 只产生候选，PG 对 tenant/date/generation/provenance/hash/连续切片做二次校验。本地模型端点与 Qdrant 都受显式主机白名单保护，prod 禁用 fake provider。outbox 使用 generation-aware lease，支持 Qdrant side effect 后崩溃重放、terminal/manual retry、前序 expiry payload 刷新和 building manifest delta。未实现 binding/report/API/UI。后端全量 269 passed/1 skipped，Ruff、strict mypy（93 源文件）、双库 Alembic、OpenAPI 二次生成、pre-commit/gitleaks 与 pip-audit 全绿。W0 镜像拉取因 registry/manifest 超时未完成，保持显式外部缺口。
 - 2026-07-28 — **F4 CP-F4.1 持久化闭包完成。** `0005_f4_policy_reports.py` 是唯一新增迁移：legacy document 仅一次性回填 `legacy_unpublished` 且新写入不得伪装 legacy；旧 policy CASCADE/SET NULL FK 被复合 tenant `RESTRICT` 替换；published family interval 由 `btree_gist` 半开区间排斥约束保证；source blob、published policy/clause/chunk、binding、report snapshot 与 completed export 由数据库不可变触发器保护。binding→family/document/clause 与 citation→binding identity 使用完整复合 FK，避免同租户 ID 拼接错配。默认库 pre-0005 三份 custom archive 已通过 `pg_restore --list` 与 SHA-256 交叉验证；默认/测试双库均为 0005 且 Alembic 零漂移。CP-F4.1 定向 4 passed、迁移/恢复组 39 passed、后端全量 244 passed/1 skipped，Ruff 与 strict mypy 通过。详见 spec §17。
 - 2026-07-28 — **F4 CP-F4.0 规格固化完成，导出采用 XLSX-only。** 正式制度依据必须是 configurator-confirmed、版本化 `rule_policy_binding`，并以 PostgreSQL clause 原文、必填 end-exclusive offsets 做严格 Unicode code point 切片校验；Qdrant/本地 rerank 只提供候选，不能直接成为报告依据。F4 report path 不调用云 LLM，报告生成沿用 F3 的 Tenant→FileVersion 锁序并在单事务中提交 report/item/parse-error/citation/count/成功审计，失败整批回滚。citation 状态与 F3 attention group 正交；索引/model/chunker provenance 不参与 report identity。XLSX 固定 5 张表，artifact 生成与下载 API/审计分离。详见 `specs/005-phase2-f4-report-generation.md`。
 - 2026-07-28 — **CP-F3.5 交付门禁完成，F3 状态推进为已完成。** 后端全量 240 passed/1 skipped、迁移定向 27 passed；前端 20 passed；静态检查、双库 Alembic、受保护约束、OpenAPI 二次生成、pre-commit/gitleaks 和生产构建全部通过。5000 行五类校验耗时 48.304265 秒、11,056 条 SQL、1,045 个 finding，低于 900 秒硬上限；该本机数值仅作证据，不成为更严格产品承诺。1440×1000 Chrome 覆盖 normal/empty/loading/error，无页面级横向溢出。无业务范围偏差、无受保护文件改动、无 F4/F5/F6 提前实现。

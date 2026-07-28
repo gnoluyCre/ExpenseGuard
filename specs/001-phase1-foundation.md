@@ -1,6 +1,6 @@
 # Spec 001 · Phase 1 地基
 
-**状态:** 已完成（CP0–CP4）。遗留 W0 spike 未做，见文末「已知问题」。
+**状态:** 已完成（CP0–CP4）。W0 代码边界已在 CP-F4.2 验证，模型容器运行态仍待外部输入，见文末「已知问题」。
 **最近更新:** 2026-07-27
 **验收:** 后端 `49 passed, 1 skipped`；前端 `8 passed`；
 `ruff` / `mypy app scripts` / `alembic check` / `oxlint` / `tsc` / `prettier --check`
@@ -283,7 +283,7 @@ ALTER TABLE row_result ADD CONSTRAINT uq_row_result_file_version_id_row_no
 
 Linux 部署（Docker）不受影响。
 
-### W0 spike 未做 —— 模型层镜像**未经实测**
+### W0 spike 部分完成 —— 模型运行态仍未实测
 
 `docker-compose.models.yml` 已写好，但**没有拉起来验证过**。文件里选的是
 Infinity（单容器同时挂 embed + rerank，正好对上本项目的双需求），备选方案
@@ -292,6 +292,10 @@ HF TEI 以注释形式留在文件末尾。**这个选择必须靠实测确认�
 同一次 spike 里必须一并验证的还有:**客户内网大概率访问不了 HuggingFace。**
 要确认离线模型供给路径（预下载权重挂载 / 权重烤进自建镜像）。这个问题
 留到上线周才发现会很贵。
+
+2026-07-28 CP-F4.2 已完成不依赖模型镜像的代码侧闭环：HTTP provider 使用 Infinity 的 OpenAI-compatible `/embeddings` 与 `/rerank` 契约，prod 禁止 fake provider，模型/Qdrant endpoint 必须命中显式主机白名单；真实 Qdrant 的 stable UUID upsert、tenant/generation/epoch-day filter 和 collection provenance 已通过集成测试。官方文档确认离线模型可将预下载目录挂入容器，并把容器内路径传给 `--model-id`。
+
+同日运行态尝试未完成：`michaelf34/infinity:0.0.77` 拉取持续停在 registry layer，`docker manifest inspect` 也在有界等待内超时，已终止本次拉取进程且未修改受保护 Compose。故以下仍保持显式未验证：pinned 镜像在目标网络可获得、两个模型同时启动、实际向量维度/质量、rerank 响应、CPU/GPU/内存占用，以及客户离线权重包的交付/校验流程。不得据此宣称 W0 已完成。
 
 Langfuse 那边同理:`docker-compose.observability.yml` 写的是 v2（单容器 +
 已由 init 脚本预建的 `langfuse` 库），未起过。升 v3 不要手写——服务集变成
@@ -316,7 +320,7 @@ web + worker + ClickHouse + Redis + MinIO，必须从上游固定 tag 复制官�
 
 ## 待办
 
-- [ ] **W0 spike**:实测 embedding 镜像（Infinity vs TEI）+ 离线模型供给路径，结论回写本文件
+- [ ] **W0 运行态**:在可访问镜像或提供离线镜像/权重包后，实测 Infinity embed+rerank、资源占用与离线供给；代码侧白名单/HTTP/Qdrant 已完成
 - [ ] **W0 spike**:起一次 Langfuse、发一条测试 span、记录版本与内存占用，然后 down
 - [ ] push 后确认 CI 首次运行全绿
 - [ ] 阶段 2 F1 · Excel 导入与文件版本管理（`process_row_once` 的第一个生产调用方在 F3）

@@ -7,9 +7,9 @@
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 
-from pydantic import Field, PostgresDsn, field_validator
+from pydantic import Field, PostgresDsn, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 #: backend/app/settings.py → backend/app → backend → 仓库根
@@ -71,6 +71,31 @@ class Settings(BaseSettings):
     # —— 向量库 ——
     qdrant_url: str = "http://127.0.0.1:6333"
     qdrant_collection: str = "policy_clauses"
+    qdrant_allowed_hosts: Annotated[list[str], NoDecode] = Field(
+        default_factory=lambda: ["127.0.0.1", "localhost", "::1"]
+    )
+
+    # —— F4 制度导入与本地检索 ——
+    policy_private_storage_root: Path = _REPO_ROOT / "data" / "private" / "policies"
+    policy_max_file_bytes: int = Field(default=20 * 1024 * 1024, gt=0)
+    policy_max_pdf_pages: int = Field(default=500, gt=0)
+    policy_max_extracted_chars: int = Field(default=2_000_000, gt=0)
+    policy_max_clauses: int = Field(default=10_000, gt=0)
+    policy_chunk_chars: int = Field(default=1_200, ge=128, le=16_000)
+    policy_index_attempt_limit: int = Field(default=5, ge=1, le=100)
+    policy_index_lease_seconds: int = Field(default=60, ge=5, le=3600)
+    policy_embedding_provider: Literal["fake", "http"] = "fake"
+    policy_local_model_url: str = "http://127.0.0.1:7997"
+    policy_local_model_allowed_hosts: Annotated[list[str], NoDecode] = Field(
+        default_factory=lambda: ["127.0.0.1", "localhost", "::1"]
+    )
+    policy_embedding_model: str = "BAAI/bge-m3"
+    policy_embedding_revision: str = "unpinned-dev"
+    policy_embedding_vector_size: int = Field(default=1024, gt=0)
+    policy_rerank_model: str = "BAAI/bge-reranker-v2-m3"
+    policy_rerank_revision: str = "unpinned-dev"
+    policy_candidate_top_k: int = Field(default=20, ge=1, le=100)
+    policy_candidate_cutoff: float = Field(default=-1.0, ge=-1.0, le=1.0)
 
     # —— 可观测 ——
     # Phase 1 默认关闭：此阶段无 LLM 调用，trace 消费者为 0。
@@ -79,13 +104,34 @@ class Settings(BaseSettings):
     otel_service_name: str = "expenseguard-api"
     otel_exporter_otlp_endpoint: str = ""
 
-    @field_validator("cors_allowed_origins", mode="before")
+    @field_validator(
+        "cors_allowed_origins",
+        "policy_local_model_allowed_hosts",
+        "qdrant_allowed_hosts",
+        mode="before",
+    )
     @classmethod
     def _split_origins(cls, v: object) -> object:
         """支持用逗号分隔的字符串配置 CORS 源（环境变量天然是字符串）。"""
         if isinstance(v, str):
             return [item.strip() for item in v.split(",") if item.strip()]
         return v
+
+    @model_validator(mode="after")
+    def _production_requires_real_local_models(self) -> Self:
+        if self.app_env == "prod" and self.policy_embedding_provider == "fake":
+            raise ValueError("prod 环境禁止使用确定性伪 embedding/rerank provider")
+        if not self.policy_local_model_allowed_hosts or not self.qdrant_allowed_hosts:
+            raise ValueError("本地模型与 Qdrant 必须配置非空主机白名单")
+        return self
+
+    @field_validator("policy_private_storage_root")
+    @classmethod
+    def _absolute_private_storage_root(cls, value: Path) -> Path:
+        resolved = value.expanduser().resolve()
+        if not resolved.is_absolute():
+            raise ValueError("policy private storage root 必须是绝对路径")
+        return resolved
 
     @property
     def checkpoint_url(self) -> str:
