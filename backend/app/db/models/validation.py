@@ -35,6 +35,12 @@ class ValidationRun(Base, TenantScopedMixin, TimestampMixin):
     __table_args__ = (
         UniqueConstraint("file_version_id"),
         UniqueConstraint("id", "tenant_id", name="uq_validation_run_id_tenant_id"),
+        UniqueConstraint(
+            "id",
+            "tenant_id",
+            "file_version_id",
+            name="uq_validation_run_id_tenant_id_file_version_id",
+        ),
         ForeignKeyConstraint(
             ["file_version_id", "tenant_id"],
             ["file_version.id", "file_version.tenant_id"],

@@ -68,6 +68,12 @@ class Finding(Base, TenantScopedMixin, TimestampMixin):
     __tablename__ = "finding"
     __table_args__ = (
         file_version_fk(),
+        UniqueConstraint(
+            "id",
+            "tenant_id",
+            "file_version_id",
+            name="uq_finding_id_tenant_id_file_version_id",
+        ),
         ForeignKeyConstraint(
             ["validation_run_id", "tenant_id"],
             ["validation_run.id", "validation_run.tenant_id"],
@@ -78,6 +84,12 @@ class Finding(Base, TenantScopedMixin, TimestampMixin):
             ["rule_config_id", "tenant_id"],
             ["rule_config.id", "rule_config.tenant_id"],
             name="fk_finding_rule_config_tenant",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["clause_id", "tenant_id"],
+            ["policy_clause.id", "policy_clause.tenant_id"],
+            name="fk_finding_clause_tenant",
             ondelete="RESTRICT",
         ),
         Index("ix_finding_file_version_id_severity", "file_version_id", "severity_impact"),
@@ -123,9 +135,7 @@ class Finding(Base, TenantScopedMixin, TimestampMixin):
     rule_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     rule_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
     #: 引用的制度条款（LLM 判定路径）
-    clause_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("policy_clause.id", ondelete="SET NULL"), nullable=True
-    )
+    clause_id: Mapped[uuid.UUID | None] = mapped_column(nullable=True)
     #: 条款逐字引用。**只有通过机械式逐字校验的引用才允许写入这里。**
     quote: Mapped[str | None] = mapped_column(Text, nullable=True)
     reasoning: Mapped[str | None] = mapped_column(Text, nullable=True)

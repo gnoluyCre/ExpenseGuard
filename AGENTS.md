@@ -86,10 +86,10 @@
 
 ## 当前状态 📍
 **最近更新:** 2026-07-28
-**正在进行:** 阶段 2 F4 的 CP-F4.0 规格固化已完成,准备进入 CP-F4.1 持久化 schema 与 ORM。
-**最近完成:** CP0 仓库重置 / CP1 后端地基 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离 / **CP4 前端垂直切片 + OpenAPI 契约 + CI** / **F1 Excel 导入** / **F2 CP-F2.0–CP-F2.5** / **F3 CP-F3.0–CP-F3.5** / **F4 CP-F4.0 统一规格**（制度 family/version、Qdrant 本地候选、configurator-confirmed binding、严格逐字引用、原子 report snapshot、5-sheet XLSX-only 与 CP-F4.1–F4.5 实施契约）
+**正在进行:** 阶段 2 F4 的 CP-F4.1 持久化 schema 与 ORM 已完成,准备进入 CP-F4.2 制度导入、发布与本地检索。
+**最近完成:** CP0 仓库重置 / CP1 后端地基 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离 / **CP4 前端垂直切片 + OpenAPI 契约 + CI** / **F1 Excel 导入** / **F2 CP-F2.0–CP-F2.5** / **F3 CP-F3.0–CP-F3.5** / **F4 CP-F4.0 统一规格 + CP-F4.1 持久化 schema/ORM**（0005 legacy 安全回填、复合租户 FK/RESTRICT、GiST 生效区间、index outbox、binding、原子 report snapshot 与 XLSX artifact 结构）
 **受阻于:** 无(Docker Desktop/最小 Compose 服务已纳入 Agent 自动恢复；W0 外部输入项见 `MEMORY.md`)
-**已知缺口(三项,均不阻塞进入 CP-F4.1):**
+**已知缺口(三项,前两项需在 CP-F4.2/W0 收口):**
 1. **W0 spike 未做** —— `docker-compose.models.yml` 的 embedding 镜像**未实测**;客户内网访问不了 HuggingFace 时的离线权重供给路径未验证。留到上线周才发现会很贵。
 2. **CI 远端状态待确认** —— 仓库已完成首次 push,但需确认 GitHub 上服务容器的 `CREATE DATABASE` 步骤、gitleaks 镜像可拉取、setup-uv/setup-node 的缓存键是否稳定。
 3. **开发工具接管完成** —— 已退役 ClaudeCode 专用入口;后续 Codex 以本文件 + `MEMORY.md` + 当前 `specs/` 为上下文入口。

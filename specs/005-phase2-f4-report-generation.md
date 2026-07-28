@@ -861,3 +861,12 @@ F4 UI 不出现复核 decision/note/assignee/queue，不出现 correlation findi
 - 产品边界决定：导出只做 XLSX；PDF/CSV 不在 F4。attention group 只映射 F3 verdict，不使用 F8 二维 severity。
 - 独立审查收口：报告改为 F3 风格的单业务事务全有或全无；引用状态与 row-level attention group 正交；每个 item 保存 row verdict 与 finding outcome；索引代际采用 frozen manifest + 显式 delta；XLSX 固定 5 张表，artifact 生成与下载分离。
 - 实现代码、迁移、依赖、API、UI 与未来测试数量均未预填。
+
+### CP-F4.1 实际落地记录（2026-07-28）
+
+- 只新增 `0005_f4_policy_reports.py` 并同步 ORM：落地 policy family/source blob、document/clause 强化、clause 内 chunk、index generation/document manifest/outbox、configurator-confirmed binding、原子 report/item/parse-error/citation snapshot 与 XLSX artifact 元数据；未实现解析、Qdrant、服务、API、UI 或 XLSX 生成。
+- legacy policy 安全策略已机械化：升级前 preflight clause→document 与 finding→clause tenant 闭包，错配则事务原子失败；既有 document 仅回填 `legacy_unpublished`，family/blob/hash/parser/chunker/creator/publish 字段及 clause ordinal/hash/locator/offset 均保持 NULL，finding 的 clause/quote/reasoning 原值保留。`legacy_unpublished` 不设 ORM/数据库默认，迁移后新 INSERT 被触发器拒绝。
+- 约束闭包已落地：旧 policy_clause→document `CASCADE` 与 finding→clause `SET NULL` 被 0005 替换为复合 tenant FK + `RESTRICT`；family/document/clause/chunk/binding/report citation 使用复合候选键闭合身份。安装并验证 `btree_gist`，published document 使用 tenant/family/半开 `daterange` 的部分 GiST exclusion constraint。
+- 不可变与恢复边界已落地：published document 仅允许一次 open-ended expiry 收口，published clause/chunk、source blob、binding、report snapshot 与 completed report/export 均由数据库触发器保护；downgrade 在 published policy、binding、report 或 export 存在时于任何 DDL 前拒绝。
+- pre-0005 默认开发库备份位于 gitignored 的 `data/private/backups/cp-f4.1/pre-0005-20260728-172329/`。full/schema/affected-data custom archive 均通过 `pg_restore --list` 与容器/本地 SHA-256 交叉校验，哈希分别为 `906d07f68c7a5d68576b0ea9f3665e6e17853e3c0062c60799ab02bf62c1b450`、`618e4816e5bd6069f89458e87c741af4203a24cb3bc2e6d48f2945e4b188419e`、`42e046aa3aabc46b41352f5635c2bd12be51278061d055b3e54c90d8d99d172d`。
+- 验证结果：CP-F4.1 定向 4 passed；迁移/幂等/恢复相关组 39 passed；后端全量 244 passed/1 skipped；Ruff lint/format、strict mypy（81 个源文件）、0005 往返、legacy/preflight/safe-downgrade、GiST expiry/重叠、跨租户 FK、RESTRICT、outbox unique、受保护约束反向测试及默认/测试双库 `alembic check` 全部通过。默认开发库与测试库均位于 `0005 (head)`。
