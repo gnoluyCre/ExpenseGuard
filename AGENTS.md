@@ -31,6 +31,12 @@
 - **契约同步:** 后端 `python scripts/export_openapi.py` → 前端 `npm run gen:api`(改了 Pydantic 模型必做,否则 CI 的 contract job 会红)
 - **构建:** 前端 `npm run build`(阶段 1 尚无 Dockerfile,`docker compose build` 待阶段 4 部署时补)
 
+### Docker 自动恢复
+- 开发或测试依赖 Docker 且 `docker info` 不可用时,Agent 必须先执行 `docker desktop start`,并在最多 120 秒内有界轮询 `docker info`;不得仅因 Docker Desktop 未启动就把任务交还人工。
+- 引擎 ready 后只启动当前任务所需的最小服务:数据库测试使用 `docker compose up -d postgres`;完整本地依赖使用 `docker compose up -d postgres qdrant`。embedding/trace 仍为显式可选项,不得自动启动。
+- readiness 必须以 Docker API、容器 health check 和实际连接为准,不得只看 Desktop 进程是否存在。Agent 不得自动停止既有容器,不得执行 `docker compose down`、删除卷或清空数据。
+- 仅在出现 UAC/管理员提权、首次协议/登录等交互要求,或 Desktop 启动/引擎 readiness 在有界重试后仍失败时转人工并显式报告。
+
 > 具体命令名以脚手架落地时的 `pyproject.toml` / `package.json` 为准;上表为约定基线,不要发明新的包管理器命令。
 
 ## 受保护区域 🛡️
@@ -81,8 +87,8 @@
 ## 当前状态 📍
 **最近更新:** 2026-07-28
 **正在进行:** 阶段 2 F3 的 CP-F3.2 强类型规则与纯确定性核心已完成,准备进入 CP-F3.3(快照、编排、幂等与审计)。
-**最近完成:** CP0 仓库重置 / CP1 后端地基 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离 / **CP4 前端垂直切片 + OpenAPI 契约 + CI** / **F1 Excel 导入** / **F2 CP-F2.0–CP-F2.5** / **F3 CP-F3.0 统一规格** / **F3 CP-F3.1 持久化 schema 与 ORM** / **F3 CP-F3.2 强类型规则与纯确定性核心**(五类冻结判别联合、canonical/两级指纹、有效版本与查重首条选择、强类型 evidence/reasoning、三态 verdict；规则包 93% 覆盖率，非数据库回归 127 passed/1 skipped，契约二次生成无漂移)
-**受阻于:** CP-F3.3 的 PostgreSQL 集成开工前需启动 Docker Desktop；W0 阻塞项仍为真实报销数据脱敏审批、制度文档到位(见 `MEMORY.md`)。
+**最近完成:** CP0 仓库重置 / CP1 后端地基 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离 / **CP4 前端垂直切片 + OpenAPI 契约 + CI** / **F1 Excel 导入** / **F2 CP-F2.0–CP-F2.5** / **F3 CP-F3.0 统一规格** / **F3 CP-F3.1 持久化 schema 与 ORM** / **F3 CP-F3.2 强类型规则与纯确定性核心**(五类冻结判别联合、canonical/两级指纹、有效版本与查重首条选择、强类型 evidence/reasoning、三态 verdict；规则包 93% 覆盖率，后端全量 202 passed/1 skipped，契约二次生成无漂移)
+**受阻于:** 无(Docker Desktop/最小 Compose 服务已纳入 Agent 自动恢复；W0 外部输入项见 `MEMORY.md`)
 **已知缺口(三项,均不阻塞进入 F3):**
 1. **W0 spike 未做** —— `docker-compose.models.yml` 的 embedding 镜像**未实测**;客户内网访问不了 HuggingFace 时的离线权重供给路径未验证。留到上线周才发现会很贵。
 2. **CI 远端状态待确认** —— 仓库已完成首次 push,但需确认 GitHub 上服务容器的 `CREATE DATABASE` 步骤、gitleaks 镜像可拉取、setup-uv/setup-node 的缓存键是否稳定。

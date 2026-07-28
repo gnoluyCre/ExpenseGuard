@@ -24,9 +24,10 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 
 ## 📂 架构决策
 *(把构建过程中做出的具体选择记录在此,便于后续 agent 遵循)*
+- 2026-07-28 — **Docker Desktop 未启动是可自动恢复的本地环境状态,不是默认人工阻塞。** Docker 相关开发/测试先用官方 `docker desktop start` + 最多 120 秒 `docker info` 轮询恢复引擎,再只启动最小 Compose 服务；当前数据库测试只启动 `postgres`。不自动启动 embedding/trace,不停止既有容器,不执行 `down`/删卷；仅提权、交互许可或有界启动失败时转人工。本次机械验证从 Desktop stopped 到 PostgreSQL healthy 约 28 秒,随后后端全量 `202 passed, 1 skipped`。
 - 2026-07-28 — **CP-F3.2 把发票号“唯一首条”保留在纯规则核心。** CP-F3.3 只负责按租户/快照装载当前批与其他 lineage 的最高成功 revision occurrence；`select_duplicate_match` 排除当前 lineage 的历史候选，并按 root revision 1 的 `(uploaded_at, id, row_no)` 稳定选择，输入冲突时 fail closed，不猜测。
 - 2026-07-28 — **F3 evidence 自身校验 kind/outcome/reason 与命中字段完整性。** `RULE_NOT_EFFECTIVE` 通过纯 selection-to-evaluation 路径生成；passed 固定无 evidence，exempted 不提升 verdict，大型允许集合仅写指纹。F2 `NormalizedExpenseRecord` 同步补上 ISO 日期语义校验，避免非法日历日期进入时效 evaluator 形成未分类异常。
-- 2026-07-28 — **CP-F3.2 纯逻辑门禁完成，数据库全量回归受本机 Docker 状态限制。** 规则定向 52 passed、包覆盖率 93%；非数据库套件 127 passed/1 skipped；Ruff、格式、strict mypy 与 OpenAPI/前端客户端二次生成无漂移。全量 pytest 在 Docker Desktop 未运行时等待 PostgreSQL，确认环境原因后终止，未记为通过或测试失败；CP-F3.3 开工前必须恢复数据库服务。
+- 2026-07-28 — **CP-F3.2 全量门禁完成。** 规则定向 52 passed、包覆盖率 93%；后端全量 202 passed/1 skipped；Ruff、格式、strict mypy 与 OpenAPI/前端客户端二次生成无漂移。首次全量因 Docker Desktop 未运行而等待 PostgreSQL,现已通过自动恢复引擎与最小 `postgres` 服务闭环；系统 Temp ACL 通过将 pytest 临时根指向 gitignored `data/private/` 解决,未修改或跳过测试。
 - 2026-07-28 — **CP-F3.1 的 validation run 只持久化 `in_progress|completed`。** 系统失败整批回滚并用独立审计记录，不保留猜测性的 failed run；`ruleset_manifest` 与六项非负/恒等计数 CHECK 成为 CP-F3.2/3.3 的存储契约。新增 F3 引用统一 `ON DELETE RESTRICT`；通过新增 `app_user(id, tenant_id)` 冗余唯一约束，让规则创建人和校验触发人也使用租户复合外键。
 - 2026-07-28 — **`0004` downgrade 对派生 revision fail closed。** 任何 DDL 前先检测 `revision_no > 1`，存在即拒绝且由事务保持 schema/数据不变；生产降级只允许从已验证 pre-0004 完整归档恢复到隔离库。发票号 JSONB 表达式索引暂不添加，只有真实性能门禁证明需要时才添加。
 - 2026-07-28 — **F3 CP-F3.0–F3.5 共用 `specs/004-phase2-f3-deterministic-validation.md` 一份规范。** §1–§12 是唯一业务/接口定义，§13 给出五个实施契约，§14 只追加已经完成的落地事实；不为各 CP 创建重复规格，独立运维 runbook 也不得成为第二事实来源。
