@@ -168,6 +168,12 @@ class ExpenseRow(Base, TenantScopedMixin, TimestampMixin):
     __tablename__ = "expense_row"
     __table_args__ = (
         UniqueConstraint("file_version_id", "row_no"),
+        UniqueConstraint(
+            "file_version_id",
+            "row_no",
+            "tenant_id",
+            name="uq_expense_row_file_row_tenant",
+        ),
         file_version_fk(),
     )
 
@@ -206,6 +212,12 @@ class RowResult(Base, TenantScopedMixin):
     __table_args__ = (
         # ↓↓↓ 项目最高优先级约束 ↓↓↓
         UniqueConstraint("file_version_id", "row_no"),
+        UniqueConstraint(
+            "file_version_id",
+            "row_no",
+            "tenant_id",
+            name="uq_row_result_file_row_tenant",
+        ),
         file_version_fk(),
         Index("ix_row_result_file_version_id", "file_version_id"),
     )

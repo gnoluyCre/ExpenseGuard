@@ -5,7 +5,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 -->
 
 ## 🏗️ 当前阶段与目标
-**当前任务:阶段 2 F4 已完成 CP-F4.0–CP-F4.5 全部闭包。** `specs/005-phase2-f4-report-generation.md` 是 F4 的唯一规范来源；下一实施点为 F5 规格固化与人工复核台。
+**当前任务:阶段 2 F5 已完成 CP-F5.0–CP-F5.1。** `specs/006-phase2-f5-human-review.md` 是 F5 的唯一规范来源；下一实施点为 CP-F5.2 抽样核心、计划与复核服务。
 
 - CP0 仓库重置(干净历史、`.gitignore` 脱敏排除)
 - CP1 后端地基(uv + 18 张表 + Alembic 三层隔离)
@@ -13,7 +13,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - CP3 认证、RBAC、租户隔离(含反向验证)
 - CP4 前端垂直切片 + OpenAPI 契约门禁 + pre-commit/CI + 合成数据生成器(含反向验证)
 
-**下一步:F5 · 人工复核台。** 开工前先固化 F5 唯一规格来源，覆盖风险排序队列、原始行/判定/引用同屏、confirmed/false_positive 追加式审计，以及第一个批次即启用的被放行样本随机抽检；不得提前进入 F6/F8。
+**下一步:CP-F5.2 · 抽样核心、计划与复核服务。** 实现 config canonical/fingerprint、`sha256-rank-v1` golden sampling、plan 原子创建、联合 query、两类一次性 decision 与幂等/失败审计；不暴露 API/UI，不实现 F6/F8。
 `process_row_once` 的首个生产调用方现为 `app.core.validation.batch_service.validate_batch`；行内 finding 与 `row_result` 使用同一 session/事务，`row_result.rule_version` 固定保存规则集指纹。
 
 **开工前必读的两件事:**
@@ -24,6 +24,8 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 
 ## 📂 架构决策
 *(把构建过程中做出的具体选择记录在此,便于后续 agent 遵循)*
+- 2026-07-29 — **F5 CP-F5.1 持久化闭包完成。** 只新增 `0007_f5_human_review.py`，未修改 `0001`–`0006`；落地 `review_sampling_config`/`review_sampling_plan`/`sampling_review`/`review_plan_request`，强化 `review` 与 `sampling_audit`。config 快照参数通过宽复合 FK 与 plan 物理一致；review target 通过 report item/finding/report/file/tenant 单条复合身份闭合；sample 同时复合绑定 plan/report/expense_row/row_result/tenant。为支持完整 FK，只增强地追加 `report_item`/`expense_row`/`row_result` 冗余唯一键，原 `row_result(file_version_id,row_no)` 与 `sampling_audit(file_version_id,row_no)` 受保护约束保持不变。六类 F5 事实均由 DB 触发器拒绝 UPDATE/DELETE，全部 FK 使用 RESTRICT；legacy review/sample 非空时 upgrade 在任何 DDL 前 fail closed，存在 F5 数据时 downgrade 同样在 DDL 前拒绝。默认库 pre-0007 备份位于 `data/private/backups/cp-f5.1/pre-0007-20260729-160753/`；full/schema/affected-data 归档的 SHA-256 分别为 `6c9baa69e6abe88ced0810f9cd510540c821bd160d94094765395a363cea3cd4`、`53b1a21488b6f609d9ce8d085f15229b579cade332f18f89ef8f75ea0baf80e0`、`188ea6f89bbcf9a5e15747c4e53ee828155f30ec7d06713ac2426798ea71c9cd`，均通过 `pg_restore --list` 与容器/本地 hash 交叉校验。迁移定向 `36 passed`，后端全量 `355 passed, 1 skipped`；Ruff、strict mypy（106 源文件）与默认/测试双库 `0007` Alembic 零漂移通过。
+- 2026-07-29 — **F5 CP-F5.0 规格固化完成。** `specs/006-phase2-f5-human-review.md` 成为 CP-F5.0–F5.5 唯一规范来源。finding 复核保持 `confirmed|false_positive`，被放行抽检改用语义独立的 `clearance_confirmed|missed_issue`；现有 `sampling_audit` 只承载不可变选择事实，legacy decision/reviewer/reviewed_at 不再写入，结论追加到独立 `sampling_review`。抽样由版本化数据配置驱动，使用一次性 CSPRNG seed 与冻结的 `sha256-rank-v1` 稳定排序，可按保存的 config/seed/score/rank 机械复算。F5 上线后的新 report 必须在同一成功事务内创建 plan/sample，缺 config 即在写入前失败；只有上线前 legacy completed report 可通过显式幂等 POST 补建，所有 GET 保持只读。队列只消费 F4 immutable snapshot，排序为 high attention → manual attention → clearance sample，不读取 F6、不计算 F8、不改写机器结论。
 - 2026-07-29 — **F4 CP-F4.5 契约与交付门禁完成，F4 状态推进为已完成。** F4/幂等/恢复/迁移定向 `94 passed`；pytest 9.1.1 下后端全量 `352 passed, 1 skipped`，Ruff、142 文件 format check、strict mypy（105 源文件）、默认/测试双库 `0006 (head)` 与 Alembic 零漂移全部通过。`pip-audit` 发现 pytest 8.4.2 的 `PYSEC-2026-1845` 后，将 dev 约束提升为 `pytest>=9.0.3,<10` 并锁定 9.1.1；升级后全量回归与审计零漏洞。OpenAPI/client 连续两轮及前后哈希一致；前端 8 文件/23 tests、typecheck/oxlint/Prettier/build/npm audit 与 pre-commit/gitleaks 全绿。固定 seed=3500 的 5000 行 F1→F2→F3→F4→XLSX 总耗时 `108.260723s`，报告 `8.331935s`/3150 SQL（SQL 累计 `4.496375s`），XLSX `4.990587s`/13 SQL，artifact `345735` bytes；1045 finding 全部形成 item + verified citation，0 unavailable，低于 900 秒硬上限。精确 1440×1000 Chrome 覆盖 report/policy 的 normal/empty/loading/error 与 viewer/configurator 权限共 8 场景，页面级横向溢出、脚本/图片注入均为 0；发现并修复制度账本长 stable key 的内部裁切，修复后仅保留显式 title truncate。私有性能/视觉证据位于 `data/private/cp-f4.5/`。
 - 2026-07-29 — **F4 CP-F4.4 API、桌面工作流与 XLSX 闭包完成。** policy family/document/publish、候选检索、正式 binding/history、report generate/read/items/parse-errors 与 export create/download 全部通过服务层暴露为强类型、权限驱动、租户隔离 API；`policy_change` 已接入 revision API。报告查询固定筛选/分页/排序，前端新增制度证据库与批次不可变报告视图，候选明确标注“仅供配置”，正式报告只展示已冻结 binding/citation。XLSX 固定 5 张表与列序，公式/DDE/超链接/宏/外链/对象 fail closed，单元格注入和 32767 字符边界机械处理；artifact 生成、重放、篡改检测、下载审计分离，文件只落 `data/private/`。定向后端 34 passed、后端全量 352 passed/1 skipped、前端 23 passed；Ruff、strict mypy（105 源文件）、双库 Alembic、OpenAPI/client 连续二次无漂移、typecheck/oxlint/Prettier/build 与 pre-commit/gitleaks 均通过。真实 Chrome 1418px 视口验证报告/制度页无横向溢出或 alert，截图保存在 gitignored `data/private/visual-cp-f4-4/`。
 - 2026-07-28 — **F4 CP-F4.3 Binding、exact quote 与原子报告闭包完成。** 正式 binding 仅由 configurator 在 tenant NOWAIT 锁内保存 1–3 条连续有序引用，PG 校验 published/[effective,expiry)/family-document-clause 身份与 frozen hash；exact verifier 只接受调用方必填的 Python Unicode code point、end-exclusive 连续切片，失败候选通过 Pydantic `hide_input_in_errors` 与安全异常保证不进入 DB/audit/log。报告沿用 `Tenant → FileVersion NOWAIT`，显式校验 actor tenant scope，并在冻结引用前机械重算 binding fingerprint；只从 completed F3 + PG binding 装配 report/item/parse-error/citation/count/成功审计。任一引用失败整条 item citation unavailable、零部分引用，失败事务全回滚后独立写无 PII 审计，completed replay/read 不访问 Qdrant/模型/当前 binding。新增 `0006`（不改 0001–0005）扩展 `policy_change` 并增加 append-only `report_request` key ledger，解决 completed report 新 key 复用与同 key 异请求永久冲突；`policy_change` 复制原始/解析快照但不复制 F3/report 副作用。pre-0006 私有 full/schema/affected-data 备份目录为 `data/private/backups/cp-f4.3/pre-0006-20260728-190828/`，三份 SHA-256 分别为 `96614363fa9a5471c232535b5ecf69bedc6f1a0ef15e5bca3d0d7d55da08da3b`、`d7b4bb6cf55d03d734c992bbf9a5df8bb2a6635ff6f284ee0d420c0e1d0e5452`、`eb2f85a491edf4922fa6b68bf598da17babe83db367cd75959f1763aaf5c816a`，均通过 `pg_restore --list` 与容器/本地 hash 交叉验证。CP-F4.3 定向 65 passed；exact verifier statement/branch 100%；后端全量 318 passed/1 skipped；Ruff、strict mypy（99 源文件）、双库 0006/Alembic、OpenAPI/client 二次无漂移、pre-commit/gitleaks、pip-audit、前端 20 tests/typecheck/lint/format/build 全绿。
@@ -110,6 +112,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 
 ### 已完成阶段的测试统计(便于新会话快速判断状态)
 
+- CP-F5.1 实测：迁移/受保护约束定向 **36 passed**；后端全量 **355 passed, 1 skipped**；Ruff lint/format、strict mypy（106 个源文件）、默认/测试双库 `0007 (head)` 与 `alembic check` 通过。
 - CP-F4.4 实测：定向后端 **34 passed**；后端全量 **352 passed, 1 skipped**；Ruff lint/format、strict mypy（105 个源文件）、默认/测试双库 `alembic check`、OpenAPI/客户端连续二次生成无漂移、pre-commit/gitleaks 通过。前端 **8 个文件、23 passed**，typecheck/oxlint/Prettier/生产 build 通过；1418px Chrome 实际视口下报告页与制度页无页面级横向溢出或 alert。
 - CP-F4.3 实测：定向 **65 passed**；strict exact verifier **23 passed** 且 statement/branch coverage **100%**；后端全量 **318 passed, 1 skipped**；Ruff lint/format、strict mypy（99 个源文件）、默认/测试双库 `0006 (head)` 与 `alembic check`、0006 往返/安全 downgrade、受保护约束回归、OpenAPI/客户端连续二次生成无漂移、pre-commit/gitleaks、`pip-audit --strict` 全部通过。前端 **20 passed**，typecheck/oxlint/Prettier/生产 build 通过。
 - CP-F3.5 实测：后端全量 **240 passed, 1 skipped**、迁移定向 **27 passed**；前端 **6 个文件、20 passed**；Ruff/格式、strict mypy（79 个源文件）、双库 `alembic check`、受保护约束、OpenAPI/客户端连续二次生成、TypeScript/oxlint/Prettier/build、pre-commit/gitleaks 全部通过。5000 行五类校验 **48.304265 秒**、SQL **11,056**、finding **1,045**；1440×1000 Chrome 全状态复核无页面级横向溢出。
