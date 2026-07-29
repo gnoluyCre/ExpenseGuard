@@ -404,17 +404,7 @@ async def _generate_report(
     )
     _fault(fault_hook, "success_audit_written")
     await db.flush()
-    return ReportSummary(
-        report_run_id=report.id,
-        file_version_id=report.file_version_id,
-        validation_run_id=report.validation_run_id,
-        report_fingerprint=report.report_fingerprint,
-        stored_row_count=report.stored_row_count,
-        report_item_count=report.report_item_count,
-        verified_citation_count=report.verified_citation_count,
-        unavailable_citation_count=report.unavailable_citation_count,
-        reused_existing=False,
-    )
+    return _summary(report, reused_existing=False)
 
 
 async def _prepare_report(
@@ -855,22 +845,33 @@ async def load_report_snapshot(
                 source_outcome=item.source_outcome,
                 source_verdict=item.source_verdict,
                 reason_code=item.reason_code,
+                reasoning_snapshot=item.reasoning_snapshot,
                 evidence_snapshot=(
                     dict(item.evidence_snapshot) if item.evidence_snapshot is not None else None
                 ),
                 attention_group=item.attention_group,
                 citation_status=item.citation_status,
                 requires_manual_citation=item.requires_manual_citation,
+                source_content_sha256=item.source_content_sha256,
                 citations=tuple(
                     CitationSnapshot(
                         id=citation.id,
                         report_item_id=citation.report_item_id,
                         binding_id=citation.binding_id,
                         citation_order=citation.citation_order,
+                        policy_family_id=citation.policy_family_id,
                         family_stable_key=citation.family_stable_key,
+                        policy_document_id=citation.policy_document_id,
                         document_title=citation.document_title,
                         document_version=citation.document_version,
+                        effective_date=citation.effective_date,
+                        expiry_date=citation.expiry_date,
+                        document_content_sha256=citation.document_content_sha256,
+                        policy_clause_id=citation.policy_clause_id,
                         clause_no=citation.clause_no,
+                        hierarchy_path=citation.hierarchy_path,
+                        clause_text=citation.clause_text,
+                        clause_text_sha256=citation.clause_text_sha256,
                         quote=citation.quote,
                         quote_start=citation.quote_start,
                         quote_end=citation.quote_end,
@@ -888,6 +889,7 @@ async def load_report_snapshot(
                 error_code=error.error_code,
                 column_name=error.column_name,
                 message=error.message,
+                source_content_sha256=error.source_content_sha256,
             )
             for error in parse_errors
         ),
@@ -895,15 +897,31 @@ async def load_report_snapshot(
 
 
 def _summary(report: ReportRun, *, reused_existing: bool) -> ReportSummary:
+    if report.completed_at is None:
+        raise RuntimeError("completed report 缺少 completed_at")
     return ReportSummary(
         report_run_id=report.id,
         file_version_id=report.file_version_id,
         validation_run_id=report.validation_run_id,
+        mapping_version_id=report.mapping_version_id,
         report_fingerprint=report.report_fingerprint,
+        source_content_sha256=report.source_content_sha256,
+        ruleset_fingerprint=report.ruleset_fingerprint,
+        template_version=report.template_version,
+        attention_mapping_version=report.attention_mapping_version,
         stored_row_count=report.stored_row_count,
+        validated_row_count=report.validated_row_count,
+        flagged_row_count=report.flagged_row_count,
+        manual_review_row_count=report.manual_review_row_count,
+        passed_row_count=report.passed_row_count,
+        parse_error_row_count=report.parse_error_row_count,
         report_item_count=report.report_item_count,
         verified_citation_count=report.verified_citation_count,
         unavailable_citation_count=report.unavailable_citation_count,
+        high_attention_row_count=report.high_attention_row_count,
+        manual_attention_row_count=report.manual_attention_row_count,
+        cleared_row_count=report.cleared_row_count,
+        completed_at=report.completed_at,
         reused_existing=reused_existing,
     )
 

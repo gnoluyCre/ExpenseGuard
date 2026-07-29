@@ -191,6 +191,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/batches/{file_version_id}/report": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get For Batch */
+    get: operations["reports_get_for_batch"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/batches/{file_version_id}/reports": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Generate */
+    post: operations["reports_generate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/batches/{file_version_id}/revisions": {
     parameters: {
       query?: never;
@@ -282,6 +316,143 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/policies/documents": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Upload Document */
+    post: operations["policies_upload_document"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/policies/documents/{document_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Document */
+    get: operations["policies_get_document"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/policies/documents/{document_id}/publish": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Publish Document */
+    post: operations["policies_publish_document"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/policies/families": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Families */
+    get: operations["policies_list_families"];
+    put?: never;
+    /** Create Family */
+    post: operations["policies_create_family"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/report-exports/{export_id}/download": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Download Export */
+    get: operations["reports_download_export"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/reports/{report_id}/exports": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create Export */
+    post: operations["reports_create_export"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/reports/{report_id}/items": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Items */
+    get: operations["reports_list_items"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/reports/{report_id}/parse-errors": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Parse Errors */
+    get: operations["reports_list_parse_errors"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/rules": {
     parameters: {
       query?: never;
@@ -293,6 +464,41 @@ export interface paths {
     get: operations["rules_list"];
     /** Save */
     put: operations["rules_save"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/rules/{rule_config_id}/policy-bindings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Rule Bindings */
+    get: operations["policies_list_rule_bindings"];
+    put?: never;
+    /** Save Rule Bindings */
+    post: operations["policies_save_rule_bindings"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/rules/{rule_config_id}/policy-candidates": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Rule Candidates */
+    get: operations["policies_rule_candidates"];
+    put?: never;
     post?: never;
     delete?: never;
     options?: never;
@@ -461,10 +667,244 @@ export interface components {
        */
       uploaded_by: string;
     };
+    /**
+     * BindingCandidate
+     * @description 已通过 PG 二次校验并按本地 rerank 排序的候选。
+     */
+    BindingCandidate: {
+      /**
+       * Chunk Id
+       * Format: uuid
+       */
+      chunk_id: string;
+      /** Chunk No */
+      chunk_no: number;
+      /**
+       * Clause Id
+       * Format: uuid
+       */
+      clause_id: string;
+      /** Clause No */
+      clause_no: string;
+      /** Clause Ordinal */
+      clause_ordinal: number;
+      /** Clause Text */
+      clause_text: string;
+      /**
+       * Document Id
+       * Format: uuid
+       */
+      document_id: string;
+      /** Document Title */
+      document_title: string;
+      /** Document Version */
+      document_version: string;
+      /**
+       * Effective Date
+       * Format: date
+       */
+      effective_date: string;
+      /** Expiry Date */
+      expiry_date: string | null;
+      /**
+       * Family Id
+       * Format: uuid
+       */
+      family_id: string;
+      /** Family Stable Key */
+      family_stable_key: string;
+      /** Rerank Score */
+      rerank_score: number;
+      /** Vector Score */
+      vector_score: number;
+    };
+    /** BindingHistoryView */
+    BindingHistoryView: {
+      /** Binding Fingerprint */
+      binding_fingerprint: string;
+      /** Citation Order */
+      citation_order: number;
+      /**
+       * Clause Id
+       * Format: uuid
+       */
+      clause_id: string;
+      /** Clause No */
+      clause_no: string;
+      /** Clause Text */
+      clause_text: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Created By
+       * Format: uuid
+       */
+      created_by: string;
+      /**
+       * Document Id
+       * Format: uuid
+       */
+      document_id: string;
+      /** Document Title */
+      document_title: string;
+      /** Document Version */
+      document_version: string;
+      /**
+       * Effective Date
+       * Format: date
+       */
+      effective_date: string;
+      /** Expiry Date */
+      expiry_date: string | null;
+      /**
+       * Family Id
+       * Format: uuid
+       */
+      family_id: string;
+      /** Family Stable Key */
+      family_stable_key: string;
+      /** Hierarchy Path */
+      hierarchy_path: string | null;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Quote */
+      quote: string;
+      /** Quote End */
+      quote_end: number;
+      /** Quote Sha256 */
+      quote_sha256: string;
+      /** Quote Start */
+      quote_start: number;
+      /**
+       * Rule Config Id
+       * Format: uuid
+       */
+      rule_config_id: string;
+    };
+    /**
+     * BindingSelection
+     * @description One exact clause slice in a complete, ordered binding set.
+     */
+    BindingSelection: {
+      /** Citation Order */
+      citation_order: number;
+      /** Exact Quote */
+      exact_quote: string;
+      /**
+       * Policy Clause Id
+       * Format: uuid
+       */
+      policy_clause_id: string;
+      /**
+       * Policy Document Id
+       * Format: uuid
+       */
+      policy_document_id: string;
+      /** Quote End */
+      quote_end: number;
+      /** Quote Start */
+      quote_start: number;
+    };
     /** Body_batches_import */
     Body_batches_import: {
       /** File */
       file: string;
+    };
+    /** Body_policies_upload_document */
+    Body_policies_upload_document: {
+      /**
+       * Effective Date
+       * Format: date
+       */
+      effective_date: string;
+      /** Expiry Date */
+      expiry_date?: string | null;
+      /**
+       * Family Id
+       * Format: uuid
+       */
+      family_id: string;
+      /** File */
+      file: string;
+      /** Title */
+      title: string;
+      /** Version */
+      version: string;
+    };
+    /**
+     * CitationSnapshot
+     * @description One verified citation copied from PostgreSQL into a report snapshot.
+     */
+    CitationSnapshot: {
+      /**
+       * Binding Id
+       * Format: uuid
+       */
+      binding_id: string;
+      /** Citation Order */
+      citation_order: number;
+      /** Clause No */
+      clause_no: string;
+      /** Clause Text */
+      clause_text: string;
+      /** Clause Text Sha256 */
+      clause_text_sha256: string;
+      /** Document Content Sha256 */
+      document_content_sha256: string;
+      /** Document Title */
+      document_title: string;
+      /** Document Version */
+      document_version: string;
+      /**
+       * Effective Date
+       * Format: date
+       */
+      effective_date: string;
+      /** Expiry Date */
+      expiry_date: string | null;
+      /** Family Stable Key */
+      family_stable_key: string;
+      /** Hierarchy Path */
+      hierarchy_path: string | null;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Policy Clause Id
+       * Format: uuid
+       */
+      policy_clause_id: string;
+      /**
+       * Policy Document Id
+       * Format: uuid
+       */
+      policy_document_id: string;
+      /**
+       * Policy Family Id
+       * Format: uuid
+       */
+      policy_family_id: string;
+      /** Quote */
+      quote: string;
+      /** Quote End */
+      quote_end: number;
+      /** Quote Sha256 */
+      quote_sha256: string;
+      /** Quote Start */
+      quote_start: number;
+      /**
+       * Report Item Id
+       * Format: uuid
+       */
+      report_item_id: string;
     };
     /**
      * ConstantInferenceRule
@@ -485,6 +925,19 @@ export interface components {
       type: "constant";
       /** Value */
       value: string;
+    };
+    /** CreatePolicyFamilyRequest */
+    CreatePolicyFamilyRequest: {
+      /** Display Name */
+      display_name: string;
+      /** Stable Key */
+      stable_key: string;
+    };
+    /** CreatePolicyFamilyResponse */
+    CreatePolicyFamilyResponse: {
+      family: components["schemas"]["PolicyFamilyListItem"];
+      /** Reused Existing */
+      reused_existing: boolean;
     };
     /** CreateRevisionRequest */
     CreateRevisionRequest: {
@@ -1171,6 +1624,38 @@ export interface components {
       /** Row No */
       row_no: number;
     };
+    /** ParseErrorPage */
+    ParseErrorPage: {
+      /** Items */
+      items: components["schemas"]["ParseErrorSnapshot"][];
+      /** Limit */
+      limit: number;
+      /** Offset */
+      offset: number;
+      /** Total */
+      total: number;
+    };
+    /**
+     * ParseErrorSnapshot
+     * @description Safe parse failure copied into a completed report.
+     */
+    ParseErrorSnapshot: {
+      /** Column Name */
+      column_name: string;
+      /** Error Code */
+      error_code: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Message */
+      message: string;
+      /** Row No */
+      row_no: number;
+      /** Source Content Sha256 */
+      source_content_sha256: string;
+    };
     /** ParseErrorsResponse */
     ParseErrorsResponse: {
       /**
@@ -1192,12 +1677,152 @@ export interface components {
       /** Total */
       total: number;
     };
+    /** PolicyClauseView */
+    PolicyClauseView: {
+      /** Clause No */
+      clause_no: string;
+      /** Hierarchy Path */
+      hierarchy_path: string | null;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Ordinal */
+      ordinal: number | null;
+      /** Source Locator */
+      source_locator: {
+        [key: string]: unknown;
+      } | null;
+      /** Text */
+      text: string;
+      /** Text Sha256 */
+      text_sha256: string | null;
+    };
+    /** PolicyDocumentListItem */
+    PolicyDocumentListItem: {
+      /** Content Sha256 */
+      content_sha256: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Effective Date
+       * Format: date
+       */
+      effective_date: string;
+      /** Expiry Date */
+      expiry_date: string | null;
+      /** Failure Code */
+      failure_code: string | null;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Index Completed Points */
+      index_completed_points: number | null;
+      /** Index Expected Points */
+      index_expected_points: number | null;
+      /** Index Status */
+      index_status: string | null;
+      /** Status */
+      status: string;
+      /** Title */
+      title: string;
+      /** Version */
+      version: string;
+    };
+    /** PolicyDocumentView */
+    PolicyDocumentView: {
+      /** Clauses */
+      clauses: components["schemas"]["PolicyClauseView"][];
+      /** Content Sha256 */
+      content_sha256: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Effective Date
+       * Format: date
+       */
+      effective_date: string;
+      /** Expiry Date */
+      expiry_date: string | null;
+      /** Failure Code */
+      failure_code: string | null;
+      /**
+       * Family Id
+       * Format: uuid
+       */
+      family_id: string;
+      /** Family Stable Key */
+      family_stable_key: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Index Completed Points */
+      index_completed_points: number | null;
+      /** Index Expected Points */
+      index_expected_points: number | null;
+      /** Index Status */
+      index_status: string | null;
+      /** Mime Type */
+      mime_type: string | null;
+      /** Size Bytes */
+      size_bytes: number | null;
+      /** Source Filename */
+      source_filename: string | null;
+      /** Status */
+      status: string;
+      /** Title */
+      title: string;
+      /** Version */
+      version: string;
+    };
+    /** PolicyFamilyListItem */
+    PolicyFamilyListItem: {
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Display Name */
+      display_name: string;
+      /** Documents */
+      documents: components["schemas"]["PolicyDocumentListItem"][];
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Stable Key */
+      stable_key: string;
+    };
     /**
      * ProvenanceMode
      * @description 规范化字段的取值来源。
      * @enum {string}
      */
     ProvenanceMode: "mapped" | "inferred";
+    /** PublishPolicyResponse */
+    PublishPolicyResponse: {
+      /**
+       * Document Id
+       * Format: uuid
+       */
+      document_id: string;
+      /** Reused Existing */
+      reused_existing: boolean;
+      /** Status */
+      status: string;
+    };
     /**
      * ReadinessResponse
      * @description 就绪响应。
@@ -1227,11 +1852,188 @@ export interface components {
       | "INVOICE_NO_MISSING"
       | "EXEMPTION_MATCHED";
     /**
+     * ReportAttentionGroup
+     * @description F4 single-axis operational grouping, independent from F8 severity.
+     * @enum {string}
+     */
+    ReportAttentionGroup: "high_attention" | "manual_attention" | "cleared";
+    /**
+     * ReportCitationStatus
+     * @description Whether all expected citations for an item are exact and available.
+     * @enum {string}
+     */
+    ReportCitationStatus: "verified" | "unavailable";
+    /** ReportExportResponse */
+    ReportExportResponse: {
+      /** Artifact Sha256 */
+      artifact_sha256: string;
+      /**
+       * Completed At
+       * Format: date-time
+       */
+      completed_at: string;
+      /**
+       * Export Id
+       * Format: uuid
+       */
+      export_id: string;
+      /** Format */
+      format: string;
+      /**
+       * Report Run Id
+       * Format: uuid
+       */
+      report_run_id: string;
+      /** Reused Existing */
+      reused_existing: boolean;
+      /** Size Bytes */
+      size_bytes: number;
+      /** Template Version */
+      template_version: string;
+    };
+    /** ReportItemPage */
+    ReportItemPage: {
+      /** Items */
+      items: components["schemas"]["ReportItemSnapshot"][];
+      /** Limit */
+      limit: number;
+      /** Offset */
+      offset: number;
+      /** Total */
+      total: number;
+    };
+    /**
+     * ReportItemSnapshot
+     * @description Finding-level immutable snapshot with ordered verified citations.
+     */
+    ReportItemSnapshot: {
+      attention_group: components["schemas"]["ReportAttentionGroup"];
+      citation_status: components["schemas"]["ReportCitationStatus"];
+      /** Citations */
+      citations: components["schemas"]["CitationSnapshot"][];
+      /** Evidence Snapshot */
+      evidence_snapshot: {
+        [key: string]: unknown;
+      } | null;
+      /**
+       * Finding Id
+       * Format: uuid
+       */
+      finding_id: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Reason Code */
+      reason_code: string;
+      /** Reasoning Snapshot */
+      reasoning_snapshot: string | null;
+      /** Requires Manual Citation */
+      requires_manual_citation: boolean;
+      /** Row No */
+      row_no: number;
+      /** Rule Id */
+      rule_id: string;
+      /** Rule Version */
+      rule_version: string | null;
+      /** Source Content Sha256 */
+      source_content_sha256: string;
+      /** Source Outcome */
+      source_outcome: string;
+      /** Source Verdict */
+      source_verdict: string;
+    };
+    /**
+     * ReportItemSort
+     * @enum {string}
+     */
+    ReportItemSort: "default" | "row_no" | "rule_id";
+    /** ReportOverviewResponse */
+    ReportOverviewResponse: {
+      /** Binding Manifest */
+      binding_manifest: {
+        [key: string]: unknown;
+      };
+      /** Policy Manifest */
+      policy_manifest: {
+        [key: string]: unknown;
+      };
+      summary: components["schemas"]["ReportSummary"];
+    };
+    /**
+     * ReportSummary
+     * @description Stable result returned for a newly assembled or replayed report.
+     */
+    ReportSummary: {
+      /** Attention Mapping Version */
+      attention_mapping_version: string;
+      /** Cleared Row Count */
+      cleared_row_count: number;
+      /**
+       * Completed At
+       * Format: date-time
+       */
+      completed_at: string;
+      /**
+       * File Version Id
+       * Format: uuid
+       */
+      file_version_id: string;
+      /** Flagged Row Count */
+      flagged_row_count: number;
+      /** High Attention Row Count */
+      high_attention_row_count: number;
+      /** Manual Attention Row Count */
+      manual_attention_row_count: number;
+      /** Manual Review Row Count */
+      manual_review_row_count: number;
+      /**
+       * Mapping Version Id
+       * Format: uuid
+       */
+      mapping_version_id: string;
+      /** Parse Error Row Count */
+      parse_error_row_count: number;
+      /** Passed Row Count */
+      passed_row_count: number;
+      /** Report Fingerprint */
+      report_fingerprint: string;
+      /** Report Item Count */
+      report_item_count: number;
+      /**
+       * Report Run Id
+       * Format: uuid
+       */
+      report_run_id: string;
+      /** Reused Existing */
+      reused_existing: boolean;
+      /** Ruleset Fingerprint */
+      ruleset_fingerprint: string;
+      /** Source Content Sha256 */
+      source_content_sha256: string;
+      /** Stored Row Count */
+      stored_row_count: number;
+      /** Template Version */
+      template_version: string;
+      /** Unavailable Citation Count */
+      unavailable_citation_count: number;
+      /** Validated Row Count */
+      validated_row_count: number;
+      /**
+       * Validation Run Id
+       * Format: uuid
+       */
+      validation_run_id: string;
+      /** Verified Citation Count */
+      verified_citation_count: number;
+    };
+    /**
      * RevisionRequestReason
      * @description 服务层接受的派生原因。
      * @enum {string}
      */
-    RevisionRequestReason: "ruleset_change" | "mapping_change";
+    RevisionRequestReason: "ruleset_change" | "mapping_change" | "policy_change";
     /**
      * Role
      * @description RBAC 三角色。权限矩阵定义在 `app.core.security.permissions`。
@@ -1313,6 +2115,23 @@ export interface components {
       rule_id: string;
       /** Version */
       version: number;
+    };
+    /** SaveBindingsRequest */
+    SaveBindingsRequest: {
+      /**
+       * Expense Date
+       * Format: date
+       */
+      expense_date: string;
+      /** Selections */
+      selections: components["schemas"]["BindingSelection"][];
+    };
+    /** SaveBindingsResponse */
+    SaveBindingsResponse: {
+      /** Items */
+      items: components["schemas"]["BindingHistoryView"][];
+      /** Reused Existing */
+      reused_existing: boolean;
     };
     /** SaveRuleRequest */
     SaveRuleRequest: {
@@ -1426,6 +2245,11 @@ export interface components {
       /** Versions */
       versions: components["schemas"]["MappingVersionResponse"][];
     };
+    /**
+     * SortDirection
+     * @enum {string}
+     */
+    SortDirection: "asc" | "desc";
     /** TimelinessEvidence */
     TimelinessEvidence: {
       /** Actual Calendar Days */
@@ -1520,6 +2344,16 @@ export interface components {
       | "location"
       | "currency"
       | "description";
+    /** UploadPolicyResponse */
+    UploadPolicyResponse: {
+      /** Chunk Count */
+      chunk_count: number;
+      /** Clause Count */
+      clause_count: number;
+      document: components["schemas"]["PolicyDocumentView"];
+      /** Reused Existing */
+      reused_existing: boolean;
+    };
     /** ValidationError */
     ValidationError: {
       /** Context */
@@ -2050,6 +2884,155 @@ export interface operations {
       };
     };
   };
+  reports_get_for_batch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        file_version_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReportOverviewResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  reports_generate: {
+    parameters: {
+      query?: never;
+      header: {
+        "Idempotency-Key": string;
+      };
+      path: {
+        file_version_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReportSummary"];
+        };
+      };
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReportSummary"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
   batches_create_revision: {
     parameters: {
       query?: never;
@@ -2312,6 +3295,668 @@ export interface operations {
       };
     };
   };
+  policies_upload_document: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody: {
+      content: {
+        "multipart/form-data": components["schemas"]["Body_policies_upload_document"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["UploadPolicyResponse"];
+        };
+      };
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["UploadPolicyResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  policies_get_document: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        document_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PolicyDocumentView"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  policies_publish_document: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        document_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PublishPolicyResponse"];
+        };
+      };
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PublishPolicyResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  policies_list_families: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PolicyFamilyListItem"][];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  policies_create_family: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreatePolicyFamilyRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CreatePolicyFamilyResponse"];
+        };
+      };
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CreatePolicyFamilyResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  reports_download_export: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        export_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Completed XLSX artifact */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  reports_create_export: {
+    parameters: {
+      query?: never;
+      header: {
+        "Idempotency-Key": string;
+      };
+      path: {
+        report_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReportExportResponse"];
+        };
+      };
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReportExportResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  reports_list_items: {
+    parameters: {
+      query?: {
+        attention_group?: components["schemas"]["ReportAttentionGroup"] | null;
+        citation_status?: components["schemas"]["ReportCitationStatus"] | null;
+        sort_by?: components["schemas"]["ReportItemSort"];
+        direction?: components["schemas"]["SortDirection"];
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path: {
+        report_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReportItemPage"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  reports_list_parse_errors: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path: {
+        report_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ParseErrorPage"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
   rules_list: {
     parameters: {
       query?: {
@@ -2417,6 +4062,228 @@ export interface operations {
       };
       /** @description Forbidden */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  policies_list_rule_bindings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        rule_config_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BindingHistoryView"][];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  policies_save_rule_bindings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        rule_config_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SaveBindingsRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SaveBindingsResponse"];
+        };
+      };
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SaveBindingsResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  policies_rule_candidates: {
+    parameters: {
+      query: {
+        expense_date: string;
+      };
+      header?: never;
+      path: {
+        rule_config_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BindingCandidate"][];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
         headers: {
           [name: string]: unknown;
         };

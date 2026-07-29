@@ -902,3 +902,11 @@ F4 UI 不出现复核 decision/note/assignee/queue，不出现 correlation findi
 - pre-0006 默认库备份位于 gitignored 的 `data/private/backups/cp-f4.3/pre-0006-20260728-190828/`。full/schema/file_version affected-data custom archive 均通过 `pg_restore --list` 与容器/本地 SHA-256 交叉验证，哈希分别为 `96614363fa9a5471c232535b5ecf69bedc6f1a0ef15e5bca3d0d7d55da08da3b`、`d7b4bb6cf55d03d734c992bbf9a5df8bb2a6635ff6f284ee0d420c0e1d0e5452`、`eb2f85a491edf4922fa6b68bf598da17babe83db367cd75959f1763aaf5c816a`。默认/测试双库均为 `0006 (head)` 且 Alembic 零漂移。
 - 报告装配额外显式验证 actor tenant scope，并机械重算 `canonical_binding_fingerprint`；跨租户 actor 零报告/失败审计副作用，错误 binding fingerprint 整组引用降级为 `POLICY_BINDING_INTEGRITY_FAILED` 且不冻结部分引用。
 - 验证结果：CP-F4.3 定向 `65 passed`；exact verifier `23 passed` 且 statement/branch coverage `100%`；后端全量 `318 passed, 1 skipped`；Ruff lint/format、strict mypy（99 个源文件）、0006 clean roundtrip/safe downgrade、双库 `alembic check`、受保护约束/租户隔离/锁冲突/幂等/中断恢复回归、OpenAPI/前端客户端连续二次生成无漂移、pre-commit/gitleaks 与 `pip-audit --strict` 全部通过。前端 `20 passed`，typecheck/oxlint/Prettier/生产 build 通过。
+
+### CP-F4.4 实际落地记录（2026-07-29）
+
+- 新增 policy/binding/report/export 路由与强类型 Pydantic/OpenAPI：制度 family/list/create、document upload/read/publish、规则候选、binding save/history、报告 generate/read/items/parse-errors、XLSX artifact create/download。路由只做传输编排，查询、分页、稳定排序、租户隔离和审计均在服务层；权限继续按 permission 驱动，`policy_change` 已接入批次 revision API。
+- 制度桌面工作流新增“制度证据库”：展示不可变版本账本、条款原文预览、候选检索、精确 offset/quote binding 与历史。候选显式标注仅供配置，报告只消费 configurator-confirmed binding。批次页新增不可变报告视图，展示汇总、attention group、逐条 reasoning/原始行证据/逐字引用、citation unavailable 与解析错误，并提供 XLSX 创建后独立下载。
+- XLSX 固定输出“报告摘要、关注项、制度引用、解析错误、原始行证据”5 张表与固定列序；只导出报告引用的原始行。所有文本执行前导空白后的公式/DDE 注入防护和 Excel 32767 字符边界处理；生成后用 ZIP/openpyxl 回读，发现公式、DDE、超链接、宏、外链或嵌入对象即 fail closed。artifact 使用私有确定性路径、追加式幂等账本、原子写入、SHA-256 篡改检测，并分离生成成功/失败与下载审计。
+- 安全与回归覆盖跨租户 404、viewer/configurator/auditor 权限、幂等重放、稳定分页、解析错误、恶意文本安全渲染、XLSX 注入/回读/篡改/孤儿恢复。未实现 F5/F6/F8、PDF/CSV/mobile，未修改受保护基础设施或既有迁移。
+- 验证结果：CP-F4.4 定向后端 `34 passed`，后端全量 `352 passed, 1 skipped`；Ruff lint/format、strict mypy（105 个源文件）、默认/测试双库 `alembic check` 与 pre-commit/gitleaks 全部通过。OpenAPI 与前端客户端连续二次生成哈希一致；前端 `8` 个文件、`23 passed`，typecheck/oxlint/Prettier/生产 build 通过。真实 Chrome 1418px 视口加载合成租户的报告与制度页，均无页面级横向溢出或 alert；视觉记录位于 gitignored `data/private/visual-cp-f4-4/`。

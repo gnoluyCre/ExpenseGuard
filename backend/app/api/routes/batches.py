@@ -171,6 +171,7 @@ class RevisionRequestReason(StrEnum):
 
     RULESET_CHANGE = "ruleset_change"
     MAPPING_CHANGE = "mapping_change"
+    POLICY_CHANGE = "policy_change"
 
 
 class CreateRevisionRequest(BaseModel):

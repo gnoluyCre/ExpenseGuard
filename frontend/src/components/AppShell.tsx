@@ -25,6 +25,7 @@ const MENU: readonly MenuItem[] = [
   { to: "/batches", label: "批次", permission: PERMISSIONS.batchRead },
   { to: "/review", label: "复核台", permission: PERMISSIONS.reviewRead },
   { to: "/rules", label: "规则配置", permission: PERMISSIONS.configRead },
+  { to: "/policies", label: "制度证据", permission: PERMISSIONS.configRead },
   { to: "/health", label: "系统状态", permission: PERMISSIONS.batchRead },
 ];
 

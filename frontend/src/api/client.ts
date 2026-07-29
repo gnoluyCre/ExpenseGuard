@@ -88,6 +88,18 @@ export type CreateRevisionRequest = components["schemas"]["CreateRevisionRequest
 export type CreateRevisionResponse = components["schemas"]["CreateRevisionResponse"];
 export type RevisionReason = components["schemas"]["RevisionRequestReason"];
 
+/** F4 制度、绑定与不可变报告快照。 */
+export type PolicyFamily = components["schemas"]["PolicyFamilyListItem"];
+export type PolicyDocument = components["schemas"]["PolicyDocumentView"];
+export type BindingCandidate = components["schemas"]["BindingCandidate"];
+export type BindingHistory = components["schemas"]["BindingHistoryView"];
+export type ReportOverview = components["schemas"]["ReportOverviewResponse"];
+export type ReportSummary = components["schemas"]["ReportSummary"];
+export type ReportItemPage = components["schemas"]["ReportItemPage"];
+export type ReportItem = components["schemas"]["ReportItemSnapshot"];
+export type ReportParseErrorPage = components["schemas"]["ParseErrorPage"];
+export type ReportExport = components["schemas"]["ReportExportResponse"];
+
 /**
  * 后端权限标识。
  *
@@ -110,4 +122,13 @@ export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
 export function hasPermission(user: CurrentUser, permission: PermissionKey): boolean {
   return user.permissions.includes(permission);
+}
+
+/** 从统一 ErrorResponse 中安全提取用户可见消息。 */
+export function apiErrorMessage(error: unknown): string | undefined {
+  if (typeof error !== "object" || error === null) return undefined;
+  const wrapped = (error as { error?: unknown }).error;
+  if (typeof wrapped !== "object" || wrapped === null) return undefined;
+  const message = (wrapped as { message?: unknown }).message;
+  return typeof message === "string" ? message : undefined;
 }

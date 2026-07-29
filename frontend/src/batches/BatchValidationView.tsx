@@ -37,6 +37,7 @@ const VERDICT_LABELS: Record<FindingItem["verdict"], string> = {
 const REVISION_LABELS: Record<RevisionReason, string> = {
   ruleset_change: "应用新规则集",
   mapping_change: "重新映射字段",
+  policy_change: "应用新制度绑定",
 };
 
 function makeIdempotencyKey(): string {

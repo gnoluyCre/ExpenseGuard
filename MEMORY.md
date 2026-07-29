@@ -5,7 +5,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 -->
 
 ## 🏗️ 当前阶段与目标
-**当前任务:阶段 2 F4 已完成 CP-F4.3 Binding、引用核心与报告编排。** `specs/005-phase2-f4-report-generation.md` 是 CP-F4.0–F4.5 的唯一规范来源；下一实施点为 CP-F4.4 API、桌面工作流与 XLSX。
+**当前任务:阶段 2 F4 已完成 CP-F4.4 API、桌面工作流与 XLSX。** `specs/005-phase2-f4-report-generation.md` 是 CP-F4.0–F4.5 的唯一规范来源；下一实施点为 CP-F4.5 契约与交付门禁。
 
 - CP0 仓库重置(干净历史、`.gitignore` 脱敏排除)
 - CP1 后端地基(uv + 18 张表 + Alembic 三层隔离)
@@ -13,7 +13,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - CP3 认证、RBAC、租户隔离(含反向验证)
 - CP4 前端垂直切片 + OpenAPI 契约门禁 + pre-commit/CI + 合成数据生成器(含反向验证)
 
-**下一步:CP-F4.4 · API、桌面工作流与 XLSX。** 基于 CP-F4.3 已冻结的 Binding/Report 服务实现 policy/binding/report/export 路由与 Pydantic/OpenAPI、制度配置页、批次报告视图及 XLSX-only 导出；不得进入 F5/F6/F8 或新增 PDF/CSV/mobile。
+**下一步:CP-F4.5 · 契约与交付门禁。** 对 F4 做全量回归、迁移/受保护约束、契约、安全、5000 行 report+XLSX 性能与 1440×1000 桌面交付门禁；不得降低阈值、跳过失败、修改受保护基础设施或提前进入 F5/F6。
 `process_row_once` 的首个生产调用方现为 `app.core.validation.batch_service.validate_batch`；行内 finding 与 `row_result` 使用同一 session/事务，`row_result.rule_version` 固定保存规则集指纹。
 
 **开工前必读的两件事:**
@@ -24,6 +24,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 
 ## 📂 架构决策
 *(把构建过程中做出的具体选择记录在此,便于后续 agent 遵循)*
+- 2026-07-29 — **F4 CP-F4.4 API、桌面工作流与 XLSX 闭包完成。** policy family/document/publish、候选检索、正式 binding/history、report generate/read/items/parse-errors 与 export create/download 全部通过服务层暴露为强类型、权限驱动、租户隔离 API；`policy_change` 已接入 revision API。报告查询固定筛选/分页/排序，前端新增制度证据库与批次不可变报告视图，候选明确标注“仅供配置”，正式报告只展示已冻结 binding/citation。XLSX 固定 5 张表与列序，公式/DDE/超链接/宏/外链/对象 fail closed，单元格注入和 32767 字符边界机械处理；artifact 生成、重放、篡改检测、下载审计分离，文件只落 `data/private/`。定向后端 34 passed、后端全量 352 passed/1 skipped、前端 23 passed；Ruff、strict mypy（105 源文件）、双库 Alembic、OpenAPI/client 连续二次无漂移、typecheck/oxlint/Prettier/build 与 pre-commit/gitleaks 均通过。真实 Chrome 1418px 视口验证报告/制度页无横向溢出或 alert，截图保存在 gitignored `data/private/visual-cp-f4-4/`。
 - 2026-07-28 — **F4 CP-F4.3 Binding、exact quote 与原子报告闭包完成。** 正式 binding 仅由 configurator 在 tenant NOWAIT 锁内保存 1–3 条连续有序引用，PG 校验 published/[effective,expiry)/family-document-clause 身份与 frozen hash；exact verifier 只接受调用方必填的 Python Unicode code point、end-exclusive 连续切片，失败候选通过 Pydantic `hide_input_in_errors` 与安全异常保证不进入 DB/audit/log。报告沿用 `Tenant → FileVersion NOWAIT`，显式校验 actor tenant scope，并在冻结引用前机械重算 binding fingerprint；只从 completed F3 + PG binding 装配 report/item/parse-error/citation/count/成功审计。任一引用失败整条 item citation unavailable、零部分引用，失败事务全回滚后独立写无 PII 审计，completed replay/read 不访问 Qdrant/模型/当前 binding。新增 `0006`（不改 0001–0005）扩展 `policy_change` 并增加 append-only `report_request` key ledger，解决 completed report 新 key 复用与同 key 异请求永久冲突；`policy_change` 复制原始/解析快照但不复制 F3/report 副作用。pre-0006 私有 full/schema/affected-data 备份目录为 `data/private/backups/cp-f4.3/pre-0006-20260728-190828/`，三份 SHA-256 分别为 `96614363fa9a5471c232535b5ecf69bedc6f1a0ef15e5bca3d0d7d55da08da3b`、`d7b4bb6cf55d03d734c992bbf9a5df8bb2a6635ff6f284ee0d420c0e1d0e5452`、`eb2f85a491edf4922fa6b68bf598da17babe83db367cd75959f1763aaf5c816a`，均通过 `pg_restore --list` 与容器/本地 hash 交叉验证。CP-F4.3 定向 65 passed；exact verifier statement/branch 100%；后端全量 318 passed/1 skipped；Ruff、strict mypy（99 源文件）、双库 0006/Alembic、OpenAPI/client 二次无漂移、pre-commit/gitleaks、pip-audit、前端 20 tests/typecheck/lint/format/build 全绿。
 - 2026-07-28 — **F4 CP-F4.2 本地制度检索闭包完成。** 私有源文件使用 tenant/SHA-256 内容寻址；解析只接受 PDF 文本层、DOCX 段落和 UTF-8 TXT 的显式编号条款，禁止 OCR/猜测边界。Qdrant 只产生候选，PG 对 tenant/date/generation/provenance/hash/连续切片做二次校验。本地模型端点与 Qdrant 都受显式主机白名单保护，prod 禁用 fake provider。outbox 使用 generation-aware lease，支持 Qdrant side effect 后崩溃重放、terminal/manual retry、前序 expiry payload 刷新和 building manifest delta。未实现 binding/report/API/UI。后端全量 269 passed/1 skipped，Ruff、strict mypy（93 源文件）、双库 Alembic、OpenAPI 二次生成、pre-commit/gitleaks 与 pip-audit 全绿。W0 镜像拉取因 registry/manifest 超时未完成，保持显式外部缺口。
 - 2026-07-28 — **F4 CP-F4.1 持久化闭包完成。** `0005_f4_policy_reports.py` 是唯一新增迁移：legacy document 仅一次性回填 `legacy_unpublished` 且新写入不得伪装 legacy；旧 policy CASCADE/SET NULL FK 被复合 tenant `RESTRICT` 替换；published family interval 由 `btree_gist` 半开区间排斥约束保证；source blob、published policy/clause/chunk、binding、report snapshot 与 completed export 由数据库不可变触发器保护。binding→family/document/clause 与 citation→binding identity 使用完整复合 FK，避免同租户 ID 拼接错配。默认库 pre-0005 三份 custom archive 已通过 `pg_restore --list` 与 SHA-256 交叉验证；默认/测试双库均为 0005 且 Alembic 零漂移。CP-F4.1 定向 4 passed、迁移/恢复组 39 passed、后端全量 244 passed/1 skipped，Ruff 与 strict mypy 通过。详见 spec §17。
@@ -108,6 +109,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 
 ### 已完成阶段的测试统计(便于新会话快速判断状态)
 
+- CP-F4.4 实测：定向后端 **34 passed**；后端全量 **352 passed, 1 skipped**；Ruff lint/format、strict mypy（105 个源文件）、默认/测试双库 `alembic check`、OpenAPI/客户端连续二次生成无漂移、pre-commit/gitleaks 通过。前端 **8 个文件、23 passed**，typecheck/oxlint/Prettier/生产 build 通过；1418px Chrome 实际视口下报告页与制度页无页面级横向溢出或 alert。
 - CP-F4.3 实测：定向 **65 passed**；strict exact verifier **23 passed** 且 statement/branch coverage **100%**；后端全量 **318 passed, 1 skipped**；Ruff lint/format、strict mypy（99 个源文件）、默认/测试双库 `0006 (head)` 与 `alembic check`、0006 往返/安全 downgrade、受保护约束回归、OpenAPI/客户端连续二次生成无漂移、pre-commit/gitleaks、`pip-audit --strict` 全部通过。前端 **20 passed**，typecheck/oxlint/Prettier/生产 build 通过。
 - CP-F3.5 实测：后端全量 **240 passed, 1 skipped**、迁移定向 **27 passed**；前端 **6 个文件、20 passed**；Ruff/格式、strict mypy（79 个源文件）、双库 `alembic check`、受保护约束、OpenAPI/客户端连续二次生成、TypeScript/oxlint/Prettier/build、pre-commit/gitleaks 全部通过。5000 行五类校验 **48.304265 秒**、SQL **11,056**、finding **1,045**；1440×1000 Chrome 全状态复核无页面级横向溢出。
 - CP-F3.1 实测：迁移目录 **27 passed**；后端全量 **149 passed, 1 skipped**；Ruff lint/格式、strict mypy（67 个源文件）、测试库与默认开发库 `alembic check` 全部通过。默认开发库已在三份 custom archive 经 `pg_restore --list` 与 SHA-256 验证后升级至 `0004`。
@@ -139,6 +141,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - [x] F4 CP-F4.1（0005 policy/index/binding/report/export 持久化、legacy 安全回填、复合租户 FK、GiST 与安全 downgrade）
 - [x] F4 CP-F4.2（私有制度导入、确定性解析、Qdrant generation/outbox、本地候选检索与 PG 二次校验）
 - [x] F4 CP-F4.3（configurator-confirmed binding、strict exact quote、原子 report snapshot、幂等/恢复与 policy_change）
+- [x] F4 CP-F4.4（强类型 policy/binding/report/export API、制度证据库、批次报告视图、五表安全 XLSX）
 - [x] 认证集成（server-side session + RBAC 三角色 + 租户过滤 fail-closed）
 - [x] 前端垂直切片（登录 / 路由守卫 / 三角色外壳 / 系统状态页）
 - [x] OpenAPI 契约门禁 + pre-commit + GitHub Actions CI

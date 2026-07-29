@@ -242,6 +242,285 @@
         "title": "BatchSummaryResponse",
         "type": "object"
       },
+      "BindingCandidate": {
+        "description": "已通过 PG 二次校验并按本地 rerank 排序的候选。",
+        "properties": {
+          "chunk_id": {
+            "format": "uuid",
+            "title": "Chunk Id",
+            "type": "string"
+          },
+          "chunk_no": {
+            "title": "Chunk No",
+            "type": "integer"
+          },
+          "clause_id": {
+            "format": "uuid",
+            "title": "Clause Id",
+            "type": "string"
+          },
+          "clause_no": {
+            "title": "Clause No",
+            "type": "string"
+          },
+          "clause_ordinal": {
+            "title": "Clause Ordinal",
+            "type": "integer"
+          },
+          "clause_text": {
+            "title": "Clause Text",
+            "type": "string"
+          },
+          "document_id": {
+            "format": "uuid",
+            "title": "Document Id",
+            "type": "string"
+          },
+          "document_title": {
+            "title": "Document Title",
+            "type": "string"
+          },
+          "document_version": {
+            "title": "Document Version",
+            "type": "string"
+          },
+          "effective_date": {
+            "format": "date",
+            "title": "Effective Date",
+            "type": "string"
+          },
+          "expiry_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiry Date"
+          },
+          "family_id": {
+            "format": "uuid",
+            "title": "Family Id",
+            "type": "string"
+          },
+          "family_stable_key": {
+            "title": "Family Stable Key",
+            "type": "string"
+          },
+          "rerank_score": {
+            "title": "Rerank Score",
+            "type": "number"
+          },
+          "vector_score": {
+            "title": "Vector Score",
+            "type": "number"
+          }
+        },
+        "required": [
+          "family_id",
+          "family_stable_key",
+          "document_id",
+          "document_title",
+          "document_version",
+          "effective_date",
+          "expiry_date",
+          "clause_id",
+          "clause_no",
+          "clause_ordinal",
+          "clause_text",
+          "chunk_id",
+          "chunk_no",
+          "vector_score",
+          "rerank_score"
+        ],
+        "title": "BindingCandidate",
+        "type": "object"
+      },
+      "BindingHistoryView": {
+        "properties": {
+          "binding_fingerprint": {
+            "title": "Binding Fingerprint",
+            "type": "string"
+          },
+          "citation_order": {
+            "title": "Citation Order",
+            "type": "integer"
+          },
+          "clause_id": {
+            "format": "uuid",
+            "title": "Clause Id",
+            "type": "string"
+          },
+          "clause_no": {
+            "title": "Clause No",
+            "type": "string"
+          },
+          "clause_text": {
+            "title": "Clause Text",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "format": "uuid",
+            "title": "Created By",
+            "type": "string"
+          },
+          "document_id": {
+            "format": "uuid",
+            "title": "Document Id",
+            "type": "string"
+          },
+          "document_title": {
+            "title": "Document Title",
+            "type": "string"
+          },
+          "document_version": {
+            "title": "Document Version",
+            "type": "string"
+          },
+          "effective_date": {
+            "format": "date",
+            "title": "Effective Date",
+            "type": "string"
+          },
+          "expiry_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiry Date"
+          },
+          "family_id": {
+            "format": "uuid",
+            "title": "Family Id",
+            "type": "string"
+          },
+          "family_stable_key": {
+            "title": "Family Stable Key",
+            "type": "string"
+          },
+          "hierarchy_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hierarchy Path"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "quote": {
+            "title": "Quote",
+            "type": "string"
+          },
+          "quote_end": {
+            "title": "Quote End",
+            "type": "integer"
+          },
+          "quote_sha256": {
+            "title": "Quote Sha256",
+            "type": "string"
+          },
+          "quote_start": {
+            "title": "Quote Start",
+            "type": "integer"
+          },
+          "rule_config_id": {
+            "format": "uuid",
+            "title": "Rule Config Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "rule_config_id",
+          "citation_order",
+          "binding_fingerprint",
+          "family_id",
+          "family_stable_key",
+          "document_id",
+          "document_title",
+          "document_version",
+          "effective_date",
+          "expiry_date",
+          "clause_id",
+          "clause_no",
+          "hierarchy_path",
+          "clause_text",
+          "quote",
+          "quote_start",
+          "quote_end",
+          "quote_sha256",
+          "created_by",
+          "created_at"
+        ],
+        "title": "BindingHistoryView",
+        "type": "object"
+      },
+      "BindingSelection": {
+        "additionalProperties": false,
+        "description": "One exact clause slice in a complete, ordered binding set.",
+        "properties": {
+          "citation_order": {
+            "maximum": 3.0,
+            "minimum": 1.0,
+            "title": "Citation Order",
+            "type": "integer"
+          },
+          "exact_quote": {
+            "title": "Exact Quote",
+            "type": "string"
+          },
+          "policy_clause_id": {
+            "format": "uuid",
+            "title": "Policy Clause Id",
+            "type": "string"
+          },
+          "policy_document_id": {
+            "format": "uuid",
+            "title": "Policy Document Id",
+            "type": "string"
+          },
+          "quote_end": {
+            "exclusiveMinimum": 0.0,
+            "title": "Quote End",
+            "type": "integer"
+          },
+          "quote_start": {
+            "minimum": 0.0,
+            "title": "Quote Start",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "policy_document_id",
+          "policy_clause_id",
+          "quote_start",
+          "quote_end",
+          "exact_quote",
+          "citation_order"
+        ],
+        "title": "BindingSelection",
+        "type": "object"
+      },
       "Body_batches_import": {
         "properties": {
           "file": {
@@ -254,6 +533,202 @@
           "file"
         ],
         "title": "Body_batches_import",
+        "type": "object"
+      },
+      "Body_policies_upload_document": {
+        "properties": {
+          "effective_date": {
+            "format": "date",
+            "title": "Effective Date",
+            "type": "string"
+          },
+          "expiry_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiry Date"
+          },
+          "family_id": {
+            "format": "uuid",
+            "title": "Family Id",
+            "type": "string"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "version": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "family_id",
+          "title",
+          "version",
+          "effective_date",
+          "file"
+        ],
+        "title": "Body_policies_upload_document",
+        "type": "object"
+      },
+      "CitationSnapshot": {
+        "additionalProperties": false,
+        "description": "One verified citation copied from PostgreSQL into a report snapshot.",
+        "properties": {
+          "binding_id": {
+            "format": "uuid",
+            "title": "Binding Id",
+            "type": "string"
+          },
+          "citation_order": {
+            "maximum": 3.0,
+            "minimum": 1.0,
+            "title": "Citation Order",
+            "type": "integer"
+          },
+          "clause_no": {
+            "title": "Clause No",
+            "type": "string"
+          },
+          "clause_text": {
+            "title": "Clause Text",
+            "type": "string"
+          },
+          "clause_text_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Clause Text Sha256",
+            "type": "string"
+          },
+          "document_content_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Document Content Sha256",
+            "type": "string"
+          },
+          "document_title": {
+            "title": "Document Title",
+            "type": "string"
+          },
+          "document_version": {
+            "title": "Document Version",
+            "type": "string"
+          },
+          "effective_date": {
+            "format": "date",
+            "title": "Effective Date",
+            "type": "string"
+          },
+          "expiry_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiry Date"
+          },
+          "family_stable_key": {
+            "title": "Family Stable Key",
+            "type": "string"
+          },
+          "hierarchy_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hierarchy Path"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "policy_clause_id": {
+            "format": "uuid",
+            "title": "Policy Clause Id",
+            "type": "string"
+          },
+          "policy_document_id": {
+            "format": "uuid",
+            "title": "Policy Document Id",
+            "type": "string"
+          },
+          "policy_family_id": {
+            "format": "uuid",
+            "title": "Policy Family Id",
+            "type": "string"
+          },
+          "quote": {
+            "title": "Quote",
+            "type": "string"
+          },
+          "quote_end": {
+            "exclusiveMinimum": 0.0,
+            "title": "Quote End",
+            "type": "integer"
+          },
+          "quote_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Quote Sha256",
+            "type": "string"
+          },
+          "quote_start": {
+            "minimum": 0.0,
+            "title": "Quote Start",
+            "type": "integer"
+          },
+          "report_item_id": {
+            "format": "uuid",
+            "title": "Report Item Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "report_item_id",
+          "binding_id",
+          "citation_order",
+          "policy_family_id",
+          "family_stable_key",
+          "policy_document_id",
+          "document_title",
+          "document_version",
+          "effective_date",
+          "expiry_date",
+          "document_content_sha256",
+          "policy_clause_id",
+          "clause_no",
+          "hierarchy_path",
+          "clause_text",
+          "clause_text_sha256",
+          "quote",
+          "quote_start",
+          "quote_end",
+          "quote_sha256"
+        ],
+        "title": "CitationSnapshot",
         "type": "object"
       },
       "ConstantInferenceRule": {
@@ -289,6 +764,47 @@
           "value"
         ],
         "title": "ConstantInferenceRule",
+        "type": "object"
+      },
+      "CreatePolicyFamilyRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "display_name": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Display Name",
+            "type": "string"
+          },
+          "stable_key": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9._-]*$",
+            "title": "Stable Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "stable_key",
+          "display_name"
+        ],
+        "title": "CreatePolicyFamilyRequest",
+        "type": "object"
+      },
+      "CreatePolicyFamilyResponse": {
+        "properties": {
+          "family": {
+            "$ref": "#/components/schemas/PolicyFamilyListItem"
+          },
+          "reused_existing": {
+            "title": "Reused Existing",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "family",
+          "reused_existing"
+        ],
+        "title": "CreatePolicyFamilyResponse",
         "type": "object"
       },
       "CreateRevisionRequest": {
@@ -1872,6 +2388,83 @@
         "title": "ParseErrorItemResponse",
         "type": "object"
       },
+      "ParseErrorPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ParseErrorSnapshot"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "minimum": 1.0,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "minimum": 0.0,
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "minimum": 0.0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "ParseErrorPage",
+        "type": "object"
+      },
+      "ParseErrorSnapshot": {
+        "additionalProperties": false,
+        "description": "Safe parse failure copied into a completed report.",
+        "properties": {
+          "column_name": {
+            "title": "Column Name",
+            "type": "string"
+          },
+          "error_code": {
+            "title": "Error Code",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "row_no": {
+            "minimum": 1.0,
+            "title": "Row No",
+            "type": "integer"
+          },
+          "source_content_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Source Content Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "row_no",
+          "error_code",
+          "column_name",
+          "message",
+          "source_content_sha256"
+        ],
+        "title": "ParseErrorSnapshot",
+        "type": "object"
+      },
       "ParseErrorsResponse": {
         "properties": {
           "file_version_id": {
@@ -1915,6 +2508,400 @@
         "title": "ParseErrorsResponse",
         "type": "object"
       },
+      "PolicyClauseView": {
+        "properties": {
+          "clause_no": {
+            "title": "Clause No",
+            "type": "string"
+          },
+          "hierarchy_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hierarchy Path"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "ordinal": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ordinal"
+          },
+          "source_locator": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Locator"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "text_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text Sha256"
+          }
+        },
+        "required": [
+          "id",
+          "clause_no",
+          "hierarchy_path",
+          "text",
+          "text_sha256",
+          "ordinal",
+          "source_locator"
+        ],
+        "title": "PolicyClauseView",
+        "type": "object"
+      },
+      "PolicyDocumentListItem": {
+        "properties": {
+          "content_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Sha256"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "effective_date": {
+            "format": "date",
+            "title": "Effective Date",
+            "type": "string"
+          },
+          "expiry_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiry Date"
+          },
+          "failure_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Code"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "index_completed_points": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Index Completed Points"
+          },
+          "index_expected_points": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Index Expected Points"
+          },
+          "index_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Index Status"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "version",
+          "effective_date",
+          "expiry_date",
+          "content_sha256",
+          "status",
+          "index_status",
+          "index_completed_points",
+          "index_expected_points",
+          "failure_code",
+          "created_at"
+        ],
+        "title": "PolicyDocumentListItem",
+        "type": "object"
+      },
+      "PolicyDocumentView": {
+        "properties": {
+          "clauses": {
+            "items": {
+              "$ref": "#/components/schemas/PolicyClauseView"
+            },
+            "title": "Clauses",
+            "type": "array"
+          },
+          "content_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Sha256"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "effective_date": {
+            "format": "date",
+            "title": "Effective Date",
+            "type": "string"
+          },
+          "expiry_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiry Date"
+          },
+          "failure_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Code"
+          },
+          "family_id": {
+            "format": "uuid",
+            "title": "Family Id",
+            "type": "string"
+          },
+          "family_stable_key": {
+            "title": "Family Stable Key",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "index_completed_points": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Index Completed Points"
+          },
+          "index_expected_points": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Index Expected Points"
+          },
+          "index_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Index Status"
+          },
+          "mime_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mime Type"
+          },
+          "size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Bytes"
+          },
+          "source_filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Filename"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "version",
+          "effective_date",
+          "expiry_date",
+          "content_sha256",
+          "status",
+          "index_status",
+          "index_completed_points",
+          "index_expected_points",
+          "failure_code",
+          "created_at",
+          "family_id",
+          "family_stable_key",
+          "source_filename",
+          "mime_type",
+          "size_bytes",
+          "clauses"
+        ],
+        "title": "PolicyDocumentView",
+        "type": "object"
+      },
+      "PolicyFamilyListItem": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/PolicyDocumentListItem"
+            },
+            "title": "Documents",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "stable_key": {
+            "title": "Stable Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "stable_key",
+          "display_name",
+          "created_at",
+          "documents"
+        ],
+        "title": "PolicyFamilyListItem",
+        "type": "object"
+      },
       "ProvenanceMode": {
         "description": "规范化字段的取值来源。",
         "enum": [
@@ -1923,6 +2910,30 @@
         ],
         "title": "ProvenanceMode",
         "type": "string"
+      },
+      "PublishPolicyResponse": {
+        "properties": {
+          "document_id": {
+            "format": "uuid",
+            "title": "Document Id",
+            "type": "string"
+          },
+          "reused_existing": {
+            "title": "Reused Existing",
+            "type": "boolean"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "document_id",
+          "status",
+          "reused_existing"
+        ],
+        "title": "PublishPolicyResponse",
+        "type": "object"
       },
       "ReadinessResponse": {
         "description": "就绪响应。",
@@ -1967,11 +2978,406 @@
         ],
         "type": "string"
       },
+      "ReportAttentionGroup": {
+        "description": "F4 single-axis operational grouping, independent from F8 severity.",
+        "enum": [
+          "high_attention",
+          "manual_attention",
+          "cleared"
+        ],
+        "title": "ReportAttentionGroup",
+        "type": "string"
+      },
+      "ReportCitationStatus": {
+        "description": "Whether all expected citations for an item are exact and available.",
+        "enum": [
+          "verified",
+          "unavailable"
+        ],
+        "title": "ReportCitationStatus",
+        "type": "string"
+      },
+      "ReportExportResponse": {
+        "properties": {
+          "artifact_sha256": {
+            "title": "Artifact Sha256",
+            "type": "string"
+          },
+          "completed_at": {
+            "format": "date-time",
+            "title": "Completed At",
+            "type": "string"
+          },
+          "export_id": {
+            "format": "uuid",
+            "title": "Export Id",
+            "type": "string"
+          },
+          "format": {
+            "title": "Format",
+            "type": "string"
+          },
+          "report_run_id": {
+            "format": "uuid",
+            "title": "Report Run Id",
+            "type": "string"
+          },
+          "reused_existing": {
+            "title": "Reused Existing",
+            "type": "boolean"
+          },
+          "size_bytes": {
+            "title": "Size Bytes",
+            "type": "integer"
+          },
+          "template_version": {
+            "title": "Template Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "export_id",
+          "report_run_id",
+          "format",
+          "template_version",
+          "artifact_sha256",
+          "size_bytes",
+          "completed_at",
+          "reused_existing"
+        ],
+        "title": "ReportExportResponse",
+        "type": "object"
+      },
+      "ReportItemPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReportItemSnapshot"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "minimum": 1.0,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "minimum": 0.0,
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "minimum": 0.0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "ReportItemPage",
+        "type": "object"
+      },
+      "ReportItemSnapshot": {
+        "additionalProperties": false,
+        "description": "Finding-level immutable snapshot with ordered verified citations.",
+        "properties": {
+          "attention_group": {
+            "$ref": "#/components/schemas/ReportAttentionGroup"
+          },
+          "citation_status": {
+            "$ref": "#/components/schemas/ReportCitationStatus"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/CitationSnapshot"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "evidence_snapshot": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Snapshot"
+          },
+          "finding_id": {
+            "format": "uuid",
+            "title": "Finding Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "reason_code": {
+            "title": "Reason Code",
+            "type": "string"
+          },
+          "reasoning_snapshot": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning Snapshot"
+          },
+          "requires_manual_citation": {
+            "title": "Requires Manual Citation",
+            "type": "boolean"
+          },
+          "row_no": {
+            "minimum": 1.0,
+            "title": "Row No",
+            "type": "integer"
+          },
+          "rule_id": {
+            "title": "Rule Id",
+            "type": "string"
+          },
+          "rule_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule Version"
+          },
+          "source_content_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Source Content Sha256",
+            "type": "string"
+          },
+          "source_outcome": {
+            "title": "Source Outcome",
+            "type": "string"
+          },
+          "source_verdict": {
+            "title": "Source Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "finding_id",
+          "row_no",
+          "rule_id",
+          "rule_version",
+          "source_outcome",
+          "source_verdict",
+          "reason_code",
+          "reasoning_snapshot",
+          "evidence_snapshot",
+          "attention_group",
+          "citation_status",
+          "requires_manual_citation",
+          "source_content_sha256",
+          "citations"
+        ],
+        "title": "ReportItemSnapshot",
+        "type": "object"
+      },
+      "ReportItemSort": {
+        "enum": [
+          "default",
+          "row_no",
+          "rule_id"
+        ],
+        "title": "ReportItemSort",
+        "type": "string"
+      },
+      "ReportOverviewResponse": {
+        "properties": {
+          "binding_manifest": {
+            "additionalProperties": true,
+            "title": "Binding Manifest",
+            "type": "object"
+          },
+          "policy_manifest": {
+            "additionalProperties": true,
+            "title": "Policy Manifest",
+            "type": "object"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/ReportSummary"
+          }
+        },
+        "required": [
+          "summary",
+          "policy_manifest",
+          "binding_manifest"
+        ],
+        "title": "ReportOverviewResponse",
+        "type": "object"
+      },
+      "ReportSummary": {
+        "additionalProperties": false,
+        "description": "Stable result returned for a newly assembled or replayed report.",
+        "properties": {
+          "attention_mapping_version": {
+            "title": "Attention Mapping Version",
+            "type": "string"
+          },
+          "cleared_row_count": {
+            "minimum": 0.0,
+            "title": "Cleared Row Count",
+            "type": "integer"
+          },
+          "completed_at": {
+            "format": "date-time",
+            "title": "Completed At",
+            "type": "string"
+          },
+          "file_version_id": {
+            "format": "uuid",
+            "title": "File Version Id",
+            "type": "string"
+          },
+          "flagged_row_count": {
+            "minimum": 0.0,
+            "title": "Flagged Row Count",
+            "type": "integer"
+          },
+          "high_attention_row_count": {
+            "minimum": 0.0,
+            "title": "High Attention Row Count",
+            "type": "integer"
+          },
+          "manual_attention_row_count": {
+            "minimum": 0.0,
+            "title": "Manual Attention Row Count",
+            "type": "integer"
+          },
+          "manual_review_row_count": {
+            "minimum": 0.0,
+            "title": "Manual Review Row Count",
+            "type": "integer"
+          },
+          "mapping_version_id": {
+            "format": "uuid",
+            "title": "Mapping Version Id",
+            "type": "string"
+          },
+          "parse_error_row_count": {
+            "minimum": 0.0,
+            "title": "Parse Error Row Count",
+            "type": "integer"
+          },
+          "passed_row_count": {
+            "minimum": 0.0,
+            "title": "Passed Row Count",
+            "type": "integer"
+          },
+          "report_fingerprint": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Report Fingerprint",
+            "type": "string"
+          },
+          "report_item_count": {
+            "minimum": 0.0,
+            "title": "Report Item Count",
+            "type": "integer"
+          },
+          "report_run_id": {
+            "format": "uuid",
+            "title": "Report Run Id",
+            "type": "string"
+          },
+          "reused_existing": {
+            "title": "Reused Existing",
+            "type": "boolean"
+          },
+          "ruleset_fingerprint": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Ruleset Fingerprint",
+            "type": "string"
+          },
+          "source_content_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Source Content Sha256",
+            "type": "string"
+          },
+          "stored_row_count": {
+            "minimum": 0.0,
+            "title": "Stored Row Count",
+            "type": "integer"
+          },
+          "template_version": {
+            "title": "Template Version",
+            "type": "string"
+          },
+          "unavailable_citation_count": {
+            "minimum": 0.0,
+            "title": "Unavailable Citation Count",
+            "type": "integer"
+          },
+          "validated_row_count": {
+            "minimum": 0.0,
+            "title": "Validated Row Count",
+            "type": "integer"
+          },
+          "validation_run_id": {
+            "format": "uuid",
+            "title": "Validation Run Id",
+            "type": "string"
+          },
+          "verified_citation_count": {
+            "minimum": 0.0,
+            "title": "Verified Citation Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "report_run_id",
+          "file_version_id",
+          "validation_run_id",
+          "mapping_version_id",
+          "report_fingerprint",
+          "source_content_sha256",
+          "ruleset_fingerprint",
+          "template_version",
+          "attention_mapping_version",
+          "stored_row_count",
+          "validated_row_count",
+          "flagged_row_count",
+          "manual_review_row_count",
+          "passed_row_count",
+          "parse_error_row_count",
+          "report_item_count",
+          "verified_citation_count",
+          "unavailable_citation_count",
+          "high_attention_row_count",
+          "manual_attention_row_count",
+          "cleared_row_count",
+          "completed_at",
+          "reused_existing"
+        ],
+        "title": "ReportSummary",
+        "type": "object"
+      },
       "RevisionRequestReason": {
         "description": "服务层接受的派生原因。",
         "enum": [
           "ruleset_change",
-          "mapping_change"
+          "mapping_change",
+          "policy_change"
         ],
         "title": "RevisionRequestReason",
         "type": "string"
@@ -2153,6 +3559,52 @@
           "created_at"
         ],
         "title": "RuleVersionResponse",
+        "type": "object"
+      },
+      "SaveBindingsRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "expense_date": {
+            "format": "date",
+            "title": "Expense Date",
+            "type": "string"
+          },
+          "selections": {
+            "items": {
+              "$ref": "#/components/schemas/BindingSelection"
+            },
+            "maxItems": 3,
+            "minItems": 1,
+            "title": "Selections",
+            "type": "array"
+          }
+        },
+        "required": [
+          "expense_date",
+          "selections"
+        ],
+        "title": "SaveBindingsRequest",
+        "type": "object"
+      },
+      "SaveBindingsResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/BindingHistoryView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "reused_existing": {
+            "title": "Reused Existing",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "items",
+          "reused_existing"
+        ],
+        "title": "SaveBindingsResponse",
         "type": "object"
       },
       "SaveRuleRequest": {
@@ -2404,6 +3856,14 @@
         "title": "SchemaMappingsResponse",
         "type": "object"
       },
+      "SortDirection": {
+        "enum": [
+          "asc",
+          "desc"
+        ],
+        "title": "SortDirection",
+        "type": "string"
+      },
       "TimelinessEvidence": {
         "additionalProperties": false,
         "properties": {
@@ -2615,6 +4075,35 @@
         ],
         "title": "UnifiedField",
         "type": "string"
+      },
+      "UploadPolicyResponse": {
+        "properties": {
+          "chunk_count": {
+            "minimum": 1.0,
+            "title": "Chunk Count",
+            "type": "integer"
+          },
+          "clause_count": {
+            "minimum": 1.0,
+            "title": "Clause Count",
+            "type": "integer"
+          },
+          "document": {
+            "$ref": "#/components/schemas/PolicyDocumentView"
+          },
+          "reused_existing": {
+            "title": "Reused Existing",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "document",
+          "reused_existing",
+          "clause_count",
+          "chunk_count"
+        ],
+        "title": "UploadPolicyResponse",
+        "type": "object"
       },
       "ValidationError": {
         "properties": {
@@ -3507,6 +4996,225 @@
         ]
       }
     },
+    "/api/batches/{file_version_id}/report": {
+      "get": {
+        "operationId": "reports_get_for_batch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_version_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "File Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportOverviewResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Get For Batch",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/batches/{file_version_id}/reports": {
+      "post": {
+        "operationId": "reports_generate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_version_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "File Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 8,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Generate",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
     "/api/batches/{file_version_id}/revisions": {
       "post": {
         "operationId": "batches_create_revision",
@@ -3884,6 +5592,1027 @@
         ]
       }
     },
+    "/api/policies/documents": {
+      "post": {
+        "operationId": "policies_upload_document",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_policies_upload_document"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadPolicyResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadPolicyResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Upload Document",
+        "tags": [
+          "policies"
+        ]
+      }
+    },
+    "/api/policies/documents/{document_id}": {
+      "get": {
+        "operationId": "policies_get_document",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyDocumentView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Get Document",
+        "tags": [
+          "policies"
+        ]
+      }
+    },
+    "/api/policies/documents/{document_id}/publish": {
+      "post": {
+        "operationId": "policies_publish_document",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishPolicyResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishPolicyResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Publish Document",
+        "tags": [
+          "policies"
+        ]
+      }
+    },
+    "/api/policies/families": {
+      "get": {
+        "operationId": "policies_list_families",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PolicyFamilyListItem"
+                  },
+                  "title": "Response Policies List Families",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "List Families",
+        "tags": [
+          "policies"
+        ]
+      },
+      "post": {
+        "operationId": "policies_create_family",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePolicyFamilyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatePolicyFamilyResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatePolicyFamilyResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Create Family",
+        "tags": [
+          "policies"
+        ]
+      }
+    },
+    "/api/report-exports/{export_id}/download": {
+      "get": {
+        "operationId": "reports_download_export",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "export_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Export Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Completed XLSX artifact"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Download Export",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/reports/{report_id}/exports": {
+      "post": {
+        "operationId": "reports_create_export",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 8,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportExportResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportExportResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Create Export",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/reports/{report_id}/items": {
+      "get": {
+        "operationId": "reports_list_items",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "attention_group",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ReportAttentionGroup"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Attention Group"
+            }
+          },
+          {
+            "in": "query",
+            "name": "citation_status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ReportCitationStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Citation Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort_by",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ReportItemSort",
+              "default": "default"
+            }
+          },
+          {
+            "in": "query",
+            "name": "direction",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/SortDirection",
+              "default": "asc"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportItemPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "List Items",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/reports/{report_id}/parse-errors": {
+      "get": {
+        "operationId": "reports_list_parse_errors",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParseErrorPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "List Parse Errors",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
     "/api/rules": {
       "get": {
         "operationId": "rules_list",
@@ -4089,6 +6818,339 @@
         "summary": "Save",
         "tags": [
           "rules"
+        ]
+      }
+    },
+    "/api/rules/{rule_config_id}/policy-bindings": {
+      "get": {
+        "operationId": "policies_list_rule_bindings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rule_config_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Rule Config Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BindingHistoryView"
+                  },
+                  "title": "Response Policies List Rule Bindings",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "List Rule Bindings",
+        "tags": [
+          "policies"
+        ]
+      },
+      "post": {
+        "operationId": "policies_save_rule_bindings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rule_config_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Rule Config Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveBindingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveBindingsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveBindingsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Save Rule Bindings",
+        "tags": [
+          "policies"
+        ]
+      }
+    },
+    "/api/rules/{rule_config_id}/policy-candidates": {
+      "get": {
+        "operationId": "policies_rule_candidates",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rule_config_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Rule Config Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expense_date",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "Expense Date",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BindingCandidate"
+                  },
+                  "title": "Response Policies Rule Candidates",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Rule Candidates",
+        "tags": [
+          "policies"
         ]
       }
     },
