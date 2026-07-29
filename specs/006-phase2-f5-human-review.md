@@ -1,9 +1,9 @@
 # Spec 006 — Phase 2 F5 人工复核台与被放行样本抽检
 
-**状态：** CP-F5.0–CP-F5.3 已完成 ✅
+**状态：** CP-F5.0–CP-F5.4 已完成 ✅
 **日期：** 2026-07-29
 **前置检查点：** F4 / CP-F4.5 已完成
-**下一实施检查点：** CP-F5.4 桌面复核台
+**下一实施检查点：** CP-F5.5 契约与交付门禁
 
 ---
 
@@ -664,3 +664,11 @@ payload 只含 tenant 内对象 ID、decision enum、版本、hash/fingerprint�
 - 三角色权限完全沿用 permission 数据：auditor/configurator 可读并提交 review、仅 configurator 可创建 sampling config、viewer 无 review 入口；未认证 401、无权限 403、跨租户 report/finding/sample 404。四类 mutation 的 Idempotency-Key 从 8–128 字符 header 注入，首次 201、同 key 同请求 200，冲突保持稳定领域 code。
 - F5 响应统一标记 `Cache-Control: private, no-store`，CORS 显式允许 `Idempotency-Key`；配置、decision/note、分页与 Pydantic 边界错误统一为 `{error:{code,message}}`。API 集成测试覆盖 RBAC、租户隔离、幂等重放/重复、legacy plan、分页/过滤、判别联合、缓存、CORS 与 success audit 无 note/key/seed 明文。
 - CP-F5.3/F5 定向 `36 passed`；后端全量 `391 passed, 1 skipped`；Ruff lint、157 文件 format、strict mypy（115 源文件）与 OpenAPI `--check` 通过。OpenAPI/client 连续二次生成 SHA-256 均稳定；前端 `23 passed`、typecheck/oxlint/Prettier/生产 build 全绿。未新增依赖、迁移、UI、批量提交、分派、评测导出或 F6/F8；下一检查点为 CP-F5.4。
+
+### CP-F5.4 实际落地记录（2026-07-29）
+
+- `/review` 占位页替换为仅桌面的工业审计工作台：顶部展示 finding/sample 精确 coverage、当前 config 与 plan 状态；左侧按后端固定顺序消费 finding/clearance 判别联合队列，支持状态/类型/当前批次筛选与稳定分页；中部同屏展示原始行、规范化投影、冻结 reasoning/evidence、rule/version、citation 状态与逐字引用；右侧提供 config/legacy plan 控制；底部为两类互斥 decision、note 与“提交后不可修改”二次确认。
+- 前端只消费 CP-F5.3 生成契约并新增 Zod 运行时表单边界，不复制裸 DTO。sampling config 校验 version/rate/min/max/reason，finding/sample 分别校验 `confirmed|false_positive` 与 `clearance_confirmed|missed_issue`，只对 false positive/missed issue 条件要求 note；正常 Unicode 原样保留，控制字符与长度越界在提交前拒绝。
+- mutation 使用 8–128 字符 Idempotency-Key；成功后失效 config/plan/queue/detail/summary 并回到 offset 0。409 并发/已完成冲突也触发刷新并展示服务端 reviewer/reviewed_at/最终标签，不乐观伪造成功。pure passed sample 明示“系统未产生关注项”，citation unavailable 明示“制度依据未完成”；missed issue 只提示人工升级，不创建 finding 或改写机器快照。
+- 权限完全由 `/api/auth/me` permissions 驱动：auditor/configurator 可读写 review 与补建 legacy plan，仅 configurator 可追加 sampling config，viewer 菜单隐藏且直接访问不发 review API。raw/note/reasoning/quote 只以文本节点展示，不写 localStorage/sessionStorage、URL 或 analytics。
+- 新增 22 项 F5 前端组件/集成/Zod 测试，覆盖 normal/empty/loading/error/conflict、config missing/stale refresh、legacy plan、两类提交、query invalidation/offset reset、三角色、恶意文本与 completed server fact；前端全量 `10 files / 45 passed`，typecheck、oxlint、Prettier、生产 build 与 npm audit 全绿。真实 Google Chrome 精确 1440×1000 覆盖 auditor finding、auditor pure-passed sample、configurator、viewer 共 4 场景；document/body 横向溢出、script/img 执行、浏览器持久化与 viewer review API 请求均为 0，证据保存在 gitignored `data/private/cp-f5.4/`。未修改后端、OpenAPI、迁移、基础设施、批量/分派/撤销、F6/F7/F8 或指标仪表盘；下一检查点为 CP-F5.5。

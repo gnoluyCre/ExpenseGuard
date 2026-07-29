@@ -86,8 +86,8 @@
 
 ## 当前状态 📍
 **最近更新:** 2026-07-29
-**正在进行:** 阶段 2 F5 的 CP-F5.0–CP-F5.3 已完成；下一实施点为 CP-F5.4 桌面复核台。
-**最近完成:** CP0 仓库重置 / CP1 后端地基 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离 / **CP4 前端垂直切片 + OpenAPI 契约 + CI** / **F1 Excel 导入** / **F2 CP-F2.0–CP-F2.5** / **F3 CP-F3.0–CP-F3.5** / **F4 CP-F4.0–CP-F4.5 报告生成闭包**（制度导入/发布/本地检索、configurator-confirmed binding、严格逐字引用、原子报告 snapshot、typed API、桌面工作流、五表 XLSX、安全回读、5000 行性能与交付门禁）/ **F5 CP-F5.0–CP-F5.3**（规格、持久化、可复算抽样与一次性 decision 服务；config/plan/queue/detail/decision/summary 强类型 API、判别联合、RBAC/租户 404、稳定错误、private/no-store 与 OpenAPI/client）
+**正在进行:** 阶段 2 F5 的 CP-F5.0–CP-F5.4 已完成；下一实施点为 CP-F5.5 契约与交付门禁。
+**最近完成:** CP0 仓库重置 / CP1 后端地基 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离 / **CP4 前端垂直切片 + OpenAPI 契约 + CI** / **F1 Excel 导入** / **F2 CP-F2.0–CP-F2.5** / **F3 CP-F3.0–CP-F3.5** / **F4 CP-F4.0–CP-F4.5 报告生成闭包**（制度导入/发布/本地检索、configurator-confirmed binding、严格逐字引用、原子报告 snapshot、typed API、桌面工作流、五表 XLSX、安全回读、5000 行性能与交付门禁）/ **F5 CP-F5.0–CP-F5.4**（规格、持久化、可复算抽样与一次性 decision 服务；强类型 API/OpenAPI；权限驱动桌面复核台、Zod 表单、稳定联合队列、同屏证据、冲突刷新与真实 Chrome 门禁）
 **受阻于:** 无(F5 可继续；W0 模型容器运行态仍需外部镜像/离线权重输入,见 `MEMORY.md`)
 **已知缺口(三项):**
 1. **W0 运行态未闭环** —— 代码侧本地模型/Qdrant 私有化边界与真实 Qdrant 已验证；但 pinned Infinity 镜像在 registry layer 拉取无进展且 manifest 查询超时，实际 embed/rerank、资源占用及客户离线权重包仍待外部输入后验证。
@@ -111,7 +111,7 @@
 - [x] **F2 · Schema 映射与结构化解析** —— 列名映射配置可复用;金额 / 日期归一化;解析失败行进错误清单不静默丢弃;字段可用性三级自动探测(available/inferred/missing)
 - [x] **F3 · 确定性校验** —— 限额 / 票种 / 时效 / 抬头 / 发票号查重五类强类型配置化硬规则(Pydantic 判别联合 + 决策表);阈值白名单为配置项;命中记录 rule_id + rule_version;可复现
 - [x] **F4 · 报告生成(含制度条款引用)** —— 按风险分级;每条判定含规则 / 条款 ID + 逐字引用 + 原始行号;制度检索按费用发生日过滤生效版本;**LLM 引用须通过机械式逐字校验方可呈现**;报告可导出
-- [ ] **F5 · 人工复核台** —— CP-F5.0–CP-F5.3 已完成；按风险排序队列;同屏展示原始行 + 判定理由 + 条款引用;标记 confirmed / false_positive 带复核人与时间戳写审计日志;**触发被放行样本随机抽检**。下一步 CP-F5.4 桌面复核台。
+- [ ] **F5 · 人工复核台** —— CP-F5.0–CP-F5.4 已完成；按风险排序队列;同屏展示原始行 + 判定理由 + 条款引用;标记 confirmed / false_positive 带复核人与时间戳写审计日志;**触发被放行样本随机抽检**。下一步 CP-F5.5 契约与交付门禁。
 
 ### 阶段 3:差异化能力(P1)与打磨
 - [ ] **F6 · 跨行关联检测(统计层)** —— 拆单 / 连号 / 频次异常 / 时空冲突;能力声明机制(enabled/degraded/unavailable)统一挂载;输出参与行号 + 证据链

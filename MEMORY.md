@@ -5,7 +5,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 -->
 
 ## 🏗️ 当前阶段与目标
-**当前任务:阶段 2 F5 已完成 CP-F5.0–CP-F5.3。** `specs/006-phase2-f5-human-review.md` 是 F5 的唯一规范来源；下一实施点为 CP-F5.4 桌面复核台。
+**当前任务:阶段 2 F5 已完成 CP-F5.0–CP-F5.4。** `specs/006-phase2-f5-human-review.md` 是 F5 的唯一规范来源；下一实施点为 CP-F5.5 契约与交付门禁。
 
 - CP0 仓库重置(干净历史、`.gitignore` 脱敏排除)
 - CP1 后端地基(uv + 18 张表 + Alembic 三层隔离)
@@ -13,7 +13,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - CP3 认证、RBAC、租户隔离(含反向验证)
 - CP4 前端垂直切片 + OpenAPI 契约门禁 + pre-commit/CI + 合成数据生成器(含反向验证)
 
-**下一步:CP-F5.4 · 桌面复核台。** 基于 CP-F5.3 生成契约实现 sampling config/plan 状态、联合队列、同屏 detail 与两类一次性 decision 表单；按 permission 驱动并覆盖 normal/empty/loading/error/conflict、恶意文本与 1440×1000 Chrome，不实现批量提交、分派、F6/F8。
+**下一步:CP-F5.5 · 契约与交付门禁。** 完成 F5 全量后端/前端、双库 Alembic、OpenAPI 二次生成、pre-commit/gitleaks、依赖审计、固定 seed 5000 行 auto-plan/交互性能与 1440×1000 全状态视觉证据；不提前进入 F6/F7/F8。
 `process_row_once` 的首个生产调用方现为 `app.core.validation.batch_service.validate_batch`；行内 finding 与 `row_result` 使用同一 session/事务，`row_result.rule_version` 固定保存规则集指纹。
 
 **开工前必读的两件事:**
@@ -24,6 +24,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 
 ## 📂 架构决策
 *(把构建过程中做出的具体选择记录在此,便于后续 agent 遵循)*
+- 2026-07-29 — **F5 CP-F5.4 桌面复核台闭包完成。** `/review` 占位页替换为权限驱动的工业审计工作台：顶部原始 coverage/config/plan 状态，左侧稳定联合队列与筛选分页，中部原始行/规范化投影/冻结 reasoning/evidence/rule/version/citation 同屏，右侧 config/legacy plan 控制，底部两类不可变 decision 二次确认。前端只消费 CP-F5.3 生成类型；新增 Zod 作为表单运行时边界，保留正常 Unicode 并拒绝控制字符，`false_positive|missed_issue` 条件必填非空白 note。mutation 成功或 409 冲突均失效相应 review/config 查询，队列回 offset 0，冲突后展示服务端最终事实/最新 config 而不伪造成功；raw/note/quote 不写 URL、storage 或 analytics。新增 22 项 F5 前端测试，前端全量 `45 passed`，typecheck/oxlint/Prettier/build/npm audit 全绿。真实 Google Chrome 1440×1000 覆盖 auditor finding、auditor pure-passed sample、configurator、viewer 共 4 场景：页面级横向溢出、脚本/图片执行、浏览器存储与 viewer review API 请求均为 0；私有证据位于 `data/private/cp-f5.4/`。未修改后端、Pydantic/OpenAPI、迁移、基础设施或 F6/F8。
 - 2026-07-29 — **F5 CP-F5.3 API 与 OpenAPI 契约闭包完成。** 新增 10 个 config/plan/queue/detail/decision/summary 端点，全部经现有 F5 服务层且无路由 SQL；queue 与 plan/decision 使用 Pydantic discriminator，config history 显式区分 current/history，legacy queue/plan 明示 `legacy_not_initialized`。RBAC 沿用 permission 数据，auditor/configurator 可读写复核、仅 configurator 可写 config、viewer 无 review 权限；跨租户 report/finding/sample 稳定 404。所有 F5 响应使用 `private, no-store`，CORS 显式允许 `Idempotency-Key`；note 条件校验、幂等/已完成冲突和错误 shape 使用稳定 code。修正 sample detail 规则集指纹来源为 frozen report，并用 `{completed,total}` 暴露两类精确 coverage。CP-F5.3/F5 定向 `36 passed`，后端全量 `391 passed, 1 skipped`；Ruff、157 文件 format、strict mypy（115 源文件）、OpenAPI/client 连续二次哈希稳定通过。前端 23 tests、typecheck/oxlint/Prettier/build 全绿；未新增依赖、迁移、UI 或 F6/F8。
 - 2026-07-29 — **F5 CP-F5.2 抽样核心、计划与复核服务闭包完成。** 新增 `app.core.reviews` 严格类型领域层：sampling config canonical fingerprint 只绑定 schema/algorithm/rate/min/max，request fingerprint 另绑定 tenant/expected version/reason hash；`sha256-rank-v1` 严格使用 32-byte seed、RFC 4122 UUID bytes 与 unsigned big-endian 8-byte row 编码，整数样本量公式及 golden vectors 固定。新报告在现有 Tenant→FileVersion NOWAIT 事务中于 completed 前原子写 plan/sample/`sampling.plan_create`，缺 config 在 report 写入前失败；plan 故障只留一条带稳定 sampling reason 的 `batch.report_failed`。legacy completed report 通过追加式 key ledger 显式补建/复用，重放不访问 CSPRNG、当前 config、Qdrant 或模型，独立失败写 `sampling.plan_failed`。联合 queue/detail/summary 只读 F4 snapshot 与原始行；finding/clearance 两类 decision 分表一次性追加，note 只入业务表，审计仅含 enum/ID/hash，故障通过独立事务写无 PII failed audit。39 项 CP-F5.2/F4 定向测试、后端全量 `386 passed, 1 skipped`、Ruff/format（155 文件）与 strict mypy（114 源文件）通过；未新增依赖、迁移、API/UI 或 OpenAPI 变更。
 - 2026-07-29 — **F5 CP-F5.1 持久化闭包完成。** 只新增 `0007_f5_human_review.py`，未修改 `0001`–`0006`；落地 `review_sampling_config`/`review_sampling_plan`/`sampling_review`/`review_plan_request`，强化 `review` 与 `sampling_audit`。config 快照参数通过宽复合 FK 与 plan 物理一致；review target 通过 report item/finding/report/file/tenant 单条复合身份闭合；sample 同时复合绑定 plan/report/expense_row/row_result/tenant。为支持完整 FK，只增强地追加 `report_item`/`expense_row`/`row_result` 冗余唯一键，原 `row_result(file_version_id,row_no)` 与 `sampling_audit(file_version_id,row_no)` 受保护约束保持不变。六类 F5 事实均由 DB 触发器拒绝 UPDATE/DELETE，全部 FK 使用 RESTRICT；legacy review/sample 非空时 upgrade 在任何 DDL 前 fail closed，存在 F5 数据时 downgrade 同样在 DDL 前拒绝。默认库 pre-0007 备份位于 `data/private/backups/cp-f5.1/pre-0007-20260729-160753/`；full/schema/affected-data 归档的 SHA-256 分别为 `6c9baa69e6abe88ced0810f9cd510540c821bd160d94094765395a363cea3cd4`、`53b1a21488b6f609d9ce8d085f15229b579cade332f18f89ef8f75ea0baf80e0`、`188ea6f89bbcf9a5e15747c4e53ee828155f30ec7d06713ac2426798ea71c9cd`，均通过 `pg_restore --list` 与容器/本地 hash 交叉校验。迁移定向 `36 passed`，后端全量 `355 passed, 1 skipped`；Ruff、strict mypy（106 源文件）与默认/测试双库 `0007` Alembic 零漂移通过。
