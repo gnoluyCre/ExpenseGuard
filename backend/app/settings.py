@@ -160,6 +160,11 @@ class Settings(BaseSettings):
         """原始上传文件留存目录。该目录位于 gitignore 的 data/private 下。"""
         return _REPO_ROOT / "data" / "private" / "uploads"
 
+    @property
+    def report_export_root(self) -> Path:
+        """XLSX 报告 artifact 私有目录；绝不暴露主机绝对路径。"""
+        return _REPO_ROOT / "data" / "private" / "report-exports"
+
 
 @lru_cache
 def get_settings() -> Settings:

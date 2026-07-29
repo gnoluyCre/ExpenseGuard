@@ -166,6 +166,38 @@ class ReportRun(Base, TenantScopedMixin, TimestampMixin):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
+class ReportRequest(Base, TenantScopedMixin, TimestampMixin):
+    """Append-only idempotency key mapping for report generation requests."""
+
+    __tablename__ = "report_request"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "idempotency_key_hash"),
+        ForeignKeyConstraint(
+            ["file_version_id", "tenant_id"],
+            ["file_version.id", "file_version.tenant_id"],
+            name="fk_report_request_file_version_tenant",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["report_run_id", "tenant_id", "file_version_id"],
+            ["report_run.id", "report_run.tenant_id", "report_run.file_version_id"],
+            name="fk_report_request_report_tenant_file",
+            ondelete="RESTRICT",
+        ),
+        CheckConstraint("char_length(idempotency_key_hash) = 64", name="idempotency_hash_length"),
+        CheckConstraint(
+            "char_length(request_fingerprint) = 64",
+            name="request_fingerprint_length",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    file_version_id: Mapped[uuid.UUID] = mapped_column(nullable=False, index=True)
+    report_run_id: Mapped[uuid.UUID] = mapped_column(nullable=False, index=True)
+    idempotency_key_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    request_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+
+
 class ReportItem(Base, TenantScopedMixin, TimestampMixin):
     """Finding-level evidence snapshot; multiple findings on one row stay separate."""
 

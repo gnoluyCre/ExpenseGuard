@@ -54,6 +54,7 @@ class RevisionRequestReason(StrEnum):
 
     RULESET_CHANGE = "ruleset_change"
     MAPPING_CHANGE = "mapping_change"
+    POLICY_CHANGE = "policy_change"
 
 
 class _StrictModel(BaseModel):
@@ -145,7 +146,10 @@ async def create_file_revision(
     if existing is not None:
         return _reuse_or_conflict(existing, fingerprint=fingerprint)
 
-    if request.reason is RevisionRequestReason.RULESET_CHANGE:
+    if request.reason in {
+        RevisionRequestReason.RULESET_CHANGE,
+        RevisionRequestReason.POLICY_CHANGE,
+    }:
         await _require_successfully_parsed_source(db, source)
 
     root_id = source.root_file_version_id or source.id
@@ -168,16 +172,21 @@ async def create_file_revision(
         uploaded_by=actor_id,
         mapping_version_id=(
             source.mapping_version_id
-            if request.reason is RevisionRequestReason.RULESET_CHANGE
+            if request.reason
+            in {RevisionRequestReason.RULESET_CHANGE, RevisionRequestReason.POLICY_CHANGE}
             else None
         ),
         parse_status=(
             source.parse_status
-            if request.reason is RevisionRequestReason.RULESET_CHANGE
+            if request.reason
+            in {RevisionRequestReason.RULESET_CHANGE, RevisionRequestReason.POLICY_CHANGE}
             else ParseStatus.UNPARSED
         ),
         parsed_at=(
-            source.parsed_at if request.reason is RevisionRequestReason.RULESET_CHANGE else None
+            source.parsed_at
+            if request.reason
+            in {RevisionRequestReason.RULESET_CHANGE, RevisionRequestReason.POLICY_CHANGE}
+            else None
         ),
         revision_no=next_revision_no,
         source_file_version_id=source.id,
@@ -192,7 +201,10 @@ async def create_file_revision(
             db.add(derived)
             await db.flush()
             await _copy_rows(db, source=source, derived=derived, reason=request.reason)
-            if request.reason is RevisionRequestReason.RULESET_CHANGE:
+            if request.reason in {
+                RevisionRequestReason.RULESET_CHANGE,
+                RevisionRequestReason.POLICY_CHANGE,
+            }:
                 await _copy_field_availability(db, source=source, derived=derived)
 
             await write_audit(
@@ -294,7 +306,10 @@ async def _copy_rows(
             )
         ).all()
     )
-    copy_parsed = reason is RevisionRequestReason.RULESET_CHANGE
+    copy_parsed = reason in {
+        RevisionRequestReason.RULESET_CHANGE,
+        RevisionRequestReason.POLICY_CHANGE,
+    }
     db.add_all(
         ExpenseRow(
             tenant_id=derived.tenant_id,

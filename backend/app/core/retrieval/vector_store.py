@@ -105,6 +105,10 @@ class QdrantVectorStore:
                 code="POLICY_VECTOR_STORE_UNAVAILABLE", message="本地向量库不可用"
             ) from exc
 
+    async def close(self) -> None:
+        """Release the per-request asynchronous Qdrant transport."""
+        await self._client.close()
+
     async def upsert_chunks(
         self, tenant_id: uuid.UUID, generation: int, chunks: Sequence[IndexChunk]
     ) -> None:

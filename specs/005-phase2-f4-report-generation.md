@@ -1,9 +1,9 @@
 # Spec 005 — Phase 2 F4 报告生成与制度条款引用
 
-**状态：** CP-F4.2 制度导入、发布与本地检索 ✅
+**状态：** CP-F4.3 Binding、引用核心与报告编排 ✅
 **日期：** 2026-07-28
 **前置检查点：** F3 / CP-F3.5 已完成
-**下一实施检查点：** CP-F4.3 Binding、引用核心与报告编排
+**下一实施检查点：** CP-F4.4 API、桌面工作流与 XLSX
 
 ---
 
@@ -427,6 +427,7 @@ CP-F4.1 只新增 `0005_f4_policy_reports.py`，不得修改 `0001`–`0004`。
 | `policy_index_job` | PG→Qdrant transactional outbox |
 | `rule_policy_binding` | 人工确认、逐字验证的规则-条款版本绑定 |
 | `report_run` | file revision 的报告状态与冻结 manifest |
+| `report_request` | report 生成请求的追加式幂等 key→请求/report 映射；允许 completed report 绑定后续新 key |
 | `report_item` | finding 级快照 |
 | `report_parse_error` | 未进入确定性校验行的解析错误快照 |
 | `report_citation` | verified citation 展示快照 |
@@ -449,6 +450,8 @@ CP-F4.1 只新增 `0005_f4_policy_reports.py`，不得修改 `0001`–`0004`。
 - unique `(tenant_id, report_fingerprint)` 与 `unique(id, tenant_id)`。
 - file/validation/creator 全部使用复合 tenant FK + `RESTRICT`。
 - `in_progress` 只允许存在于尚未提交的业务事务中；completed 后 immutable，不持久化 failed/partial report。
+
+`report_request` 至少包含 tenant、file version、report run、`idempotency_key_hash`、`request_fingerprint` 与创建时间；使用 `unique(tenant_id, idempotency_key_hash)` 和复合 tenant FK。它只保存 hash/ID，不保存请求体、原始行、quote 或制度原文，且与 report 创建/复用处于同一事务。该表追加写且不可修改/删除，用于同时满足“completed report + 新 key 复用”与“同 key + 异请求永久冲突”。
 
 ### 9.3 Report item 与 citation
 
@@ -490,6 +493,7 @@ CP-F4.1 只新增 `0005_f4_policy_reports.py`，不得修改 `0001`–`0004`。
 - 已有 finding 的 `clause_id/quote/reasoning` 保留原值，不回填、不删除、不作为 F4 snapshot 真源。
 - 机械反向验证 `row_result`、`sampling_audit`、`audit_log`、F3 unique/FK/check/append-only 未改变。
 - downgrade 在存在 F4 published policy、binding、report 或 export 时必须在任何 DDL 前拒绝，不删除交付证据。
+- CP-F4.3 不修改既有 `0001`–`0005`；新增 `0006` 仅扩展 `file_version.revision_reason` 的 `policy_change` 值域并新增追加式 `report_request`。非测试库升级前必须完成可恢复 full/schema/affected-data 备份、`pg_restore --list` 与 SHA-256 校验；downgrade 在存在 `policy_change` revision 或任一 `report_request` 时于任何 DDL 前拒绝。
 
 ---
 
@@ -524,11 +528,15 @@ Tenant FOR UPDATE NOWAIT
 - 同 key + 不同请求：409 `IDEMPOTENCY_KEY_REUSED`。
 - completed report + 新 key：200 复用，不创建新 report。
 
+每个经校验的 key 都在 `report_request` 中追加记录。首次生成时 request 与 report snapshot 同事务提交；completed report 使用新 key 重放时，只追加 key→既有 report 的映射，不新增 report/item/citation/成功审计，也不访问 Qdrant、模型或当前 binding。若 key 已存在，必须先比较冻结的 `request_fingerprint`；不一致即 409，不能因为目标批次已有 completed report 而绕过冲突检查。
+
 若 file revision 已有 completed report，服务必须先按主键读取冻结 report，再以其 `report_fingerprint` 计算幂等响应；不得读取当前 binding/index/model 来重新推导 identity。新 policy/binding 只能通过 §10.4 的派生 revision 生效。
 
 ### 10.4 Policy change
 
 F4 扩展 revision reason `policy_change`：复制 source revision 的原始/解析快照，不复制 F3/报告副作用。派生 revision 必须重新完成 F3 validation 后生成新 report；旧 report 不变。
+
+该值域扩展由 CP-F4.3 的新增 `0006` 落地；禁止回写 `0004` 或 `0005`。`policy_change` 与 `ruleset_change` 一样要求来源已成功解析，但其 request fingerprint 使用独立 reason，不能与其他派生原因复用同一幂等请求。
 
 ### 10.5 Export 幂等
 
@@ -879,3 +887,35 @@ F4 UI 不出现复核 decision/note/assignee/queue，不出现 correlation findi
 - outbox worker 使用 `FOR UPDATE SKIP LOCKED`、lease token、attempt limit 与稳定 failure code；已覆盖“Qdrant upsert 成功后进程退出”的租约回收和同点重放。terminal failure 会冻结同文档兄弟 job，人工 retry 复用原 job；active 增量发布会同步刷新被收口前序版本的 expiry payload，building generation 使用 frozen manifest、显式 delta revision 和原子 active/retired 切换，active/building job 可按 generation 路由到不同 collection。
 - 本地模型提供 `fake`（仅 dev/test）和 Infinity HTTP 双路径；prod 禁止 fake，模型与 Qdrant URL 必须命中显式主机白名单且不得内嵌凭据。F4 路径没有云 LLM provider 或出网回退。
 - 新增运行时依赖 `pypdf 6.x` 与 `python-docx 1.2.x`。真实 PostgreSQL/Qdrant 定向测试覆盖内容幂等、跨租户隐藏、expiry end-exclusive、伪造 payload、worker kill/retry、terminal/manual retry、generation rebuild/delta 与 collection provenance。最终后端全量 `269 passed, 1 skipped`；Ruff lint/format、strict mypy（93 个源文件）、默认/测试双库 `alembic check`、OpenAPI/前端客户端连续二次生成、pre-commit/gitleaks 与 `pip-audit --strict` 全部通过。
+
+### CP-F4.3 实施覆盖决定（2026-07-28，编码前）
+
+- 只读预检发现现有 `file_version.revision_reason` 只允许 `ruleset_change|mapping_change`，无法表达 §10.4 已冻结的 `policy_change`；同时 `report_run` 只保存单个幂等 key，无法同时长期满足“completed report + 新 key 复用”和“同 key + 异请求冲突”。
+- 经实施计划确认，CP-F4.3 新增 `0006`，不修改既有迁移：扩展 `policy_change` 值域并新增追加式 `report_request` 幂等账本。升级前执行私有可恢复备份与校验；迁移、ORM、服务和并发/恢复测试必须共同证明新闭包不弱化 `row_result`、`sampling_audit`、`audit_log` 或既有 F4 不可变约束。
+
+### CP-F4.3 实际落地记录（2026-07-28）
+
+- 新增纯 `citations.py` 与 canonical binding/report fingerprint：exact verifier 只按 Python Unicode code point、必填 end-exclusive offsets 验证 PG clause 连续子串，不做 strip、Unicode normalization、casefold、全半角/空白/标点转换、搜索、编辑距离或跨 clause 拼接。失败统一为安全稳定错误，Pydantic binding 输入启用 `hide_input_in_errors`；sentinel 反向测试证明候选 quote 不进入异常、DB、audit 或日志。
+- 新增 PG-only Binding 服务：configurator 在 tenant NOWAIT 锁内一次保存完整 1–3 条连续 order，校验同租户 rule/actor、published document、`effective <= expense_date < expiry`、family/document/clause 复合身份、clause hash 与 exact quote 后才写入；相同 canonical set 重放复用且成功审计最多一次，不同/歧义 set fail closed。Qdrant 候选、score 与模型不进入正式 binding。
+- 新增原子 Report 服务：严格 `Tenant FOR UPDATE NOWAIT → FileVersion FOR UPDATE NOWAIT`，只消费 completed F3、row_result/finding/expense_row/parse error 与 PG binding；每个 finding 独立 item，同 row 多 finding 不折叠，passed 无 finding 只计数，parse error 独立 snapshot。任一预期引用失败时保留 source outcome/verdict/attention，整条 item citation unavailable 且零部分 citation；成功 report/item/parse-error/citation/count/`batch.report_generate` 同事务，fault 后全回滚并用独立短事务写无 PII `batch.report_failed`。completed replay/read 只读 snapshot，不访问 Qdrant、模型或当前 binding。
+- 新增 `0006_f4_report_requests.py`，不修改 `0001`–`0005`：`file_version.revision_reason` 增加 `policy_change`；新增 append-only `report_request`，以 tenant/key hash 唯一、request fingerprint 和 report/file 复合 tenant FK 记忆首次及后续 alias key。downgrade 在任一 policy_change revision 或 report_request 存在时于 DDL 前拒绝。`policy_change` 复制 raw/normalized/parse-error/field-availability snapshot，不复制 validation/dependency/row_result/finding/report/export，必须重新 F3 后才能生成新报告。CP-F4.3 未暴露 binding/report/API/UI/XLSX；既有 revision API 仍只接受原有两种 reason，`policy_change` 等 CP-F4.4 显式接线。
+- pre-0006 默认库备份位于 gitignored 的 `data/private/backups/cp-f4.3/pre-0006-20260728-190828/`。full/schema/file_version affected-data custom archive 均通过 `pg_restore --list` 与容器/本地 SHA-256 交叉验证，哈希分别为 `96614363fa9a5471c232535b5ecf69bedc6f1a0ef15e5bca3d0d7d55da08da3b`、`d7b4bb6cf55d03d734c992bbf9a5df8bb2a6635ff6f284ee0d420c0e1d0e5452`、`eb2f85a491edf4922fa6b68bf598da17babe83db367cd75959f1763aaf5c816a`。默认/测试双库均为 `0006 (head)` 且 Alembic 零漂移。
+- 报告装配额外显式验证 actor tenant scope，并机械重算 `canonical_binding_fingerprint`；跨租户 actor 零报告/失败审计副作用，错误 binding fingerprint 整组引用降级为 `POLICY_BINDING_INTEGRITY_FAILED` 且不冻结部分引用。
+- 验证结果：CP-F4.3 定向 `65 passed`；exact verifier `23 passed` 且 statement/branch coverage `100%`；后端全量 `318 passed, 1 skipped`；Ruff lint/format、strict mypy（99 个源文件）、0006 clean roundtrip/safe downgrade、双库 `alembic check`、受保护约束/租户隔离/锁冲突/幂等/中断恢复回归、OpenAPI/前端客户端连续二次生成无漂移、pre-commit/gitleaks 与 `pip-audit --strict` 全部通过。前端 `20 passed`，typecheck/oxlint/Prettier/生产 build 通过。
+
+### CP-F4.4 实际落地记录（2026-07-29）
+
+- 新增 policy/binding/report/export 路由与强类型 Pydantic/OpenAPI：制度 family/list/create、document upload/read/publish、规则候选、binding save/history、报告 generate/read/items/parse-errors、XLSX artifact create/download。路由只做传输编排，查询、分页、稳定排序、租户隔离和审计均在服务层；权限继续按 permission 驱动，`policy_change` 已接入批次 revision API。
+- 制度桌面工作流新增“制度证据库”：展示不可变版本账本、条款原文预览、候选检索、精确 offset/quote binding 与历史。候选显式标注仅供配置，报告只消费 configurator-confirmed binding。批次页新增不可变报告视图，展示汇总、attention group、逐条 reasoning/原始行证据/逐字引用、citation unavailable 与解析错误，并提供 XLSX 创建后独立下载。
+- XLSX 固定输出“报告摘要、关注项、制度引用、解析错误、原始行证据”5 张表与固定列序；只导出报告引用的原始行。所有文本执行前导空白后的公式/DDE 注入防护和 Excel 32767 字符边界处理；生成后用 ZIP/openpyxl 回读，发现公式、DDE、超链接、宏、外链或嵌入对象即 fail closed。artifact 使用私有确定性路径、追加式幂等账本、原子写入、SHA-256 篡改检测，并分离生成成功/失败与下载审计。
+- 安全与回归覆盖跨租户 404、viewer/configurator/auditor 权限、幂等重放、稳定分页、解析错误、恶意文本安全渲染、XLSX 注入/回读/篡改/孤儿恢复。未实现 F5/F6/F8、PDF/CSV/mobile，未修改受保护基础设施或既有迁移。
+- 验证结果：CP-F4.4 定向后端 `34 passed`，后端全量 `352 passed, 1 skipped`；Ruff lint/format、strict mypy（105 个源文件）、默认/测试双库 `alembic check` 与 pre-commit/gitleaks 全部通过。OpenAPI 与前端客户端连续二次生成哈希一致；前端 `8` 个文件、`23 passed`，typecheck/oxlint/Prettier/生产 build 通过。真实 Chrome 1418px 视口加载合成租户的报告与制度页，均无页面级横向溢出或 alert；视觉记录位于 gitignored `data/private/visual-cp-f4-4/`。
+
+### CP-F4.5 实际落地记录（2026-07-29）
+
+- 定向回归覆盖 F4 API、迁移、binding、report、export、exact quote、XLSX，以及全局幂等/中断恢复：`94 passed`。pytest 9.1.1 下后端全量 `352 passed, 1 skipped`；Ruff lint、142 文件 format check、strict mypy（105 个源文件）、默认/测试双库 `0006 (head)` 与 `alembic check` 全部通过。未修改 `docker-compose.yml`、Dockerfile、`.github/workflows/` 或既有迁移，未弱化受保护唯一约束与追加写语义。
+- 安全审计首次发现 dev 依赖 pytest 8.4.2 命中 `PYSEC-2026-1845`（修复版本 9.0.3）。将开发约束从 `pytest>=8.3,<9` 提升为 `pytest>=9.0.3,<10`，锁文件解析为 9.1.1；升级后全量回归保持原数量，`pip-audit --strict`、npm audit、pre-commit/gitleaks 均为零失败。该变更只影响开发测试依赖，不改变生产运行依赖或业务阈值。
+- OpenAPI 与前端客户端在修改前、首次生成、第二次生成的 SHA-256 分别始终为 `0526005dee87105a7b850ed52adf7a7863cf3192c7bd627d4d96cb569290e054` 与 `a92b64c1b0785bed266d7883ba6b37c4cdf831ca41e73481703ea98d5aeae9b0`，连续生成无 Git 漂移。前端 `8` 个测试文件、`23 passed`，strict TypeScript、oxlint、Prettier、生产 build 与 npm audit 全部通过。
+- 固定 seed `3500` 的 5000 行 F1→F2→F3→F4→XLSX 全链路总耗时 `108.260723s`，低于全局 `900s` 硬上限。数据生成 `31.252592s`、导入 `3.494532s`、解析 `4.668034s`、F3 校验 `55.166717s`/`11056` SQL；F4 报告装配 `8.331935s`/`3150` SQL（SQL 累计 `4.496375s`），XLSX `4.990587s`/`13` SQL（SQL 累计 `0.216112s`）。5000 行全部解析成功，1045 finding 全部形成 report item 与 verified citation，0 unavailable；XLSX artifact `345735` bytes，SHA-256 为 `1a6c27d8b4e00869b3fb0c4306247ed5cebcb2129c8eb868b7f7c79e10f19d44`。这些本机数值只作本次门禁证据，不提高产品承诺。
+- 精确 1440×1000 Chrome 152 复核 report/policy 的 normal、empty、loading、error，以及 viewer/configurator 权限共 8 场景；全部 inner viewport 为 1440×1000、页面级横向溢出为 0，恶意 `<script>`/`<img>` 文本未形成 DOM 节点。机械指标发现制度账本长 stable key/版本标识在左侧网格被内部裁切，已通过 `min-w-0` 收缩闭包与 stable key `break-all` 最小修复，并补组件回归断言；复核后仅标题保留显式 `truncate`。私有结果、XLSX 与截图位于 gitignored `data/private/cp-f4.5/`。
+- CP-F4.5 无业务范围偏差，未降低阈值、跳过失败或提前实现 F5/F6/F8。F4 路线图在上述全部门禁通过且状态文件写入真实数量后标记完成。
