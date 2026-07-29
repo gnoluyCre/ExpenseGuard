@@ -17,6 +17,8 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe("PoliciesPage", () => {
   it("以文本呈现制度原文，viewer 不显示写入表单", async () => {
+    const longStableKey =
+      "travel.policy.with.a.deliberately.long.stable.key.for.desktop.overflow.gate";
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -26,7 +28,7 @@ describe("PoliciesPage", () => {
           return json([
             {
               id: "11111111-1111-1111-1111-111111111111",
-              stable_key: "travel",
+              stable_key: longStableKey,
               display_name: "差旅制度",
               created_at: "2026-07-29T05:00:00Z",
               documents: [
@@ -91,6 +93,8 @@ describe("PoliciesPage", () => {
     renderWithProviders(<PoliciesPage />, { queryClient });
     const documentButton = await screen.findByRole("button", { name: /差旅制度<script>/ });
     expect(documentButton).toBeInTheDocument();
+    expect(documentButton).toHaveClass("min-w-0", "w-full");
+    expect(screen.getByText(longStableKey)).toHaveClass("break-all");
     expect(screen.queryByText("01 · 建立制度族")).not.toBeInTheDocument();
     await user.click(documentButton);
     expect(

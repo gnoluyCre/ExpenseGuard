@@ -910,3 +910,12 @@ F4 UI 不出现复核 decision/note/assignee/queue，不出现 correlation findi
 - XLSX 固定输出“报告摘要、关注项、制度引用、解析错误、原始行证据”5 张表与固定列序；只导出报告引用的原始行。所有文本执行前导空白后的公式/DDE 注入防护和 Excel 32767 字符边界处理；生成后用 ZIP/openpyxl 回读，发现公式、DDE、超链接、宏、外链或嵌入对象即 fail closed。artifact 使用私有确定性路径、追加式幂等账本、原子写入、SHA-256 篡改检测，并分离生成成功/失败与下载审计。
 - 安全与回归覆盖跨租户 404、viewer/configurator/auditor 权限、幂等重放、稳定分页、解析错误、恶意文本安全渲染、XLSX 注入/回读/篡改/孤儿恢复。未实现 F5/F6/F8、PDF/CSV/mobile，未修改受保护基础设施或既有迁移。
 - 验证结果：CP-F4.4 定向后端 `34 passed`，后端全量 `352 passed, 1 skipped`；Ruff lint/format、strict mypy（105 个源文件）、默认/测试双库 `alembic check` 与 pre-commit/gitleaks 全部通过。OpenAPI 与前端客户端连续二次生成哈希一致；前端 `8` 个文件、`23 passed`，typecheck/oxlint/Prettier/生产 build 通过。真实 Chrome 1418px 视口加载合成租户的报告与制度页，均无页面级横向溢出或 alert；视觉记录位于 gitignored `data/private/visual-cp-f4-4/`。
+
+### CP-F4.5 实际落地记录（2026-07-29）
+
+- 定向回归覆盖 F4 API、迁移、binding、report、export、exact quote、XLSX，以及全局幂等/中断恢复：`94 passed`。pytest 9.1.1 下后端全量 `352 passed, 1 skipped`；Ruff lint、142 文件 format check、strict mypy（105 个源文件）、默认/测试双库 `0006 (head)` 与 `alembic check` 全部通过。未修改 `docker-compose.yml`、Dockerfile、`.github/workflows/` 或既有迁移，未弱化受保护唯一约束与追加写语义。
+- 安全审计首次发现 dev 依赖 pytest 8.4.2 命中 `PYSEC-2026-1845`（修复版本 9.0.3）。将开发约束从 `pytest>=8.3,<9` 提升为 `pytest>=9.0.3,<10`，锁文件解析为 9.1.1；升级后全量回归保持原数量，`pip-audit --strict`、npm audit、pre-commit/gitleaks 均为零失败。该变更只影响开发测试依赖，不改变生产运行依赖或业务阈值。
+- OpenAPI 与前端客户端在修改前、首次生成、第二次生成的 SHA-256 分别始终为 `0526005dee87105a7b850ed52adf7a7863cf3192c7bd627d4d96cb569290e054` 与 `a92b64c1b0785bed266d7883ba6b37c4cdf831ca41e73481703ea98d5aeae9b0`，连续生成无 Git 漂移。前端 `8` 个测试文件、`23 passed`，strict TypeScript、oxlint、Prettier、生产 build 与 npm audit 全部通过。
+- 固定 seed `3500` 的 5000 行 F1→F2→F3→F4→XLSX 全链路总耗时 `108.260723s`，低于全局 `900s` 硬上限。数据生成 `31.252592s`、导入 `3.494532s`、解析 `4.668034s`、F3 校验 `55.166717s`/`11056` SQL；F4 报告装配 `8.331935s`/`3150` SQL（SQL 累计 `4.496375s`），XLSX `4.990587s`/`13` SQL（SQL 累计 `0.216112s`）。5000 行全部解析成功，1045 finding 全部形成 report item 与 verified citation，0 unavailable；XLSX artifact `345735` bytes，SHA-256 为 `1a6c27d8b4e00869b3fb0c4306247ed5cebcb2129c8eb868b7f7c79e10f19d44`。这些本机数值只作本次门禁证据，不提高产品承诺。
+- 精确 1440×1000 Chrome 152 复核 report/policy 的 normal、empty、loading、error，以及 viewer/configurator 权限共 8 场景；全部 inner viewport 为 1440×1000、页面级横向溢出为 0，恶意 `<script>`/`<img>` 文本未形成 DOM 节点。机械指标发现制度账本长 stable key/版本标识在左侧网格被内部裁切，已通过 `min-w-0` 收缩闭包与 stable key `break-all` 最小修复，并补组件回归断言；复核后仅标题保留显式 `truncate`。私有结果、XLSX 与截图位于 gitignored `data/private/cp-f4.5/`。
+- CP-F4.5 无业务范围偏差，未降低阈值、跳过失败或提前实现 F5/F6/F8。F4 路线图在上述全部门禁通过且状态文件写入真实数量后标记完成。

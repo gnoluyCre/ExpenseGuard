@@ -176,11 +176,11 @@ export function PoliciesPage() {
       ) : null}
 
       <div className="grid grid-cols-[minmax(300px,.72fr)_minmax(0,1.7fr)] gap-4">
-        <Card className="self-start overflow-hidden">
+        <Card className="min-w-0 self-start overflow-hidden">
           <CardHeader className="bg-slate-950 text-white">
             <CardTitle>制度版本账本</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-4 p-4">
+          <CardContent className="grid min-w-0 gap-4 p-4">
             {families.isLoading ? <p className="text-sm">加载制度中</p> : null}
             {families.isError ? (
               <p role="alert" className="text-sm text-destructive">
@@ -188,20 +188,22 @@ export function PoliciesPage() {
               </p>
             ) : null}
             {(families.data ?? []).map((family) => (
-              <section key={family.id} className="grid gap-2">
-                <div>
+              <section key={family.id} className="grid min-w-0 gap-2">
+                <div className="min-w-0">
                   <p className="font-semibold">{family.display_name}</p>
-                  <p className="font-mono text-xs text-muted-foreground">{family.stable_key}</p>
+                  <p className="break-all font-mono text-xs text-muted-foreground">
+                    {family.stable_key}
+                  </p>
                 </div>
                 {family.documents.map((item) => (
                   <button
                     key={item.id}
                     type="button"
                     onClick={() => setSelectedDocumentId(item.id)}
-                    className="rounded-md border p-3 text-left hover:border-slate-500 hover:bg-slate-50"
+                    className="min-w-0 w-full rounded-md border p-3 text-left hover:border-slate-500 hover:bg-slate-50"
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-medium">
+                    <div className="flex min-w-0 items-center justify-between gap-2">
+                      <span className="min-w-0 truncate text-sm font-medium">
                         {item.title} · {item.version}
                       </span>
                       <Badge variant="outline">{statusLabel(item.status)}</Badge>
