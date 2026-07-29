@@ -5,7 +5,7 @@ from __future__ import annotations
 import unicodedata
 import uuid
 from datetime import date, datetime
-from typing import Any, Final, Literal, Self
+from typing import Annotated, Any, Final, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -150,23 +150,38 @@ ReviewQueueStatus = Literal["pending", "completed"]
 SamplingPlanStatus = Literal["completed", "legacy_not_initialized"]
 
 
-class ReviewQueueItem(_StrictModel):
-    kind: ReviewQueueKind
+class _ReviewQueueItemBase(_StrictModel):
     status: ReviewQueueStatus
+    sampling_status: SamplingPlanStatus
     target_id: uuid.UUID
     report_run_id: uuid.UUID
     file_version_id: uuid.UUID
     report_completed_at: datetime
     row_no: int = Field(ge=1)
-    attention_group: ReportAttentionGroup | None
-    finding_id: uuid.UUID | None
-    rule_id: str | None
-    rule_version: str | None
-    sampling_plan_id: uuid.UUID | None
-    selection_rank: int | None = Field(default=None, ge=1)
-    decision: ReviewDecision | SamplingReviewDecision | None
     reviewer_id: uuid.UUID | None
     reviewed_at: datetime | None
+
+
+class FindingReviewQueueItem(_ReviewQueueItemBase):
+    kind: Literal["finding"] = "finding"
+    attention_group: ReportAttentionGroup
+    finding_id: uuid.UUID
+    rule_id: str
+    rule_version: str | None
+    decision: ReviewDecision | None
+
+
+class ClearanceReviewQueueItem(_ReviewQueueItemBase):
+    kind: Literal["clearance_sample"] = "clearance_sample"
+    sampling_plan_id: uuid.UUID
+    selection_rank: int = Field(ge=1)
+    decision: SamplingReviewDecision | None
+
+
+ReviewQueueItem = Annotated[
+    FindingReviewQueueItem | ClearanceReviewQueueItem,
+    Field(discriminator="kind"),
+]
 
 
 class ReviewQueuePage(_StrictModel):
@@ -176,6 +191,11 @@ class ReviewQueuePage(_StrictModel):
     offset: int = Field(ge=0)
 
 
+class ReviewCoverage(_StrictModel):
+    completed: int = Field(ge=0)
+    total: int = Field(ge=0)
+
+
 class ReviewSummary(_StrictModel):
     report_run_id: uuid.UUID
     sampling_status: SamplingPlanStatus
@@ -183,12 +203,14 @@ class ReviewSummary(_StrictModel):
     finding_completed: int = Field(ge=0)
     finding_confirmed: int = Field(ge=0)
     finding_false_positive: int = Field(ge=0)
+    finding_review_coverage: ReviewCoverage
     sample_eligible: int = Field(ge=0)
     sample_selected: int = Field(ge=0)
     sample_pending: int = Field(ge=0)
     sample_completed: int = Field(ge=0)
     sample_clearance_confirmed: int = Field(ge=0)
     sample_missed_issue: int = Field(ge=0)
+    sample_review_coverage: ReviewCoverage
 
 
 class ReviewCitationEvidence(_StrictModel):

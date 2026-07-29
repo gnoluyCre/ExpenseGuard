@@ -18,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
 
 from app.api.errors import register_error_handlers
-from app.api.routes import auth, batches, health, policies, reports, rules, schema_mappings
+from app.api.routes import auth, batches, health, policies, reports, reviews, rules, schema_mappings
 from app.core.tenancy.scope import install_tenant_guard
 from app.db.engine import create_engine_from_settings, create_session_factory
 from app.settings import Settings, get_settings
@@ -83,7 +83,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_origins=settings.cors_allowed_origins,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
-        allow_headers=["Content-Type"],
+        allow_headers=["Content-Type", "Idempotency-Key"],
     )
 
     register_error_handlers(app)
@@ -94,6 +94,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(rules.router)
     app.include_router(policies.router)
     app.include_router(reports.router)
+    app.include_router(reviews.router)
     return app
 
 

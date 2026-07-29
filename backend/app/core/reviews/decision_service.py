@@ -14,7 +14,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.errors import ExpenseGuardError
 from app.core.policies.canonical import canonical_sha256
-from app.core.reviews.errors import ReviewError, ReviewInputError, ReviewInternalError
+from app.core.reviews.errors import (
+    ReviewError,
+    ReviewInputError,
+    ReviewInternalError,
+    ReviewNotFoundError,
+)
 from app.core.reviews.models import (
     FindingReviewCommand,
     FindingReviewResult,
@@ -142,12 +147,12 @@ async def _submit_finding_review(
         )
     )
     if item is None:
-        raise ReviewError(code="REVIEW_TARGET_NOT_FOUND", message="复核目标不存在")
+        raise ReviewNotFoundError(code="REVIEW_TARGET_NOT_FOUND", message="复核目标不存在")
     if item.attention_group not in {
         ReportAttentionGroup.HIGH_ATTENTION,
         ReportAttentionGroup.MANUAL_ATTENTION,
     }:
-        raise ReviewError(code="REVIEW_TARGET_NOT_FOUND", message="复核目标不存在")
+        raise ReviewNotFoundError(code="REVIEW_TARGET_NOT_FOUND", message="复核目标不存在")
     await _lock_file(db, tenant_id=tenant_id, file_version_id=item.file_version_id)
     item = await db.scalar(
         select(ReportItem)
@@ -155,7 +160,7 @@ async def _submit_finding_review(
         .with_for_update(nowait=True)
     )
     if item is None:
-        raise ReviewError(code="REVIEW_TARGET_NOT_FOUND", message="复核目标不存在")
+        raise ReviewNotFoundError(code="REVIEW_TARGET_NOT_FOUND", message="复核目标不存在")
     await _require_completed_report(db, tenant_id=tenant_id, report_run_id=item.report_run_id)
     await _require_actor(db, tenant_id=tenant_id, actor_id=actor_id)
 
@@ -245,7 +250,7 @@ async def _submit_sampling_review(
         )
     )
     if sample is None:
-        raise ReviewError(code="REVIEW_TARGET_NOT_FOUND", message="复核目标不存在")
+        raise ReviewNotFoundError(code="SAMPLE_NOT_FOUND", message="抽检样本不存在")
     verdict = await db.scalar(
         select(RowResult.verdict).where(
             RowResult.tenant_id == tenant_id,
@@ -254,7 +259,7 @@ async def _submit_sampling_review(
         )
     )
     if verdict != "passed":
-        raise ReviewError(code="REVIEW_TARGET_NOT_FOUND", message="复核目标不存在")
+        raise ReviewNotFoundError(code="SAMPLE_NOT_FOUND", message="抽检样本不存在")
     await _lock_file(db, tenant_id=tenant_id, file_version_id=sample.file_version_id)
     sample = await db.scalar(
         select(SamplingAudit)
@@ -262,7 +267,7 @@ async def _submit_sampling_review(
         .with_for_update(nowait=True)
     )
     if sample is None:
-        raise ReviewError(code="REVIEW_TARGET_NOT_FOUND", message="复核目标不存在")
+        raise ReviewNotFoundError(code="SAMPLE_NOT_FOUND", message="抽检样本不存在")
     await _require_completed_report(db, tenant_id=tenant_id, report_run_id=sample.report_run_id)
     await _require_actor(db, tenant_id=tenant_id, actor_id=actor_id)
 
@@ -356,7 +361,7 @@ async def _lock_file(db: AsyncSession, *, tenant_id: uuid.UUID, file_version_id:
             raise ReviewError(code="REVIEW_CONFLICT", message="该批次正在执行复核变更") from exc
         raise
     if batch is None:
-        raise ReviewError(code="REVIEW_TARGET_NOT_FOUND", message="复核目标不存在")
+        raise ReviewNotFoundError(code="REVIEW_TARGET_NOT_FOUND", message="复核目标不存在")
 
 
 async def _require_completed_report(
@@ -369,7 +374,7 @@ async def _require_completed_report(
         )
     )
     if report is None or report.status is not ReportRunStatus.COMPLETED:
-        raise ReviewError(code="REVIEW_TARGET_NOT_FOUND", message="复核目标不存在")
+        raise ReviewNotFoundError(code="REPORT_NOT_FOUND", message="报告不存在")
 
 
 async def _require_actor(db: AsyncSession, *, tenant_id: uuid.UUID, actor_id: uuid.UUID) -> None:
@@ -388,6 +393,10 @@ def _validate_finding_command(**values: object) -> FindingReviewCommand:
     try:
         return FindingReviewCommand.model_validate(values)
     except ValidationError as exc:
+        if _note_required(exc):
+            raise ReviewInputError(
+                code="REVIEW_NOTE_REQUIRED", message="该复核结论必须填写说明"
+            ) from exc
         raise ReviewInputError(code="REVIEW_DECISION_INVALID", message="复核结论无效") from exc
 
 
@@ -395,7 +404,17 @@ def _validate_sampling_command(**values: object) -> SamplingReviewCommand:
     try:
         return SamplingReviewCommand.model_validate(values)
     except ValidationError as exc:
-        raise ReviewInputError(code="SAMPLE_DECISION_INVALID", message="抽检结论无效") from exc
+        if _note_required(exc):
+            raise ReviewInputError(
+                code="REVIEW_NOTE_REQUIRED", message="该抽检结论必须填写说明"
+            ) from exc
+        raise ReviewInputError(code="REVIEW_DECISION_INVALID", message="抽检结论无效") from exc
+
+
+def _note_required(exc: ValidationError) -> bool:
+    return any(
+        "note is required" in str(error.get("ctx", {}).get("error", "")) for error in exc.errors()
+    )
 
 
 def _decision_fingerprint(

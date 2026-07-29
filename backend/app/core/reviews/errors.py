@@ -11,8 +11,17 @@ class ReviewInputError(ReviewError):
     status_code = 422
 
 
+class ReviewNotFoundError(ReviewError):
+    status_code = 404
+
+
 class ReviewInternalError(ReviewError):
     status_code = 500
 
-    def __init__(self) -> None:
-        super().__init__(code="REVIEW_INTERNAL_ERROR", message="复核服务暂时不可用")
+    def __init__(
+        self,
+        *,
+        code: str = "REVIEW_SUBMIT_FAILED",
+        message: str = "复核提交暂时不可用",
+    ) -> None:
+        super().__init__(code=code, message=message)

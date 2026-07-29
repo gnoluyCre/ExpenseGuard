@@ -13,7 +13,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.core.errors import ExpenseGuardError
 from app.core.policies.canonical import canonical_sha256
 from app.core.reviews.config_service import require_latest_sampling_config
-from app.core.reviews.errors import ReviewError, ReviewInputError, ReviewInternalError
+from app.core.reviews.errors import (
+    ReviewError,
+    ReviewInputError,
+    ReviewInternalError,
+    ReviewNotFoundError,
+)
 from app.core.reviews.models import (
     SamplingConfigParameters,
     SamplingPlanResult,
@@ -52,7 +57,7 @@ async def create_plan_for_new_report(
 ) -> SamplingPlanResult:
     """Create plan/sample/audit inside the caller's uncommitted report transaction."""
     if report.tenant_id != tenant_id:
-        raise ReviewError(code="REVIEW_TARGET_NOT_FOUND", message="复核目标不存在")
+        raise ReviewNotFoundError(code="REVIEW_TARGET_NOT_FOUND", message="复核目标不存在")
     existing = await _find_plan(db, tenant_id=tenant_id, report_run_id=report.id)
     if existing is not None:
         return await _plan_result(db, existing, reused_existing=True)
@@ -96,7 +101,30 @@ async def create_legacy_sampling_plan(
             actor_id=actor_id,
             report_run_id=report_run_id,
         )
-        raise ReviewInternalError from exc
+        raise ReviewInternalError(
+            code="REVIEW_PLAN_FAILED",
+            message="抽样计划创建暂时不可用",
+        ) from exc
+
+
+async def get_sampling_plan(
+    db: AsyncSession,
+    *,
+    tenant_id: uuid.UUID,
+    report_run_id: uuid.UUID,
+) -> SamplingPlanResult | None:
+    """Read a completed report's frozen plan without creating one."""
+    report = await db.scalar(
+        select(ReportRun).where(
+            ReportRun.id == report_run_id,
+            ReportRun.tenant_id == tenant_id,
+            ReportRun.status == ReportRunStatus.COMPLETED,
+        )
+    )
+    if report is None:
+        raise ReviewNotFoundError(code="REPORT_NOT_FOUND", message="报告不存在")
+    plan = await _find_plan(db, tenant_id=tenant_id, report_run_id=report_run_id)
+    return None if plan is None else await _plan_result(db, plan, reused_existing=True)
 
 
 async def _create_legacy_sampling_plan(
@@ -153,7 +181,7 @@ async def _create_legacy_sampling_plan(
         )
     )
     if report is None:
-        raise ReviewError(code="REVIEW_TARGET_NOT_FOUND", message="复核目标不存在")
+        raise ReviewNotFoundError(code="REPORT_NOT_FOUND", message="报告不存在")
     await _lock_file(db, tenant_id=tenant_id, file_version_id=report.file_version_id)
     report = await db.scalar(
         select(ReportRun)
@@ -161,7 +189,7 @@ async def _create_legacy_sampling_plan(
         .with_for_update(nowait=True)
     )
     if report is None:
-        raise ReviewError(code="REVIEW_TARGET_NOT_FOUND", message="复核目标不存在")
+        raise ReviewNotFoundError(code="REPORT_NOT_FOUND", message="报告不存在")
     if report.status is not ReportRunStatus.COMPLETED:
         raise ReviewError(code="REPORT_NOT_COMPLETED", message="报告尚未完成")
 
@@ -398,7 +426,7 @@ async def _lock_file(
             raise ReviewError(code="REVIEW_CONFLICT", message="该批次正在执行复核变更") from exc
         raise
     if batch is None:
-        raise ReviewError(code="REVIEW_TARGET_NOT_FOUND", message="复核目标不存在")
+        raise ReviewNotFoundError(code="REVIEW_TARGET_NOT_FOUND", message="复核目标不存在")
     return batch
 
 

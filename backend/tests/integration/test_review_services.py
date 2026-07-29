@@ -909,6 +909,6 @@ async def test_sampling_decision_rejects_non_passed_row_even_if_selection_was_in
                 note=None,
                 idempotency_key="invalid-sample-decision-key",
             )
-        assert rejected.value.code == "REVIEW_TARGET_NOT_FOUND"
+        assert rejected.value.code == "SAMPLE_NOT_FOUND"
         await session.rollback()
         assert await session.scalar(select(func.count()).select_from(SamplingReview)) == 0

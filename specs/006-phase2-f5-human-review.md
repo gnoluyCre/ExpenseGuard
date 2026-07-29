@@ -1,9 +1,9 @@
 # Spec 006 — Phase 2 F5 人工复核台与被放行样本抽检
 
-**状态：** CP-F5.0–CP-F5.2 已完成 ✅
+**状态：** CP-F5.0–CP-F5.3 已完成 ✅
 **日期：** 2026-07-29
 **前置检查点：** F4 / CP-F4.5 已完成
-**下一实施检查点：** CP-F5.3 API 与 OpenAPI 契约
+**下一实施检查点：** CP-F5.4 桌面复核台
 
 ---
 
@@ -656,3 +656,11 @@ payload 只含 tenant 内对象 ID、decision enum、版本、hash/fingerprint�
 - 新 report 在既有 Tenant→FileVersion NOWAIT 与 F4 单事务内，于 report completed 前写入 plan、全部 `sampling_audit` 与 `sampling.plan_create`；缺 config 在任何 report 写入前返回 `SAMPLING_CONFIG_REQUIRED`。plan/sample/audit 任一故障使 report 全部回滚，只以独立事务写一条带稳定 `sampling_reason_code` 的 `batch.report_failed`。legacy completed report 通过显式 key ledger 补建/复用，新 key 不重抽样、不新增成功审计；legacy 系统故障独立写 `sampling.plan_failed`。
 - finding review 仅接受 high/manual report item，clearance review 再校验 sample 绑定的 row_result 仍为 passed；两类结论均在 Tenant→FileVersion→target 锁序内一次性追加并与成功审计同事务，key 重放、新 key 重复、key 异请求、NOWAIT 并发与 kill/restart 均 fail closed。`sampling_audit` legacy decision 三列保持 NULL；任何人工结论均不改写 finding/report/item/citation/row_result，也不因 `missed_issue` 创建 finding。
 - CP-F5.2/F4 定向 `39 passed`；后端全量 `386 passed, 1 skipped`；Ruff lint/format（155 文件）与 strict mypy（114 源文件）通过。未新增依赖、迁移、API/UI 或 OpenAPI/client 变更；下一检查点为 CP-F5.3。
+
+### CP-F5.3 实际落地记录（2026-07-29）
+
+- 新增 config/plan/queue/finding detail/sample detail/两类 decision/summary 共 10 个强类型 API，全部只做传输校验、auth/db 注入与现有 F5 服务调用，路由无直接 SQL。GET config 返回明确的 current/history；plan 用 `completed|legacy_not_initialized` 判别联合；queue item 与 decision request 按 `kind` 生成 OpenAPI `oneOf + discriminator.mapping`，不使用裸 JSON DTO。
+- queue 支持 status/kind/report/file 白名单筛选、固定 default sort 与 1–200/非负 offset 分页；legacy finding item 明示 `sampling_status=legacy_not_initialized`。summary 补齐 finding/sample `{completed,total}` coverage；sample detail 的 ruleset fingerprint 修正为 completed report 冻结值，不读取当前规则或误用单行字段。
+- 三角色权限完全沿用 permission 数据：auditor/configurator 可读并提交 review、仅 configurator 可创建 sampling config、viewer 无 review 入口；未认证 401、无权限 403、跨租户 report/finding/sample 404。四类 mutation 的 Idempotency-Key 从 8–128 字符 header 注入，首次 201、同 key 同请求 200，冲突保持稳定领域 code。
+- F5 响应统一标记 `Cache-Control: private, no-store`，CORS 显式允许 `Idempotency-Key`；配置、decision/note、分页与 Pydantic 边界错误统一为 `{error:{code,message}}`。API 集成测试覆盖 RBAC、租户隔离、幂等重放/重复、legacy plan、分页/过滤、判别联合、缓存、CORS 与 success audit 无 note/key/seed 明文。
+- CP-F5.3/F5 定向 `36 passed`；后端全量 `391 passed, 1 skipped`；Ruff lint、157 文件 format、strict mypy（115 源文件）与 OpenAPI `--check` 通过。OpenAPI/client 连续二次生成 SHA-256 均稳定；前端 `23 passed`、typecheck/oxlint/Prettier/生产 build 全绿。未新增依赖、迁移、UI、批量提交、分派、评测导出或 F6/F8；下一检查点为 CP-F5.4。

@@ -5,17 +5,21 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, true
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.reports.service import load_report_snapshot
-from app.core.reviews.errors import ReviewError, ReviewInputError
+from app.core.reviews.errors import ReviewInputError, ReviewNotFoundError
 from app.core.reviews.models import (
     ClearanceReviewDetail,
+    ClearanceReviewQueueItem,
     FindingReviewDetail,
+    FindingReviewQueueItem,
     FindingReviewResult,
+    ReviewCoverage,
     ReviewItemEvidence,
     ReviewQueueItem,
+    ReviewQueueKind,
     ReviewQueuePage,
     ReviewQueueStatus,
     ReviewSummary,
@@ -38,11 +42,17 @@ async def list_review_queue(
     *,
     tenant_id: uuid.UUID,
     status: ReviewQueueStatus = "pending",
+    kind: ReviewQueueKind | None = None,
+    report_run_id: uuid.UUID | None = None,
+    file_version_id: uuid.UUID | None = None,
+    sort_by: str = "default",
     limit: int = 50,
     offset: int = 0,
 ) -> ReviewQueuePage:
     """Return the stable union of finding reviews and clearance samples."""
     if status not in {"pending", "completed"}:
+        raise ReviewInputError(code="REVIEW_FILTER_INVALID", message="复核队列筛选无效")
+    if kind not in {None, "finding", "clearance_sample"} or sort_by != "default":
         raise ReviewInputError(code="REVIEW_FILTER_INVALID", message="复核队列筛选无效")
     if not 1 <= limit <= 200 or offset < 0:
         raise ReviewInputError(code="REVIEW_PAGINATION_INVALID", message="复核分页参数无效")
@@ -50,9 +60,13 @@ async def list_review_queue(
     finding_rows = tuple(
         (
             await db.execute(
-                select(ReportItem, ReportRun, Review)
+                select(ReportItem, ReportRun, Review, ReviewSamplingPlan)
                 .join(ReportRun, ReportRun.id == ReportItem.report_run_id)
                 .outerjoin(Review, Review.report_item_id == ReportItem.id)
+                .outerjoin(
+                    ReviewSamplingPlan,
+                    ReviewSamplingPlan.report_run_id == ReportItem.report_run_id,
+                )
                 .where(
                     ReportItem.tenant_id == tenant_id,
                     ReportRun.status == ReportRunStatus.COMPLETED,
@@ -63,6 +77,12 @@ async def list_review_queue(
                         ]
                     ),
                     Review.id.is_(None) if status == "pending" else Review.id.is_not(None),
+                    ReportItem.report_run_id == report_run_id
+                    if report_run_id is not None
+                    else true(),
+                    ReportItem.file_version_id == file_version_id
+                    if file_version_id is not None
+                    else true(),
                 )
             )
         ).all()
@@ -84,53 +104,58 @@ async def list_review_queue(
                         if status == "pending"
                         else SamplingReview.id.is_not(None)
                     ),
+                    SamplingAudit.report_run_id == report_run_id
+                    if report_run_id is not None
+                    else true(),
+                    SamplingAudit.file_version_id == file_version_id
+                    if file_version_id is not None
+                    else true(),
                 )
             )
         ).all()
     )
 
-    items = [
-        ReviewQueueItem(
-            kind="finding",
-            status=status,
-            target_id=item.id,
-            report_run_id=item.report_run_id,
-            file_version_id=item.file_version_id,
-            report_completed_at=_completed_at(report),
-            row_no=item.row_no,
-            attention_group=item.attention_group,
-            finding_id=item.finding_id,
-            rule_id=item.rule_id,
-            rule_version=item.rule_version,
-            sampling_plan_id=None,
-            selection_rank=None,
-            decision=review.decision if review is not None else None,
-            reviewer_id=review.reviewer_id if review is not None else None,
-            reviewed_at=review.reviewed_at if review is not None else None,
+    items: list[ReviewQueueItem] = []
+    if kind in {None, "finding"}:
+        items.extend(
+            FindingReviewQueueItem(
+                kind="finding",
+                status=status,
+                sampling_status=("completed" if plan is not None else "legacy_not_initialized"),
+                target_id=item.id,
+                report_run_id=item.report_run_id,
+                file_version_id=item.file_version_id,
+                report_completed_at=_completed_at(report),
+                row_no=item.row_no,
+                attention_group=item.attention_group,
+                finding_id=item.finding_id,
+                rule_id=item.rule_id,
+                rule_version=item.rule_version,
+                decision=review.decision if review is not None else None,
+                reviewer_id=review.reviewer_id if review is not None else None,
+                reviewed_at=review.reviewed_at if review is not None else None,
+            )
+            for item, report, review, plan in finding_rows
         )
-        for item, report, review in finding_rows
-    ]
-    items.extend(
-        ReviewQueueItem(
-            kind="clearance_sample",
-            status=status,
-            target_id=sample.id,
-            report_run_id=sample.report_run_id,
-            file_version_id=sample.file_version_id,
-            report_completed_at=_completed_at(report),
-            row_no=sample.row_no,
-            attention_group=None,
-            finding_id=None,
-            rule_id=None,
-            rule_version=None,
-            sampling_plan_id=sample.sampling_plan_id,
-            selection_rank=sample.selection_rank,
-            decision=review.decision if review is not None else None,
-            reviewer_id=review.reviewer_id if review is not None else None,
-            reviewed_at=review.reviewed_at if review is not None else None,
+    if kind in {None, "clearance_sample"}:
+        items.extend(
+            ClearanceReviewQueueItem(
+                kind="clearance_sample",
+                status=status,
+                sampling_status="completed",
+                target_id=sample.id,
+                report_run_id=sample.report_run_id,
+                file_version_id=sample.file_version_id,
+                report_completed_at=_completed_at(report),
+                row_no=sample.row_no,
+                sampling_plan_id=sample.sampling_plan_id,
+                selection_rank=sample.selection_rank,
+                decision=review.decision if review is not None else None,
+                reviewer_id=review.reviewer_id if review is not None else None,
+                reviewed_at=review.reviewed_at if review is not None else None,
+            )
+            for sample, report, review in sample_rows
         )
-        for sample, report, review in sample_rows
-    )
     items.sort(key=_pending_order if status == "pending" else _completed_order)
     total = len(items)
     return ReviewQueuePage(
@@ -152,7 +177,7 @@ async def get_review_summary(
         )
     )
     if report is None:
-        raise ReviewError(code="REVIEW_TARGET_NOT_FOUND", message="复核目标不存在")
+        raise ReviewNotFoundError(code="REVIEW_TARGET_NOT_FOUND", message="复核目标不存在")
     plan = await db.scalar(
         select(ReviewSamplingPlan).where(
             ReviewSamplingPlan.tenant_id == tenant_id,
@@ -201,12 +226,17 @@ async def get_review_summary(
             finding_completed=finding_completed,
             finding_confirmed=confirmed,
             finding_false_positive=false_positive,
+            finding_review_coverage=ReviewCoverage(
+                completed=finding_completed,
+                total=finding_total,
+            ),
             sample_eligible=0,
             sample_selected=0,
             sample_pending=0,
             sample_completed=0,
             sample_clearance_confirmed=0,
             sample_missed_issue=0,
+            sample_review_coverage=ReviewCoverage(completed=0, total=0),
         )
     sample_completed = int(
         await db.scalar(
@@ -240,12 +270,20 @@ async def get_review_summary(
         finding_completed=finding_completed,
         finding_confirmed=confirmed,
         finding_false_positive=false_positive,
+        finding_review_coverage=ReviewCoverage(
+            completed=finding_completed,
+            total=finding_total,
+        ),
         sample_eligible=plan.eligible_count,
         sample_selected=plan.sample_size,
         sample_pending=plan.sample_size - sample_completed,
         sample_completed=sample_completed,
         sample_clearance_confirmed=clearance_confirmed,
         sample_missed_issue=missed_issue,
+        sample_review_coverage=ReviewCoverage(
+            completed=sample_completed,
+            total=plan.sample_size,
+        ),
     )
 
 
@@ -272,7 +310,7 @@ async def get_finding_review_detail(
         )
     ).one_or_none()
     if row is None:
-        raise ReviewError(code="REVIEW_TARGET_NOT_FOUND", message="复核目标不存在")
+        raise ReviewNotFoundError(code="REVIEW_TARGET_NOT_FOUND", message="复核目标不存在")
     item, expense_row, review = row
     snapshot = await load_report_snapshot(db, report_run_id=item.report_run_id)
     item_snapshot = next(
@@ -335,8 +373,8 @@ async def get_sampling_review_detail(
         )
     ).one_or_none()
     if row is None:
-        raise ReviewError(code="REVIEW_TARGET_NOT_FOUND", message="复核目标不存在")
-    sample, expense_row, row_result, report, review = row
+        raise ReviewNotFoundError(code="SAMPLE_NOT_FOUND", message="抽检样本不存在")
+    sample, expense_row, _row_result, report, review = row
     snapshot = await load_report_snapshot(db, report_run_id=sample.report_run_id)
     cleared_items = tuple(
         ReviewItemEvidence.model_validate(item.model_dump())
@@ -352,7 +390,7 @@ async def get_sampling_review_detail(
         raw_row=expense_row.raw_json,
         normalized_row=expense_row.normalized_json,
         source_verdict="passed",
-        ruleset_fingerprint=row_result.rule_version,
+        ruleset_fingerprint=report.ruleset_fingerprint,
         report_fingerprint=report.report_fingerprint,
         cleared_items=cleared_items,
         existing_review=(
@@ -402,16 +440,17 @@ def _pending_order(item: ReviewQueueItem) -> tuple[object, ...]:
         ReportAttentionGroup.HIGH_ATTENTION: 0,
         ReportAttentionGroup.MANUAL_ATTENTION: 1,
         None: 2,
-    }[item.attention_group]
-    version_key = (0, "") if item.rule_version is None else (1, item.rule_version)
+    }[item.attention_group if item.kind == "finding" else None]
+    rule_version = item.rule_version if item.kind == "finding" else None
+    version_key = (0, "") if rule_version is None else (1, rule_version)
     return (
         attention_rank,
         item.report_completed_at,
         item.row_no,
-        item.rule_id or "",
+        item.rule_id if item.kind == "finding" else "",
         version_key,
-        str(item.finding_id or ""),
-        item.selection_rank or 0,
+        str(item.finding_id) if item.kind == "finding" else "",
+        item.selection_rank if item.kind == "clearance_sample" else 0,
         str(item.target_id),
     )
 

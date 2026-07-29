@@ -159,6 +159,22 @@ async def get_latest_sampling_config(
     return config
 
 
+async def list_sampling_configs(
+    db: AsyncSession, *, tenant_id: uuid.UUID
+) -> tuple[SamplingConfigResult, ...]:
+    """Return immutable config history newest-first for the current tenant."""
+    configs = tuple(
+        (
+            await db.scalars(
+                select(ReviewSamplingConfig)
+                .where(ReviewSamplingConfig.tenant_id == tenant_id)
+                .order_by(ReviewSamplingConfig.version.desc())
+            )
+        ).all()
+    )
+    return tuple(_to_result(config, reused_existing=True) for config in configs)
+
+
 async def require_latest_sampling_config(
     db: AsyncSession, *, tenant_id: uuid.UUID
 ) -> ReviewSamplingConfig:
