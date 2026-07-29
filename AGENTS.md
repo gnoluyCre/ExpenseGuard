@@ -89,9 +89,9 @@
 **正在进行:** 阶段 3 F6 的 CP-F6.0 规格固化已完成；下一实施点为 CP-F6.1 持久化 schema 与 ORM。
 **最近完成:** CP0 仓库重置 / CP1 后端地基 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离 / **CP4 前端垂直切片 + OpenAPI 契约 + CI** / **F1 Excel 导入** / **F2 CP-F2.0–CP-F2.5** / **F3 CP-F3.0–CP-F3.5** / **F4 CP-F4.0–CP-F4.5 报告生成闭包**（制度导入/发布/本地检索、configurator-confirmed binding、严格逐字引用、原子报告 snapshot、typed API、桌面工作流、五表 XLSX、安全回读、5000 行性能与交付门禁）/ **F5 CP-F5.0–CP-F5.5 人工复核闭包**（规格、持久化、可复算抽样与一次性 decision 服务；强类型 API/OpenAPI；权限驱动桌面复核台；SQL 联合分页；固定 seed 5000 行性能、全状态 Chrome、安全与交付门禁）/ **F6 CP-F6.0 规格固化**（四类稳定统计 detector、版本化 profile、能力声明、证据/参与行完整性、原子 run 幂等与 F7/F8 边界）
 **受阻于:** 无(CP-F6.1 可开始；W0 模型容器运行态仍需外部镜像/离线权重输入,见 `MEMORY.md`)
-**已知缺口(三项):**
+**已知缺口 / 状态(三项):**
 1. **W0 运行态未闭环** —— 代码侧本地模型/Qdrant 私有化边界与真实 Qdrant 已验证；但 pinned Infinity 镜像在 registry layer 拉取无进展且 manifest 查询超时，实际 embed/rerank、资源占用及客户离线权重包仍待外部输入后验证。
-2. **CI 远端状态待确认** —— 仓库已完成首次 push,但需确认 GitHub 上服务容器的 `CREATE DATABASE` 步骤、gitleaks 镜像可拉取、setup-uv/setup-node 的缓存键是否稳定。
+2. **CI 远端闭环** —— 2026-07-29 已由 F4/F5 PR 实测 backend / frontend / contract / secrets / eval-gate 全绿；backend job 显式启动 PostgreSQL 与 pinned Qdrant，并验证测试库创建、gitleaks 镜像及 setup-uv/setup-node 缓存路径可用。
 3. **开发工具接管完成** —— 已退役 ClaudeCode 专用入口;后续 Codex 以本文件 + `MEMORY.md` + 当前 `specs/` 为上下文入口。
 
 细节见 `specs/001-phase1-foundation.md` 的「已知问题」与「待办」。
