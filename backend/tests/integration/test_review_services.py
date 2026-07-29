@@ -175,6 +175,106 @@ async def test_new_report_auto_plan_is_atomic_reproducible_and_queryable(
     assert summary.sample_eligible == summary.sample_selected == summary.sample_pending == 1
 
 
+async def test_review_queue_sql_pagination_preserves_union_order_and_kind_totals(
+    session_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    tenant_id, actor_id, _batch_id, report_id = await _create_report(
+        session_factory, slug=f"f5-queue-page-{uuid.uuid4().hex[:8]}"
+    )
+    async with session_factory() as session:
+        bind_tenant(session.sync_session, tenant_id)
+        full = await list_review_queue(
+            session,
+            tenant_id=tenant_id,
+            report_run_id=report_id,
+            limit=200,
+        )
+        first = await list_review_queue(
+            session,
+            tenant_id=tenant_id,
+            report_run_id=report_id,
+            limit=2,
+        )
+        second = await list_review_queue(
+            session,
+            tenant_id=tenant_id,
+            report_run_id=report_id,
+            limit=2,
+            offset=2,
+        )
+        findings = await list_review_queue(
+            session,
+            tenant_id=tenant_id,
+            kind="finding",
+            report_run_id=report_id,
+            limit=200,
+        )
+        samples = await list_review_queue(
+            session,
+            tenant_id=tenant_id,
+            kind="clearance_sample",
+            report_run_id=report_id,
+            limit=200,
+        )
+    assert full.total == len(full.items) == findings.total + samples.total
+    assert tuple(item.target_id for item in first.items + second.items) == tuple(
+        item.target_id for item in full.items
+    )
+    assert all(item.kind == "finding" for item in findings.items)
+    assert all(item.kind == "clearance_sample" for item in samples.items)
+
+    finding_target = findings.items[0].target_id
+    sample_target = samples.items[0].target_id
+    async with session_factory() as session:
+        bind_tenant(session.sync_session, tenant_id)
+        await submit_finding_review(
+            session,
+            session_factory,
+            tenant_id=tenant_id,
+            actor_id=actor_id,
+            report_item_id=finding_target,
+            decision="confirmed",
+            note=None,
+            idempotency_key="queue-page-finding",
+        )
+        await session.commit()
+    async with session_factory() as session:
+        bind_tenant(session.sync_session, tenant_id)
+        await submit_sampling_review(
+            session,
+            session_factory,
+            tenant_id=tenant_id,
+            actor_id=actor_id,
+            sampling_audit_id=sample_target,
+            decision="clearance_confirmed",
+            note=None,
+            idempotency_key="queue-page-sample",
+        )
+        await session.commit()
+    async with session_factory() as session:
+        bind_tenant(session.sync_session, tenant_id)
+        completed = await list_review_queue(
+            session,
+            tenant_id=tenant_id,
+            status="completed",
+            report_run_id=report_id,
+            limit=1,
+        )
+        completed_tail = await list_review_queue(
+            session,
+            tenant_id=tenant_id,
+            status="completed",
+            report_run_id=report_id,
+            limit=1,
+            offset=1,
+        )
+    assert completed.total == 2
+    assert {completed.items[0].target_id, completed_tail.items[0].target_id} == {
+        finding_target,
+        sample_target,
+    }
+
+
 async def test_missing_sampling_config_prevents_all_report_writes(
     session_factory: async_sessionmaker[AsyncSession],
 ) -> None:

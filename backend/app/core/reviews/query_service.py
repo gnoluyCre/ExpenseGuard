@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
 
-from sqlalchemy import func, select, true
+from sqlalchemy import Integer, String, case, cast, func, literal, select, true, union_all
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.reports.service import load_report_snapshot
@@ -57,109 +57,174 @@ async def list_review_queue(
     if not 1 <= limit <= 200 or offset < 0:
         raise ReviewInputError(code="REVIEW_PAGINATION_INVALID", message="复核分页参数无效")
 
-    finding_rows = tuple(
-        (
-            await db.execute(
-                select(ReportItem, ReportRun, Review, ReviewSamplingPlan)
-                .join(ReportRun, ReportRun.id == ReportItem.report_run_id)
-                .outerjoin(Review, Review.report_item_id == ReportItem.id)
-                .outerjoin(
-                    ReviewSamplingPlan,
-                    ReviewSamplingPlan.report_run_id == ReportItem.report_run_id,
-                )
-                .where(
-                    ReportItem.tenant_id == tenant_id,
-                    ReportRun.status == ReportRunStatus.COMPLETED,
-                    ReportItem.attention_group.in_(
-                        [
-                            ReportAttentionGroup.HIGH_ATTENTION,
-                            ReportAttentionGroup.MANUAL_ATTENTION,
-                        ]
-                    ),
-                    Review.id.is_(None) if status == "pending" else Review.id.is_not(None),
-                    ReportItem.report_run_id == report_run_id
-                    if report_run_id is not None
-                    else true(),
-                    ReportItem.file_version_id == file_version_id
-                    if file_version_id is not None
-                    else true(),
-                )
-            )
-        ).all()
+    uuid_type = PG_UUID(as_uuid=True)
+    finding_query = (
+        select(
+            literal("finding").label("kind"),
+            case(
+                (ReviewSamplingPlan.id.is_not(None), "completed"),
+                else_="legacy_not_initialized",
+            ).label("sampling_status"),
+            ReportItem.id.label("target_id"),
+            ReportItem.report_run_id.label("report_run_id"),
+            ReportItem.file_version_id.label("file_version_id"),
+            ReportRun.completed_at.label("report_completed_at"),
+            ReportItem.row_no.label("row_no"),
+            cast(ReportItem.attention_group, String).label("attention_group"),
+            ReportItem.finding_id.label("finding_id"),
+            ReportItem.rule_id.label("rule_id"),
+            ReportItem.rule_version.label("rule_version"),
+            cast(literal(None), uuid_type).label("sampling_plan_id"),
+            cast(literal(None), Integer).label("selection_rank"),
+            cast(Review.decision, String).label("decision"),
+            Review.reviewer_id.label("reviewer_id"),
+            Review.reviewed_at.label("reviewed_at"),
+            case(
+                (ReportItem.attention_group == ReportAttentionGroup.HIGH_ATTENTION, 0),
+                (ReportItem.attention_group == ReportAttentionGroup.MANUAL_ATTENTION, 1),
+                else_=2,
+            ).label("attention_rank"),
+            case((ReportItem.rule_version.is_(None), 0), else_=1).label("version_rank"),
+            func.coalesce(ReportItem.rule_version, "").label("rule_version_sort"),
+            cast(ReportItem.finding_id, String).label("finding_sort_id"),
+            literal(0).label("selection_sort"),
+            cast(ReportItem.id, String).label("target_sort_id"),
+        )
+        .join(ReportRun, ReportRun.id == ReportItem.report_run_id)
+        .outerjoin(Review, Review.report_item_id == ReportItem.id)
+        .outerjoin(
+            ReviewSamplingPlan,
+            ReviewSamplingPlan.report_run_id == ReportItem.report_run_id,
+        )
+        .where(
+            ReportItem.tenant_id == tenant_id,
+            ReportRun.status == ReportRunStatus.COMPLETED,
+            ReportItem.attention_group.in_(
+                [
+                    ReportAttentionGroup.HIGH_ATTENTION,
+                    ReportAttentionGroup.MANUAL_ATTENTION,
+                ]
+            ),
+            Review.id.is_(None) if status == "pending" else Review.id.is_not(None),
+            ReportItem.report_run_id == report_run_id if report_run_id is not None else true(),
+            ReportItem.file_version_id == file_version_id
+            if file_version_id is not None
+            else true(),
+        )
     )
-    sample_rows = tuple(
-        (
-            await db.execute(
-                select(SamplingAudit, ReportRun, SamplingReview)
-                .join(ReportRun, ReportRun.id == SamplingAudit.report_run_id)
-                .outerjoin(
-                    SamplingReview,
-                    SamplingReview.sampling_audit_id == SamplingAudit.id,
-                )
-                .where(
-                    SamplingAudit.tenant_id == tenant_id,
-                    ReportRun.status == ReportRunStatus.COMPLETED,
-                    (
-                        SamplingReview.id.is_(None)
-                        if status == "pending"
-                        else SamplingReview.id.is_not(None)
-                    ),
-                    SamplingAudit.report_run_id == report_run_id
-                    if report_run_id is not None
-                    else true(),
-                    SamplingAudit.file_version_id == file_version_id
-                    if file_version_id is not None
-                    else true(),
-                )
-            )
-        ).all()
+    sample_query = (
+        select(
+            literal("clearance_sample").label("kind"),
+            literal("completed").label("sampling_status"),
+            SamplingAudit.id.label("target_id"),
+            SamplingAudit.report_run_id.label("report_run_id"),
+            SamplingAudit.file_version_id.label("file_version_id"),
+            ReportRun.completed_at.label("report_completed_at"),
+            SamplingAudit.row_no.label("row_no"),
+            cast(literal(None), String).label("attention_group"),
+            cast(literal(None), uuid_type).label("finding_id"),
+            cast(literal(None), String).label("rule_id"),
+            cast(literal(None), String).label("rule_version"),
+            SamplingAudit.sampling_plan_id.label("sampling_plan_id"),
+            SamplingAudit.selection_rank.label("selection_rank"),
+            cast(SamplingReview.decision, String).label("decision"),
+            SamplingReview.reviewer_id.label("reviewer_id"),
+            SamplingReview.reviewed_at.label("reviewed_at"),
+            literal(2).label("attention_rank"),
+            literal(0).label("version_rank"),
+            literal("").label("rule_version_sort"),
+            literal("").label("finding_sort_id"),
+            SamplingAudit.selection_rank.label("selection_sort"),
+            cast(SamplingAudit.id, String).label("target_sort_id"),
+        )
+        .join(ReportRun, ReportRun.id == SamplingAudit.report_run_id)
+        .outerjoin(
+            SamplingReview,
+            SamplingReview.sampling_audit_id == SamplingAudit.id,
+        )
+        .where(
+            SamplingAudit.tenant_id == tenant_id,
+            ReportRun.status == ReportRunStatus.COMPLETED,
+            SamplingReview.id.is_(None) if status == "pending" else SamplingReview.id.is_not(None),
+            SamplingAudit.report_run_id == report_run_id if report_run_id is not None else true(),
+            SamplingAudit.file_version_id == file_version_id
+            if file_version_id is not None
+            else true(),
+        )
     )
-
-    items: list[ReviewQueueItem] = []
+    selected_queries = []
     if kind in {None, "finding"}:
-        items.extend(
-            FindingReviewQueueItem(
-                kind="finding",
-                status=status,
-                sampling_status=("completed" if plan is not None else "legacy_not_initialized"),
-                target_id=item.id,
-                report_run_id=item.report_run_id,
-                file_version_id=item.file_version_id,
-                report_completed_at=_completed_at(report),
-                row_no=item.row_no,
-                attention_group=item.attention_group,
-                finding_id=item.finding_id,
-                rule_id=item.rule_id,
-                rule_version=item.rule_version,
-                decision=review.decision if review is not None else None,
-                reviewer_id=review.reviewer_id if review is not None else None,
-                reviewed_at=review.reviewed_at if review is not None else None,
-            )
-            for item, report, review, plan in finding_rows
-        )
+        selected_queries.append(finding_query)
     if kind in {None, "clearance_sample"}:
-        items.extend(
-            ClearanceReviewQueueItem(
-                kind="clearance_sample",
-                status=status,
-                sampling_status="completed",
-                target_id=sample.id,
-                report_run_id=sample.report_run_id,
-                file_version_id=sample.file_version_id,
-                report_completed_at=_completed_at(report),
-                row_no=sample.row_no,
-                sampling_plan_id=sample.sampling_plan_id,
-                selection_rank=sample.selection_rank,
-                decision=review.decision if review is not None else None,
-                reviewer_id=review.reviewer_id if review is not None else None,
-                reviewed_at=review.reviewed_at if review is not None else None,
+        selected_queries.append(sample_query)
+    queue = (
+        union_all(*selected_queries).subquery()
+        if len(selected_queries) > 1
+        else selected_queries[0].subquery()
+    )
+    total = int(await db.scalar(select(func.count()).select_from(queue)) or 0)
+    base_ordering = (
+        queue.c.attention_rank,
+        queue.c.report_completed_at,
+        queue.c.row_no,
+        queue.c.rule_id,
+        queue.c.version_rank,
+        queue.c.rule_version_sort,
+        queue.c.finding_sort_id,
+        queue.c.selection_sort,
+        queue.c.target_sort_id,
+    )
+    ordering = (
+        (queue.c.reviewed_at.desc(), *base_ordering) if status == "completed" else base_ordering
+    )
+    rows = tuple(
+        (await db.execute(select(queue).order_by(*ordering).limit(limit).offset(offset))).mappings()
+    )
+    items: list[ReviewQueueItem] = []
+    for row in rows:
+        completed_at = row["report_completed_at"]
+        if completed_at is None:
+            raise RuntimeError("completed report is missing completed_at")
+        if row["kind"] == "finding":
+            items.append(
+                FindingReviewQueueItem(
+                    kind="finding",
+                    status=status,
+                    sampling_status=row["sampling_status"],
+                    target_id=row["target_id"],
+                    report_run_id=row["report_run_id"],
+                    file_version_id=row["file_version_id"],
+                    report_completed_at=completed_at,
+                    row_no=row["row_no"],
+                    attention_group=row["attention_group"],
+                    finding_id=row["finding_id"],
+                    rule_id=row["rule_id"],
+                    rule_version=row["rule_version"],
+                    decision=row["decision"],
+                    reviewer_id=row["reviewer_id"],
+                    reviewed_at=row["reviewed_at"],
+                )
             )
-            for sample, report, review in sample_rows
-        )
-    items.sort(key=_pending_order if status == "pending" else _completed_order)
-    total = len(items)
+        else:
+            items.append(
+                ClearanceReviewQueueItem(
+                    kind="clearance_sample",
+                    status=status,
+                    sampling_status="completed",
+                    target_id=row["target_id"],
+                    report_run_id=row["report_run_id"],
+                    file_version_id=row["file_version_id"],
+                    report_completed_at=completed_at,
+                    row_no=row["row_no"],
+                    sampling_plan_id=row["sampling_plan_id"],
+                    selection_rank=row["selection_rank"],
+                    decision=row["decision"],
+                    reviewer_id=row["reviewer_id"],
+                    reviewed_at=row["reviewed_at"],
+                )
+            )
     return ReviewQueuePage(
-        items=tuple(items[offset : offset + limit]),
+        items=tuple(items),
         total=total,
         limit=limit,
         offset=offset,
@@ -433,36 +498,3 @@ async def _decision_count(
         )
         or 0
     )
-
-
-def _pending_order(item: ReviewQueueItem) -> tuple[object, ...]:
-    attention_rank = {
-        ReportAttentionGroup.HIGH_ATTENTION: 0,
-        ReportAttentionGroup.MANUAL_ATTENTION: 1,
-        None: 2,
-    }[item.attention_group if item.kind == "finding" else None]
-    rule_version = item.rule_version if item.kind == "finding" else None
-    version_key = (0, "") if rule_version is None else (1, rule_version)
-    return (
-        attention_rank,
-        item.report_completed_at,
-        item.row_no,
-        item.rule_id if item.kind == "finding" else "",
-        version_key,
-        str(item.finding_id) if item.kind == "finding" else "",
-        item.selection_rank if item.kind == "clearance_sample" else 0,
-        str(item.target_id),
-    )
-
-
-def _completed_order(item: ReviewQueueItem) -> tuple[object, ...]:
-    reviewed_at = item.reviewed_at
-    if reviewed_at is None:
-        raise RuntimeError("completed queue item is missing reviewed_at")
-    return (-reviewed_at.timestamp(), *_pending_order(item))
-
-
-def _completed_at(report: ReportRun) -> datetime:
-    if report.completed_at is None:
-        raise RuntimeError("completed report is missing completed_at")
-    return report.completed_at
