@@ -5,7 +5,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 -->
 
 ## 🏗️ 当前阶段与目标
-**当前任务:阶段 2 F5 已完成 CP-F5.0–CP-F5.5。** `specs/006-phase2-f5-human-review.md` 是 F5 的唯一规范来源；下一实施点为阶段 3 F6，开工前须先固化规格。
+**当前任务:阶段 3 F6 已完成 CP-F6.0 规格固化。** `specs/007-phase3-f6-cross-row-detection.md` 是 CP-F6.0–CP-F6.5 的唯一规范来源；下一实施点为 CP-F6.1 持久化 schema 与 ORM。
 
 - CP0 仓库重置(干净历史、`.gitignore` 脱敏排除)
 - CP1 后端地基(uv + 18 张表 + Alembic 三层隔离)
@@ -13,17 +13,19 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - CP3 认证、RBAC、租户隔离(含反向验证)
 - CP4 前端垂直切片 + OpenAPI 契约门禁 + pre-commit/CI + 合成数据生成器(含反向验证)
 
-**下一步:阶段 3 F6 · 跨行关联检测规格固化。** 先冻结拆单/连号/频次异常/时空冲突的输入、稳定输出、能力声明与证据链，再实施持久化或检测器；不得直接跳入 F7/F8。
+**下一步:CP-F6.1 · 持久化 schema 与 ORM。** 只新增 `0008_f6_cross_row_detection.py`，落地 detection config/run/request、run 级 capability、correlation finding 与参与行复合身份、RESTRICT/CHECK/unique/不可变触发器；升级前先做私有可恢复备份与 legacy 空表 preflight，不得修改 `0001`–`0007`，不得直接跳入 detector/API/UI 或 F7/F8。
 `process_row_once` 的首个生产调用方现为 `app.core.validation.batch_service.validate_batch`；行内 finding 与 `row_result` 使用同一 session/事务，`row_result.rule_version` 固定保存规则集指纹。
 
 **开工前必读的两件事:**
 1. 契约同步是硬要求:改了 Pydantic 模型 → `cd backend && uv run python scripts/export_openapi.py` + `cd frontend && npm run gen:api`,两个生成物都要提交,否则 CI 的 contract job 直接红。
 2. 评测门禁已就位但处于待命:`backend/evals/baseline.json` 的 `thresholds` 一填数值就自动开始阻断,**不需要改任何 workflow YAML**。
 
-**遗留缺口:** W0 运行态仍未闭环 —— 2026-07-28 已验证代码侧 fake/HTTP 双路径、prod 禁 fake、模型/Qdrant 主机白名单和真实 Qdrant；但 pinned Infinity 镜像拉取停在 registry layer，`docker manifest inspect` 也超时，按有界策略终止。官方支持把预下载模型目录挂入容器并以容器内路径作为 `--model-id`，但客户离线权重包、镜像可达性、实际 embed/rerank 质量与资源占用仍需外部网络/权重输入后实测。GitHub CI 远端状态也待确认。
+**遗留缺口:** W0 运行态仍未闭环 —— 2026-07-28 已验证代码侧 fake/HTTP 双路径、prod 禁 fake、模型/Qdrant 主机白名单和真实 Qdrant；但 pinned Infinity 镜像拉取停在 registry layer，`docker manifest inspect` 也超时，按有界策略终止。官方支持把预下载模型目录挂入容器并以容器内路径作为 `--model-id`，但客户离线权重包、镜像可达性、实际 embed/rerank 质量与资源占用仍需外部网络/权重输入后实测。
 
 ## 📂 架构决策
 *(把构建过程中做出的具体选择记录在此,便于后续 agent 遵循)*
+- 2026-07-29 — **GitHub CI 远端闭环。** F4 PR #1 与 F5 PR #2 的 backend / frontend / contract / secrets / eval-gate 均全绿；修复 pytest-asyncio 9 在非 Windows 平台必须返回非空 loop factory 的收集错误，并在 backend job 增加 pinned `qdrant/qdrant:v1.16.1` 服务与 `/readyz` 有界探活，使真实 Qdrant 集成测试进入远端门禁。由实际运行确认 PostgreSQL 测试库创建、gitleaks 镜像与 setup-uv/setup-node 缓存路径可用。
+- 2026-07-29 — **F6 CP-F6.0 规格固化完成。** 新增 `specs/007-phase3-f6-cross-row-detection.md`，成为 CP-F6.0–CP-F6.5 唯一规范来源。四类统计 detector 固定为 `split_invoice`/`sequential_invoice`/`frequency_anomaly`/`spatiotemporal_tier0`，全部由不可变 profile、算法版本、input/config fingerprint、typed evidence 与稳定 finding key 驱动；能力状态综合 F2 field availability 与运行时 coverage，completed run 恰好四条 `enabled|degraded|unavailable` declaration，零 finding 不等于 unavailable，系统错误不伪装为能力缺失。旧 skeleton 由 run 级身份与 `correlation_finding_row` 复合 FK 强化，全部参与行物理闭合；run/declaration/finding/row/request/audit 单事务提交且追加不可变，相同 file/profile fingerprint 最多一个成功 run。F6 作为独立关联检测补充快照，不改写 F3/F4/F5，不进入既有复核标签，不调用 LLM/Qdrant，不实现时空 Tier 1 或 F8；legacy severity `0` 仅为未分级兼容哨兵，API/UI 禁止当作真实分级。下一检查点为 CP-F6.1；本检查点仅改文档，未创建迁移、代码、API、UI 或依赖。
 - 2026-07-29 — **F5 CP-F5.5 契约与交付门禁闭包完成。** 5000 行初测暴露联合队列先全量 ORM 装载、Python 排序再切页，真实 API queue p95 为 `21.590788s`；改为 finding/sample 同形 SQL `UNION ALL`、数据库稳定排序/offset/limit 与独立 count 后，保持 pending/completed、kind/report/file 筛选及原排序语义，queue p95 降至 `0.051330s`。新增 SQL 分页/联合顺序/kind total/completed 回归，后端全量 `392 passed, 1 skipped`，Ruff/157 文件 format/strict mypy（115 源文件）全绿。固定 seed=3500 的 5000 行 F1→F5 总耗时 `115.895928s`；auto-plan `0.777962s`，3955 个 eligible 中抽 396 行并机械复算。finding/sample detail p95 为 `0.347350s`/`0.227890s`，decision p95 为 `0.061819s`/`0.049018s`；四类标签各 10 次，审计无 note/key/seed 明文。前端 10 文件/45 tests 与全部静态/build 门禁、双库 `0007`/Alembic、OpenAPI/client 二次哈希、pre-commit/gitleaks、两端依赖审计均通过。真实 Chrome 1440×1000 覆盖正常三角色及 config/plan/queue/detail/decision/citation 全状态，15 份 metrics、25 张截图均零页面溢出、零脚本/图片执行、零浏览器存储；私有证据位于 `data/private/cp-f5.5/`。未修改迁移、基础设施、CI 或 F6/F7/F8。
 - 2026-07-29 — **F5 CP-F5.4 桌面复核台闭包完成。** `/review` 占位页替换为权限驱动的工业审计工作台：顶部原始 coverage/config/plan 状态，左侧稳定联合队列与筛选分页，中部原始行/规范化投影/冻结 reasoning/evidence/rule/version/citation 同屏，右侧 config/legacy plan 控制，底部两类不可变 decision 二次确认。前端只消费 CP-F5.3 生成类型；新增 Zod 作为表单运行时边界，保留正常 Unicode 并拒绝控制字符，`false_positive|missed_issue` 条件必填非空白 note。mutation 成功或 409 冲突均失效相应 review/config 查询，队列回 offset 0，冲突后展示服务端最终事实/最新 config 而不伪造成功；raw/note/quote 不写 URL、storage 或 analytics。新增 22 项 F5 前端测试，前端全量 `45 passed`，typecheck/oxlint/Prettier/build/npm audit 全绿。真实 Google Chrome 1440×1000 覆盖 auditor finding、auditor pure-passed sample、configurator、viewer 共 4 场景：页面级横向溢出、脚本/图片执行、浏览器存储与 viewer review API 请求均为 0；私有证据位于 `data/private/cp-f5.4/`。未修改后端、Pydantic/OpenAPI、迁移、基础设施或 F6/F8。
 - 2026-07-29 — **F5 CP-F5.3 API 与 OpenAPI 契约闭包完成。** 新增 10 个 config/plan/queue/detail/decision/summary 端点，全部经现有 F5 服务层且无路由 SQL；queue 与 plan/decision 使用 Pydantic discriminator，config history 显式区分 current/history，legacy queue/plan 明示 `legacy_not_initialized`。RBAC 沿用 permission 数据，auditor/configurator 可读写复核、仅 configurator 可写 config、viewer 无 review 权限；跨租户 report/finding/sample 稳定 404。所有 F5 响应使用 `private, no-store`，CORS 显式允许 `Idempotency-Key`；note 条件校验、幂等/已完成冲突和错误 shape 使用稳定 code。修正 sample detail 规则集指纹来源为 frozen report，并用 `{completed,total}` 暴露两类精确 coverage。CP-F5.3/F5 定向 `36 passed`，后端全量 `391 passed, 1 skipped`；Ruff、157 文件 format、strict mypy（115 源文件）、OpenAPI/client 连续二次哈希稳定通过。前端 23 tests、typecheck/oxlint/Prettier/build 全绿；未新增依赖、迁移、UI 或 F6/F8。
