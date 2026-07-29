@@ -32,7 +32,7 @@
 import asyncio
 import os
 import sys
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncIterator, Callable, Iterator
 from pathlib import Path
 
 import pytest
@@ -53,8 +53,8 @@ BACKEND_DIR = Path(__file__).resolve().parents[1]
 
 def pytest_asyncio_loop_factories(
     config: pytest.Config, item: pytest.Item
-) -> dict[str, type[asyncio.AbstractEventLoop]] | None:
-    """Windows 上强制使用 SelectorEventLoop。
+) -> dict[str, Callable[[], asyncio.AbstractEventLoop]]:
+    """提供非空事件循环工厂；Windows 强制使用 SelectorEventLoop。
 
     psycopg 的异步模式**无法在 ProactorEventLoop 上工作**（连接时直接抛
     `InterfaceError`），而 ProactorEventLoop 恰恰是 Windows 上 asyncio 的默认。
@@ -64,10 +64,13 @@ def pytest_asyncio_loop_factories(
 
     用这个 hook 而非老的 `event_loop_policy` fixture:后者在
     pytest-asyncio 1.x 已弃用，且事件循环策略机制本身在 Python 3.14 也在退场。
+
+    pytest-asyncio 9 要求已注册的 hook 在所有平台都返回非空映射。Linux/macOS
+    显式返回 asyncio 默认工厂，Windows 则覆盖为 SelectorEventLoop。
     """
-    if sys.platform != "win32":
-        return None
-    return {"selector": asyncio.SelectorEventLoop}
+    if sys.platform == "win32":
+        return {"selector": asyncio.SelectorEventLoop}
+    return {"default": asyncio.new_event_loop}
 
 
 #: 需要在 clean_db 里清空的业务表。
