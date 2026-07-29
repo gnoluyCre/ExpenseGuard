@@ -28,9 +28,13 @@ EXPECTED_TABLES = {
     "policy_clause",
     "policy_document",
     "review",
+    "review_plan_request",
+    "review_sampling_config",
+    "review_sampling_plan",
     "row_result",
     "rule_config",
     "sampling_audit",
+    "sampling_review",
     "schema_mapping",
     "schema_mapping_version",
     "tenant",
@@ -41,7 +45,7 @@ EXPECTED_TABLES = {
 
 
 async def test_all_business_tables_exist(engine: AsyncEngine) -> None:
-    """20 张业务表齐备。"""
+    """各阶段已交付的业务表齐备。"""
     async with engine.connect() as conn:
         rows = await conn.execute(
             text(

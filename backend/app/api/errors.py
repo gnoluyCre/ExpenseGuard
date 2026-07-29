@@ -56,6 +56,18 @@ async def _handle_request_validation_error(request: Request, exc: Exception) -> 
     if request.method == "PUT" and request.url.path == "/api/rules":
         code = "RULE_CONFIG_INVALID"
         message = "规则配置无效"
+    elif (
+        request.method == "PUT"
+        and request.url.path == "/api/review/sampling-config"
+        and _has_body_error(exc)
+    ):
+        code = "SAMPLING_CONFIG_INVALID"
+        message = "抽样配置无效"
+    elif (
+        request.method == "POST" and request.url.path.endswith("/decision") and _has_body_error(exc)
+    ):
+        code = "REVIEW_DECISION_INVALID"
+        message = "复核结论无效"
     else:
         code = "REQUEST_VALIDATION_ERROR"
         message = "请求参数无效"
@@ -63,6 +75,10 @@ async def _handle_request_validation_error(request: Request, exc: Exception) -> 
         status_code=422,
         content=ErrorResponse(error=ErrorDetail(code=code, message=message)).model_dump(),
     )
+
+
+def _has_body_error(exc: RequestValidationError) -> bool:
+    return any(error.get("loc", (None,))[0] == "body" for error in exc.errors())
 
 
 def register_error_handlers(app: FastAPI) -> None:

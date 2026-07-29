@@ -453,6 +453,144 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/reports/{report_id}/review-plan": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Review Plan */
+    get: operations["reviews_get_review_plan"];
+    put?: never;
+    /** Create Review Plan */
+    post: operations["reviews_create_review_plan"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/review/sampling-config": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Sampling Config */
+    get: operations["reviews_get_sampling_config"];
+    /** Put Sampling Config */
+    put: operations["reviews_put_sampling_config"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/reviews/findings/{report_item_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Finding Detail */
+    get: operations["reviews_get_finding_detail"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/reviews/findings/{report_item_id}/decision": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Submit Finding Decision */
+    post: operations["reviews_submit_finding_decision"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/reviews/queue": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Queue */
+    get: operations["reviews_list_queue"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/reviews/samples/{sampling_audit_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Sample Detail */
+    get: operations["reviews_get_sample_detail"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/reviews/samples/{sampling_audit_id}/decision": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Submit Sample Decision */
+    post: operations["reviews_submit_sample_decision"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/reviews/summary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Summary */
+    get: operations["reviews_get_summary"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/rules": {
     parameters: {
       query?: never;
@@ -906,6 +1044,112 @@ export interface components {
        */
       report_item_id: string;
     };
+    /** ClearanceReviewDetail */
+    ClearanceReviewDetail: {
+      /** Cleared Items */
+      cleared_items: components["schemas"]["ReviewItemEvidence"][];
+      existing_review: components["schemas"]["SamplingReviewResult"] | null;
+      /**
+       * File Version Id
+       * Format: uuid
+       */
+      file_version_id: string;
+      /** Normalized Row */
+      normalized_row: {
+        [key: string]: unknown;
+      } | null;
+      /** Raw Row */
+      raw_row: {
+        [key: string]: unknown;
+      };
+      /** Report Fingerprint */
+      report_fingerprint: string;
+      /**
+       * Report Run Id
+       * Format: uuid
+       */
+      report_run_id: string;
+      /** Row No */
+      row_no: number;
+      /** Ruleset Fingerprint */
+      ruleset_fingerprint: string;
+      /**
+       * Sampling Audit Id
+       * Format: uuid
+       */
+      sampling_audit_id: string;
+      /**
+       * Sampling Plan Id
+       * Format: uuid
+       */
+      sampling_plan_id: string;
+      /**
+       * Source Verdict
+       * @constant
+       */
+      source_verdict: "passed";
+    };
+    /** ClearanceReviewQueueItem */
+    ClearanceReviewQueueItem: {
+      decision: components["schemas"]["SamplingReviewDecision"] | null;
+      /**
+       * File Version Id
+       * Format: uuid
+       */
+      file_version_id: string;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: "clearance_sample";
+      /**
+       * Report Completed At
+       * Format: date-time
+       */
+      report_completed_at: string;
+      /**
+       * Report Run Id
+       * Format: uuid
+       */
+      report_run_id: string;
+      /** Reviewed At */
+      reviewed_at: string | null;
+      /** Reviewer Id */
+      reviewer_id: string | null;
+      /** Row No */
+      row_no: number;
+      /**
+       * Sampling Plan Id
+       * Format: uuid
+       */
+      sampling_plan_id: string;
+      /**
+       * Sampling Status
+       * @enum {string}
+       */
+      sampling_status: "completed" | "legacy_not_initialized";
+      /** Selection Rank */
+      selection_rank: number;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "pending" | "completed";
+      /**
+       * Target Id
+       * Format: uuid
+       */
+      target_id: string;
+    };
+    /** CompletedSamplingPlanResponse */
+    CompletedSamplingPlanResponse: {
+      plan: components["schemas"]["SamplingPlanResult"];
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      status: "completed";
+    };
     /**
      * ConstantInferenceRule
      * @description 固定值推断；首版只允许推断币种。
@@ -1128,6 +1372,17 @@ export interface components {
       /** Source Columns */
       source_columns: string[];
     };
+    /** FindingDecisionRequest */
+    FindingDecisionRequest: {
+      decision: components["schemas"]["ReviewDecision"];
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: "finding";
+      /** Note */
+      note?: string | null;
+    };
     /** FindingItemResponse */
     FindingItemResponse: {
       evidence: components["schemas"]["RuleEvidence"];
@@ -1148,6 +1403,127 @@ export interface components {
       /** Rule Version */
       rule_version: string | null;
       verdict: components["schemas"]["RowVerdict"];
+    };
+    /** FindingReviewDetail */
+    FindingReviewDetail: {
+      existing_review: components["schemas"]["FindingReviewResult"] | null;
+      /** Normalized Row */
+      normalized_row: {
+        [key: string]: unknown;
+      } | null;
+      /** Raw Row */
+      raw_row: {
+        [key: string]: unknown;
+      };
+      report_item: components["schemas"]["ReviewItemEvidence"];
+      /**
+       * Report Run Id
+       * Format: uuid
+       */
+      report_run_id: string;
+    };
+    /** FindingReviewQueueItem */
+    FindingReviewQueueItem: {
+      attention_group: components["schemas"]["ReportAttentionGroup"];
+      decision: components["schemas"]["ReviewDecision"] | null;
+      /**
+       * File Version Id
+       * Format: uuid
+       */
+      file_version_id: string;
+      /**
+       * Finding Id
+       * Format: uuid
+       */
+      finding_id: string;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: "finding";
+      /**
+       * Report Completed At
+       * Format: date-time
+       */
+      report_completed_at: string;
+      /**
+       * Report Run Id
+       * Format: uuid
+       */
+      report_run_id: string;
+      /** Reviewed At */
+      reviewed_at: string | null;
+      /** Reviewer Id */
+      reviewer_id: string | null;
+      /** Row No */
+      row_no: number;
+      /** Rule Id */
+      rule_id: string;
+      /** Rule Version */
+      rule_version: string | null;
+      /**
+       * Sampling Status
+       * @enum {string}
+       */
+      sampling_status: "completed" | "legacy_not_initialized";
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "pending" | "completed";
+      /**
+       * Target Id
+       * Format: uuid
+       */
+      target_id: string;
+    };
+    /** FindingReviewResult */
+    FindingReviewResult: {
+      decision: components["schemas"]["ReviewDecision"];
+      /**
+       * File Version Id
+       * Format: uuid
+       */
+      file_version_id: string;
+      /**
+       * Finding Id
+       * Format: uuid
+       */
+      finding_id: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Note */
+      note: string | null;
+      /**
+       * Report Item Id
+       * Format: uuid
+       */
+      report_item_id: string;
+      /**
+       * Report Run Id
+       * Format: uuid
+       */
+      report_run_id: string;
+      /** Reused Existing */
+      reused_existing: boolean;
+      /**
+       * Reviewed At
+       * Format: date-time
+       */
+      reviewed_at: string;
+      /**
+       * Reviewer Id
+       * Format: uuid
+       */
+      reviewer_id: string;
+      /**
+       * Tenant Id
+       * Format: uuid
+       */
+      tenant_id: string;
     };
     /** FindingsResponse */
     FindingsResponse: {
@@ -1385,6 +1761,19 @@ export interface components {
        * @constant
        */
       schema_version: 1;
+    };
+    /** LegacySamplingPlanResponse */
+    LegacySamplingPlanResponse: {
+      /**
+       * Report Run Id
+       * Format: uuid
+       */
+      report_run_id: string;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      status: "legacy_not_initialized";
     };
     /** LimitEvidence */
     LimitEvidence: {
@@ -2028,6 +2417,173 @@ export interface components {
       /** Verified Citation Count */
       verified_citation_count: number;
     };
+    /** ReviewCitationEvidence */
+    ReviewCitationEvidence: {
+      /**
+       * Binding Id
+       * Format: uuid
+       */
+      binding_id: string;
+      /** Citation Order */
+      citation_order: number;
+      /** Clause No */
+      clause_no: string;
+      /** Clause Text */
+      clause_text: string;
+      /** Clause Text Sha256 */
+      clause_text_sha256: string;
+      /** Document Content Sha256 */
+      document_content_sha256: string;
+      /** Document Title */
+      document_title: string;
+      /** Document Version */
+      document_version: string;
+      /**
+       * Effective Date
+       * Format: date
+       */
+      effective_date: string;
+      /** Expiry Date */
+      expiry_date: string | null;
+      /** Family Stable Key */
+      family_stable_key: string;
+      /** Hierarchy Path */
+      hierarchy_path: string | null;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Policy Clause Id
+       * Format: uuid
+       */
+      policy_clause_id: string;
+      /**
+       * Policy Document Id
+       * Format: uuid
+       */
+      policy_document_id: string;
+      /**
+       * Policy Family Id
+       * Format: uuid
+       */
+      policy_family_id: string;
+      /** Quote */
+      quote: string;
+      /** Quote End */
+      quote_end: number;
+      /** Quote Sha256 */
+      quote_sha256: string;
+      /** Quote Start */
+      quote_start: number;
+      /**
+       * Report Item Id
+       * Format: uuid
+       */
+      report_item_id: string;
+    };
+    /** ReviewCoverage */
+    ReviewCoverage: {
+      /** Completed */
+      completed: number;
+      /** Total */
+      total: number;
+    };
+    /**
+     * ReviewDecision
+     * @description 复核结论。这是回流评测集**唯一的真实标签来源**。
+     * @enum {string}
+     */
+    ReviewDecision: "confirmed" | "false_positive";
+    /** ReviewItemEvidence */
+    ReviewItemEvidence: {
+      attention_group: components["schemas"]["ReportAttentionGroup"];
+      citation_status: components["schemas"]["ReportCitationStatus"];
+      /** Citations */
+      citations: components["schemas"]["ReviewCitationEvidence"][];
+      /** Evidence Snapshot */
+      evidence_snapshot: {
+        [key: string]: unknown;
+      } | null;
+      /**
+       * Finding Id
+       * Format: uuid
+       */
+      finding_id: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Reason Code */
+      reason_code: string;
+      /** Reasoning Snapshot */
+      reasoning_snapshot: string | null;
+      /** Requires Manual Citation */
+      requires_manual_citation: boolean;
+      /** Row No */
+      row_no: number;
+      /** Rule Id */
+      rule_id: string;
+      /** Rule Version */
+      rule_version: string | null;
+      /** Source Content Sha256 */
+      source_content_sha256: string;
+      /** Source Outcome */
+      source_outcome: string;
+      /** Source Verdict */
+      source_verdict: string;
+    };
+    /** ReviewQueuePage */
+    ReviewQueuePage: {
+      /** Items */
+      items: (
+        | components["schemas"]["FindingReviewQueueItem"]
+        | components["schemas"]["ClearanceReviewQueueItem"]
+      )[];
+      /** Limit */
+      limit: number;
+      /** Offset */
+      offset: number;
+      /** Total */
+      total: number;
+    };
+    /** ReviewSummary */
+    ReviewSummary: {
+      /** Finding Completed */
+      finding_completed: number;
+      /** Finding Confirmed */
+      finding_confirmed: number;
+      /** Finding False Positive */
+      finding_false_positive: number;
+      /** Finding Pending */
+      finding_pending: number;
+      finding_review_coverage: components["schemas"]["ReviewCoverage"];
+      /**
+       * Report Run Id
+       * Format: uuid
+       */
+      report_run_id: string;
+      /** Sample Clearance Confirmed */
+      sample_clearance_confirmed: number;
+      /** Sample Completed */
+      sample_completed: number;
+      /** Sample Eligible */
+      sample_eligible: number;
+      /** Sample Missed Issue */
+      sample_missed_issue: number;
+      /** Sample Pending */
+      sample_pending: number;
+      sample_review_coverage: components["schemas"]["ReviewCoverage"];
+      /** Sample Selected */
+      sample_selected: number;
+      /**
+       * Sampling Status
+       * @enum {string}
+       */
+      sampling_status: "completed" | "legacy_not_initialized";
+    };
     /**
      * RevisionRequestReason
      * @description 服务层接受的派生原因。
@@ -2115,6 +2671,209 @@ export interface components {
       rule_id: string;
       /** Version */
       version: number;
+    };
+    /** SamplingConfigCreateRequest */
+    SamplingConfigCreateRequest: {
+      /** Change Reason */
+      change_reason: string;
+      /** Expected Current Version */
+      expected_current_version: number;
+      /** Max Sample Size */
+      max_sample_size: number;
+      /** Min Sample Size */
+      min_sample_size: number;
+      /** Rate Bps */
+      rate_bps: number;
+    };
+    /** SamplingConfigHistoryResponse */
+    SamplingConfigHistoryResponse: {
+      current: components["schemas"]["SamplingConfigResult"] | null;
+      /** History */
+      history: components["schemas"]["SamplingConfigResult"][];
+    };
+    /** SamplingConfigResult */
+    SamplingConfigResult: {
+      /**
+       * Algorithm Version
+       * @default sha256-rank-v1
+       * @constant
+       */
+      algorithm_version: "sha256-rank-v1";
+      /** Change Reason */
+      change_reason: string;
+      /** Config Fingerprint */
+      config_fingerprint: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Created By
+       * Format: uuid
+       */
+      created_by: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Max Sample Size */
+      max_sample_size: number;
+      /** Min Sample Size */
+      min_sample_size: number;
+      /** Rate Bps */
+      rate_bps: number;
+      /** Reused Existing */
+      reused_existing: boolean;
+      /**
+       * Tenant Id
+       * Format: uuid
+       */
+      tenant_id: string;
+      /** Version */
+      version: number;
+    };
+    /** SamplingDecisionRequest */
+    SamplingDecisionRequest: {
+      decision: components["schemas"]["SamplingReviewDecision"];
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: "clearance_sample";
+      /** Note */
+      note?: string | null;
+    };
+    /** SamplingPlanResult */
+    SamplingPlanResult: {
+      /**
+       * Algorithm Version
+       * @default sha256-rank-v1
+       * @constant
+       */
+      algorithm_version: "sha256-rank-v1";
+      /** Config Fingerprint */
+      config_fingerprint: string;
+      /** Config Version */
+      config_version: number;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Created By
+       * Format: uuid
+       */
+      created_by: string;
+      /** Eligible Count */
+      eligible_count: number;
+      /**
+       * File Version Id
+       * Format: uuid
+       */
+      file_version_id: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Max Sample Size */
+      max_sample_size: number;
+      /** Min Sample Size */
+      min_sample_size: number;
+      /** Rate Bps */
+      rate_bps: number;
+      /**
+       * Report Run Id
+       * Format: uuid
+       */
+      report_run_id: string;
+      /** Reused Existing */
+      reused_existing: boolean;
+      /** Sample Size */
+      sample_size: number;
+      /**
+       * Sampling Config Id
+       * Format: uuid
+       */
+      sampling_config_id: string;
+      /** Seed Hex */
+      seed_hex: string;
+      /** Selections */
+      selections: components["schemas"]["SamplingSelection"][];
+      /**
+       * Tenant Id
+       * Format: uuid
+       */
+      tenant_id: string;
+    };
+    /**
+     * SamplingReviewDecision
+     * @description 被放行样本的人工结论，与 finding review 语义分离。
+     * @enum {string}
+     */
+    SamplingReviewDecision: "clearance_confirmed" | "missed_issue";
+    /** SamplingReviewResult */
+    SamplingReviewResult: {
+      decision: components["schemas"]["SamplingReviewDecision"];
+      /**
+       * File Version Id
+       * Format: uuid
+       */
+      file_version_id: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Note */
+      note: string | null;
+      /**
+       * Report Run Id
+       * Format: uuid
+       */
+      report_run_id: string;
+      /** Reused Existing */
+      reused_existing: boolean;
+      /**
+       * Reviewed At
+       * Format: date-time
+       */
+      reviewed_at: string;
+      /**
+       * Reviewer Id
+       * Format: uuid
+       */
+      reviewer_id: string;
+      /**
+       * Sampling Audit Id
+       * Format: uuid
+       */
+      sampling_audit_id: string;
+      /**
+       * Sampling Plan Id
+       * Format: uuid
+       */
+      sampling_plan_id: string;
+      /**
+       * Tenant Id
+       * Format: uuid
+       */
+      tenant_id: string;
+    };
+    /**
+     * SamplingSelection
+     * @description One selected eligible row with its frozen deterministic rank evidence.
+     */
+    SamplingSelection: {
+      /** Row No */
+      row_no: number;
+      /** Selection Rank */
+      selection_rank: number;
+      /** Selection Score Sha256 */
+      selection_score_sha256: string;
     };
     /** SaveBindingsRequest */
     SaveBindingsRequest: {
@@ -3948,6 +4707,850 @@ export interface operations {
       };
       /** @description Unprocessable Content */
       422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  reviews_get_review_plan: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        report_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json":
+            | components["schemas"]["CompletedSamplingPlanResponse"]
+            | components["schemas"]["LegacySamplingPlanResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  reviews_create_review_plan: {
+    parameters: {
+      query?: never;
+      header: {
+        "Idempotency-Key": string;
+      };
+      path: {
+        report_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CompletedSamplingPlanResponse"];
+        };
+      };
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CompletedSamplingPlanResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  reviews_get_sampling_config: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SamplingConfigHistoryResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  reviews_put_sampling_config: {
+    parameters: {
+      query?: never;
+      header: {
+        "Idempotency-Key": string;
+      };
+      path?: never;
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SamplingConfigCreateRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SamplingConfigResult"];
+        };
+      };
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SamplingConfigResult"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  reviews_get_finding_detail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        report_item_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FindingReviewDetail"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  reviews_submit_finding_decision: {
+    parameters: {
+      query?: never;
+      header: {
+        "Idempotency-Key": string;
+      };
+      path: {
+        report_item_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json":
+          | components["schemas"]["FindingDecisionRequest"]
+          | components["schemas"]["SamplingDecisionRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FindingReviewResult"];
+        };
+      };
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FindingReviewResult"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  reviews_list_queue: {
+    parameters: {
+      query?: {
+        status?: "pending" | "completed";
+        kind?: ("finding" | "clearance_sample") | null;
+        report_id?: string | null;
+        file_version_id?: string | null;
+        sort_by?: "default";
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReviewQueuePage"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  reviews_get_sample_detail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        sampling_audit_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ClearanceReviewDetail"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  reviews_submit_sample_decision: {
+    parameters: {
+      query?: never;
+      header: {
+        "Idempotency-Key": string;
+      };
+      path: {
+        sampling_audit_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json":
+          | components["schemas"]["FindingDecisionRequest"]
+          | components["schemas"]["SamplingDecisionRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SamplingReviewResult"];
+        };
+      };
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SamplingReviewResult"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  reviews_get_summary: {
+    parameters: {
+      query: {
+        report_id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReviewSummary"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
         headers: {
           [name: string]: unknown;
         };

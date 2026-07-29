@@ -13,6 +13,8 @@ from sqlalchemy.engine import Connection, make_url
 from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
+from tests.integration.test_f5_migrations import _seed_f5_graph
+
 pytestmark = pytest.mark.integration
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
@@ -590,18 +592,24 @@ async def test_protected_idempotency_and_audit_invariants_survive_0005(
                 "rule_version": HASH_C,
             },
         )
+        f5_ids = await _seed_f5_graph(conn)
         sampling = (
-            "INSERT INTO sampling_audit (id, tenant_id, file_version_id, row_no) "
-            "VALUES (:id, :tenant_id, :file_id, 2)"
-        )
-        await conn.execute(
-            text(sampling),
-            {"id": uuid.uuid4(), "tenant_id": tenant_id, "file_id": file_id},
+            "INSERT INTO sampling_audit "
+            "(id, tenant_id, sampling_plan_id, report_run_id, file_version_id, row_no, "
+            "selection_rank, selection_score_sha256) VALUES "
+            "(:id, :tenant_id, :plan_id, :report_id, :file_id, 2, 2, :score)"
         )
         await _expect_integrity_error(
             conn,
             sampling,
-            {"id": uuid.uuid4(), "tenant_id": tenant_id, "file_id": file_id},
+            {
+                "id": uuid.uuid4(),
+                "tenant_id": f5_ids["tenant"],
+                "plan_id": f5_ids["plan"],
+                "report_id": f5_ids["report"],
+                "file_id": f5_ids["file"],
+                "score": HASH_C,
+            },
         )
         audit_id = uuid.uuid4()
         await conn.execute(

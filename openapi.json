@@ -731,6 +731,232 @@
         "title": "CitationSnapshot",
         "type": "object"
       },
+      "ClearanceReviewDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "cleared_items": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewItemEvidence"
+            },
+            "title": "Cleared Items",
+            "type": "array"
+          },
+          "existing_review": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SamplingReviewResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file_version_id": {
+            "format": "uuid",
+            "title": "File Version Id",
+            "type": "string"
+          },
+          "normalized_row": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Normalized Row"
+          },
+          "raw_row": {
+            "additionalProperties": true,
+            "title": "Raw Row",
+            "type": "object"
+          },
+          "report_fingerprint": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Report Fingerprint",
+            "type": "string"
+          },
+          "report_run_id": {
+            "format": "uuid",
+            "title": "Report Run Id",
+            "type": "string"
+          },
+          "row_no": {
+            "minimum": 1.0,
+            "title": "Row No",
+            "type": "integer"
+          },
+          "ruleset_fingerprint": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Ruleset Fingerprint",
+            "type": "string"
+          },
+          "sampling_audit_id": {
+            "format": "uuid",
+            "title": "Sampling Audit Id",
+            "type": "string"
+          },
+          "sampling_plan_id": {
+            "format": "uuid",
+            "title": "Sampling Plan Id",
+            "type": "string"
+          },
+          "source_verdict": {
+            "const": "passed",
+            "title": "Source Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "report_run_id",
+          "sampling_audit_id",
+          "sampling_plan_id",
+          "file_version_id",
+          "row_no",
+          "raw_row",
+          "normalized_row",
+          "source_verdict",
+          "ruleset_fingerprint",
+          "report_fingerprint",
+          "cleared_items",
+          "existing_review"
+        ],
+        "title": "ClearanceReviewDetail",
+        "type": "object"
+      },
+      "ClearanceReviewQueueItem": {
+        "additionalProperties": false,
+        "properties": {
+          "decision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SamplingReviewDecision"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file_version_id": {
+            "format": "uuid",
+            "title": "File Version Id",
+            "type": "string"
+          },
+          "kind": {
+            "const": "clearance_sample",
+            "default": "clearance_sample",
+            "title": "Kind",
+            "type": "string"
+          },
+          "report_completed_at": {
+            "format": "date-time",
+            "title": "Report Completed At",
+            "type": "string"
+          },
+          "report_run_id": {
+            "format": "uuid",
+            "title": "Report Run Id",
+            "type": "string"
+          },
+          "reviewed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed At"
+          },
+          "reviewer_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewer Id"
+          },
+          "row_no": {
+            "minimum": 1.0,
+            "title": "Row No",
+            "type": "integer"
+          },
+          "sampling_plan_id": {
+            "format": "uuid",
+            "title": "Sampling Plan Id",
+            "type": "string"
+          },
+          "sampling_status": {
+            "enum": [
+              "completed",
+              "legacy_not_initialized"
+            ],
+            "title": "Sampling Status",
+            "type": "string"
+          },
+          "selection_rank": {
+            "minimum": 1.0,
+            "title": "Selection Rank",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "completed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "target_id": {
+            "format": "uuid",
+            "title": "Target Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "sampling_status",
+          "target_id",
+          "report_run_id",
+          "file_version_id",
+          "report_completed_at",
+          "row_no",
+          "reviewer_id",
+          "reviewed_at",
+          "sampling_plan_id",
+          "selection_rank",
+          "decision"
+        ],
+        "title": "ClearanceReviewQueueItem",
+        "type": "object"
+      },
+      "CompletedSamplingPlanResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "plan": {
+            "$ref": "#/components/schemas/SamplingPlanResult"
+          },
+          "status": {
+            "const": "completed",
+            "default": "completed",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plan"
+        ],
+        "title": "CompletedSamplingPlanResponse",
+        "type": "object"
+      },
       "ConstantInferenceRule": {
         "additionalProperties": false,
         "description": "固定值推断；首版只允许推断币种。",
@@ -1238,6 +1464,38 @@
         "title": "FieldProvenance",
         "type": "object"
       },
+      "FindingDecisionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "decision": {
+            "$ref": "#/components/schemas/ReviewDecision"
+          },
+          "kind": {
+            "const": "finding",
+            "default": "finding",
+            "title": "Kind",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "title": "FindingDecisionRequest",
+        "type": "object"
+      },
       "FindingItemResponse": {
         "properties": {
           "evidence": {
@@ -1297,6 +1555,260 @@
           "verdict"
         ],
         "title": "FindingItemResponse",
+        "type": "object"
+      },
+      "FindingReviewDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "existing_review": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FindingReviewResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "normalized_row": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Normalized Row"
+          },
+          "raw_row": {
+            "additionalProperties": true,
+            "title": "Raw Row",
+            "type": "object"
+          },
+          "report_item": {
+            "$ref": "#/components/schemas/ReviewItemEvidence"
+          },
+          "report_run_id": {
+            "format": "uuid",
+            "title": "Report Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "report_run_id",
+          "report_item",
+          "raw_row",
+          "normalized_row",
+          "existing_review"
+        ],
+        "title": "FindingReviewDetail",
+        "type": "object"
+      },
+      "FindingReviewQueueItem": {
+        "additionalProperties": false,
+        "properties": {
+          "attention_group": {
+            "$ref": "#/components/schemas/ReportAttentionGroup"
+          },
+          "decision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReviewDecision"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file_version_id": {
+            "format": "uuid",
+            "title": "File Version Id",
+            "type": "string"
+          },
+          "finding_id": {
+            "format": "uuid",
+            "title": "Finding Id",
+            "type": "string"
+          },
+          "kind": {
+            "const": "finding",
+            "default": "finding",
+            "title": "Kind",
+            "type": "string"
+          },
+          "report_completed_at": {
+            "format": "date-time",
+            "title": "Report Completed At",
+            "type": "string"
+          },
+          "report_run_id": {
+            "format": "uuid",
+            "title": "Report Run Id",
+            "type": "string"
+          },
+          "reviewed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed At"
+          },
+          "reviewer_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewer Id"
+          },
+          "row_no": {
+            "minimum": 1.0,
+            "title": "Row No",
+            "type": "integer"
+          },
+          "rule_id": {
+            "title": "Rule Id",
+            "type": "string"
+          },
+          "rule_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule Version"
+          },
+          "sampling_status": {
+            "enum": [
+              "completed",
+              "legacy_not_initialized"
+            ],
+            "title": "Sampling Status",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "completed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "target_id": {
+            "format": "uuid",
+            "title": "Target Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "sampling_status",
+          "target_id",
+          "report_run_id",
+          "file_version_id",
+          "report_completed_at",
+          "row_no",
+          "reviewer_id",
+          "reviewed_at",
+          "attention_group",
+          "finding_id",
+          "rule_id",
+          "rule_version",
+          "decision"
+        ],
+        "title": "FindingReviewQueueItem",
+        "type": "object"
+      },
+      "FindingReviewResult": {
+        "additionalProperties": false,
+        "properties": {
+          "decision": {
+            "$ref": "#/components/schemas/ReviewDecision"
+          },
+          "file_version_id": {
+            "format": "uuid",
+            "title": "File Version Id",
+            "type": "string"
+          },
+          "finding_id": {
+            "format": "uuid",
+            "title": "Finding Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "report_item_id": {
+            "format": "uuid",
+            "title": "Report Item Id",
+            "type": "string"
+          },
+          "report_run_id": {
+            "format": "uuid",
+            "title": "Report Run Id",
+            "type": "string"
+          },
+          "reused_existing": {
+            "title": "Reused Existing",
+            "type": "boolean"
+          },
+          "reviewed_at": {
+            "format": "date-time",
+            "title": "Reviewed At",
+            "type": "string"
+          },
+          "reviewer_id": {
+            "format": "uuid",
+            "title": "Reviewer Id",
+            "type": "string"
+          },
+          "tenant_id": {
+            "format": "uuid",
+            "title": "Tenant Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tenant_id",
+          "report_run_id",
+          "report_item_id",
+          "file_version_id",
+          "finding_id",
+          "decision",
+          "reviewer_id",
+          "reviewed_at",
+          "note",
+          "reused_existing"
+        ],
+        "title": "FindingReviewResult",
         "type": "object"
       },
       "FindingsResponse": {
@@ -1853,6 +2365,27 @@
           "allowances"
         ],
         "title": "InvoiceTypeRuleDefinition",
+        "type": "object"
+      },
+      "LegacySamplingPlanResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "report_run_id": {
+            "format": "uuid",
+            "title": "Report Run Id",
+            "type": "string"
+          },
+          "status": {
+            "const": "legacy_not_initialized",
+            "default": "legacy_not_initialized",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "report_run_id"
+        ],
+        "title": "LegacySamplingPlanResponse",
         "type": "object"
       },
       "LimitEvidence": {
@@ -3372,6 +3905,431 @@
         "title": "ReportSummary",
         "type": "object"
       },
+      "ReviewCitationEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "binding_id": {
+            "format": "uuid",
+            "title": "Binding Id",
+            "type": "string"
+          },
+          "citation_order": {
+            "maximum": 3.0,
+            "minimum": 1.0,
+            "title": "Citation Order",
+            "type": "integer"
+          },
+          "clause_no": {
+            "title": "Clause No",
+            "type": "string"
+          },
+          "clause_text": {
+            "title": "Clause Text",
+            "type": "string"
+          },
+          "clause_text_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Clause Text Sha256",
+            "type": "string"
+          },
+          "document_content_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Document Content Sha256",
+            "type": "string"
+          },
+          "document_title": {
+            "title": "Document Title",
+            "type": "string"
+          },
+          "document_version": {
+            "title": "Document Version",
+            "type": "string"
+          },
+          "effective_date": {
+            "format": "date",
+            "title": "Effective Date",
+            "type": "string"
+          },
+          "expiry_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiry Date"
+          },
+          "family_stable_key": {
+            "title": "Family Stable Key",
+            "type": "string"
+          },
+          "hierarchy_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hierarchy Path"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "policy_clause_id": {
+            "format": "uuid",
+            "title": "Policy Clause Id",
+            "type": "string"
+          },
+          "policy_document_id": {
+            "format": "uuid",
+            "title": "Policy Document Id",
+            "type": "string"
+          },
+          "policy_family_id": {
+            "format": "uuid",
+            "title": "Policy Family Id",
+            "type": "string"
+          },
+          "quote": {
+            "title": "Quote",
+            "type": "string"
+          },
+          "quote_end": {
+            "exclusiveMinimum": 0.0,
+            "title": "Quote End",
+            "type": "integer"
+          },
+          "quote_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Quote Sha256",
+            "type": "string"
+          },
+          "quote_start": {
+            "minimum": 0.0,
+            "title": "Quote Start",
+            "type": "integer"
+          },
+          "report_item_id": {
+            "format": "uuid",
+            "title": "Report Item Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "report_item_id",
+          "binding_id",
+          "citation_order",
+          "policy_family_id",
+          "family_stable_key",
+          "policy_document_id",
+          "document_title",
+          "document_version",
+          "effective_date",
+          "expiry_date",
+          "document_content_sha256",
+          "policy_clause_id",
+          "clause_no",
+          "hierarchy_path",
+          "clause_text",
+          "clause_text_sha256",
+          "quote",
+          "quote_start",
+          "quote_end",
+          "quote_sha256"
+        ],
+        "title": "ReviewCitationEvidence",
+        "type": "object"
+      },
+      "ReviewCoverage": {
+        "additionalProperties": false,
+        "properties": {
+          "completed": {
+            "minimum": 0.0,
+            "title": "Completed",
+            "type": "integer"
+          },
+          "total": {
+            "minimum": 0.0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "completed",
+          "total"
+        ],
+        "title": "ReviewCoverage",
+        "type": "object"
+      },
+      "ReviewDecision": {
+        "description": "复核结论。这是回流评测集**唯一的真实标签来源**。",
+        "enum": [
+          "confirmed",
+          "false_positive"
+        ],
+        "title": "ReviewDecision",
+        "type": "string"
+      },
+      "ReviewItemEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "attention_group": {
+            "$ref": "#/components/schemas/ReportAttentionGroup"
+          },
+          "citation_status": {
+            "$ref": "#/components/schemas/ReportCitationStatus"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewCitationEvidence"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "evidence_snapshot": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Snapshot"
+          },
+          "finding_id": {
+            "format": "uuid",
+            "title": "Finding Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "reason_code": {
+            "title": "Reason Code",
+            "type": "string"
+          },
+          "reasoning_snapshot": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning Snapshot"
+          },
+          "requires_manual_citation": {
+            "title": "Requires Manual Citation",
+            "type": "boolean"
+          },
+          "row_no": {
+            "minimum": 1.0,
+            "title": "Row No",
+            "type": "integer"
+          },
+          "rule_id": {
+            "title": "Rule Id",
+            "type": "string"
+          },
+          "rule_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule Version"
+          },
+          "source_content_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Source Content Sha256",
+            "type": "string"
+          },
+          "source_outcome": {
+            "title": "Source Outcome",
+            "type": "string"
+          },
+          "source_verdict": {
+            "title": "Source Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "finding_id",
+          "row_no",
+          "rule_id",
+          "rule_version",
+          "source_outcome",
+          "source_verdict",
+          "reason_code",
+          "reasoning_snapshot",
+          "evidence_snapshot",
+          "attention_group",
+          "citation_status",
+          "requires_manual_citation",
+          "source_content_sha256",
+          "citations"
+        ],
+        "title": "ReviewItemEvidence",
+        "type": "object"
+      },
+      "ReviewQueuePage": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "clearance_sample": "#/components/schemas/ClearanceReviewQueueItem",
+                  "finding": "#/components/schemas/FindingReviewQueueItem"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/FindingReviewQueueItem"
+                },
+                {
+                  "$ref": "#/components/schemas/ClearanceReviewQueueItem"
+                }
+              ]
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "minimum": 1.0,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "minimum": 0.0,
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "minimum": 0.0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "ReviewQueuePage",
+        "type": "object"
+      },
+      "ReviewSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "finding_completed": {
+            "minimum": 0.0,
+            "title": "Finding Completed",
+            "type": "integer"
+          },
+          "finding_confirmed": {
+            "minimum": 0.0,
+            "title": "Finding Confirmed",
+            "type": "integer"
+          },
+          "finding_false_positive": {
+            "minimum": 0.0,
+            "title": "Finding False Positive",
+            "type": "integer"
+          },
+          "finding_pending": {
+            "minimum": 0.0,
+            "title": "Finding Pending",
+            "type": "integer"
+          },
+          "finding_review_coverage": {
+            "$ref": "#/components/schemas/ReviewCoverage"
+          },
+          "report_run_id": {
+            "format": "uuid",
+            "title": "Report Run Id",
+            "type": "string"
+          },
+          "sample_clearance_confirmed": {
+            "minimum": 0.0,
+            "title": "Sample Clearance Confirmed",
+            "type": "integer"
+          },
+          "sample_completed": {
+            "minimum": 0.0,
+            "title": "Sample Completed",
+            "type": "integer"
+          },
+          "sample_eligible": {
+            "minimum": 0.0,
+            "title": "Sample Eligible",
+            "type": "integer"
+          },
+          "sample_missed_issue": {
+            "minimum": 0.0,
+            "title": "Sample Missed Issue",
+            "type": "integer"
+          },
+          "sample_pending": {
+            "minimum": 0.0,
+            "title": "Sample Pending",
+            "type": "integer"
+          },
+          "sample_review_coverage": {
+            "$ref": "#/components/schemas/ReviewCoverage"
+          },
+          "sample_selected": {
+            "minimum": 0.0,
+            "title": "Sample Selected",
+            "type": "integer"
+          },
+          "sampling_status": {
+            "enum": [
+              "completed",
+              "legacy_not_initialized"
+            ],
+            "title": "Sampling Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "report_run_id",
+          "sampling_status",
+          "finding_pending",
+          "finding_completed",
+          "finding_confirmed",
+          "finding_false_positive",
+          "finding_review_coverage",
+          "sample_eligible",
+          "sample_selected",
+          "sample_pending",
+          "sample_completed",
+          "sample_clearance_confirmed",
+          "sample_missed_issue",
+          "sample_review_coverage"
+        ],
+        "title": "ReviewSummary",
+        "type": "object"
+      },
       "RevisionRequestReason": {
         "description": "服务层接受的派生原因。",
         "enum": [
@@ -3559,6 +4517,421 @@
           "created_at"
         ],
         "title": "RuleVersionResponse",
+        "type": "object"
+      },
+      "SamplingConfigCreateRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "change_reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Change Reason",
+            "type": "string"
+          },
+          "expected_current_version": {
+            "minimum": 0.0,
+            "title": "Expected Current Version",
+            "type": "integer"
+          },
+          "max_sample_size": {
+            "minimum": 1.0,
+            "title": "Max Sample Size",
+            "type": "integer"
+          },
+          "min_sample_size": {
+            "minimum": 1.0,
+            "title": "Min Sample Size",
+            "type": "integer"
+          },
+          "rate_bps": {
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Rate Bps",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_current_version",
+          "rate_bps",
+          "min_sample_size",
+          "max_sample_size",
+          "change_reason"
+        ],
+        "title": "SamplingConfigCreateRequest",
+        "type": "object"
+      },
+      "SamplingConfigHistoryResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "current": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SamplingConfigResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/SamplingConfigResult"
+            },
+            "title": "History",
+            "type": "array"
+          }
+        },
+        "required": [
+          "current",
+          "history"
+        ],
+        "title": "SamplingConfigHistoryResponse",
+        "type": "object"
+      },
+      "SamplingConfigResult": {
+        "additionalProperties": false,
+        "properties": {
+          "algorithm_version": {
+            "const": "sha256-rank-v1",
+            "default": "sha256-rank-v1",
+            "title": "Algorithm Version",
+            "type": "string"
+          },
+          "change_reason": {
+            "title": "Change Reason",
+            "type": "string"
+          },
+          "config_fingerprint": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Config Fingerprint",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "format": "uuid",
+            "title": "Created By",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "max_sample_size": {
+            "minimum": 1.0,
+            "title": "Max Sample Size",
+            "type": "integer"
+          },
+          "min_sample_size": {
+            "minimum": 1.0,
+            "title": "Min Sample Size",
+            "type": "integer"
+          },
+          "rate_bps": {
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Rate Bps",
+            "type": "integer"
+          },
+          "reused_existing": {
+            "title": "Reused Existing",
+            "type": "boolean"
+          },
+          "tenant_id": {
+            "format": "uuid",
+            "title": "Tenant Id",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rate_bps",
+          "min_sample_size",
+          "max_sample_size",
+          "id",
+          "tenant_id",
+          "version",
+          "config_fingerprint",
+          "created_by",
+          "created_at",
+          "change_reason",
+          "reused_existing"
+        ],
+        "title": "SamplingConfigResult",
+        "type": "object"
+      },
+      "SamplingDecisionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "decision": {
+            "$ref": "#/components/schemas/SamplingReviewDecision"
+          },
+          "kind": {
+            "const": "clearance_sample",
+            "default": "clearance_sample",
+            "title": "Kind",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "title": "SamplingDecisionRequest",
+        "type": "object"
+      },
+      "SamplingPlanResult": {
+        "additionalProperties": false,
+        "properties": {
+          "algorithm_version": {
+            "const": "sha256-rank-v1",
+            "default": "sha256-rank-v1",
+            "title": "Algorithm Version",
+            "type": "string"
+          },
+          "config_fingerprint": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Config Fingerprint",
+            "type": "string"
+          },
+          "config_version": {
+            "minimum": 1.0,
+            "title": "Config Version",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "format": "uuid",
+            "title": "Created By",
+            "type": "string"
+          },
+          "eligible_count": {
+            "minimum": 0.0,
+            "title": "Eligible Count",
+            "type": "integer"
+          },
+          "file_version_id": {
+            "format": "uuid",
+            "title": "File Version Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "max_sample_size": {
+            "minimum": 1.0,
+            "title": "Max Sample Size",
+            "type": "integer"
+          },
+          "min_sample_size": {
+            "minimum": 1.0,
+            "title": "Min Sample Size",
+            "type": "integer"
+          },
+          "rate_bps": {
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Rate Bps",
+            "type": "integer"
+          },
+          "report_run_id": {
+            "format": "uuid",
+            "title": "Report Run Id",
+            "type": "string"
+          },
+          "reused_existing": {
+            "title": "Reused Existing",
+            "type": "boolean"
+          },
+          "sample_size": {
+            "minimum": 0.0,
+            "title": "Sample Size",
+            "type": "integer"
+          },
+          "sampling_config_id": {
+            "format": "uuid",
+            "title": "Sampling Config Id",
+            "type": "string"
+          },
+          "seed_hex": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Seed Hex",
+            "type": "string"
+          },
+          "selections": {
+            "items": {
+              "$ref": "#/components/schemas/SamplingSelection"
+            },
+            "title": "Selections",
+            "type": "array"
+          },
+          "tenant_id": {
+            "format": "uuid",
+            "title": "Tenant Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rate_bps",
+          "min_sample_size",
+          "max_sample_size",
+          "id",
+          "tenant_id",
+          "report_run_id",
+          "file_version_id",
+          "sampling_config_id",
+          "config_version",
+          "config_fingerprint",
+          "seed_hex",
+          "eligible_count",
+          "sample_size",
+          "created_by",
+          "created_at",
+          "selections",
+          "reused_existing"
+        ],
+        "title": "SamplingPlanResult",
+        "type": "object"
+      },
+      "SamplingReviewDecision": {
+        "description": "被放行样本的人工结论，与 finding review 语义分离。",
+        "enum": [
+          "clearance_confirmed",
+          "missed_issue"
+        ],
+        "title": "SamplingReviewDecision",
+        "type": "string"
+      },
+      "SamplingReviewResult": {
+        "additionalProperties": false,
+        "properties": {
+          "decision": {
+            "$ref": "#/components/schemas/SamplingReviewDecision"
+          },
+          "file_version_id": {
+            "format": "uuid",
+            "title": "File Version Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "report_run_id": {
+            "format": "uuid",
+            "title": "Report Run Id",
+            "type": "string"
+          },
+          "reused_existing": {
+            "title": "Reused Existing",
+            "type": "boolean"
+          },
+          "reviewed_at": {
+            "format": "date-time",
+            "title": "Reviewed At",
+            "type": "string"
+          },
+          "reviewer_id": {
+            "format": "uuid",
+            "title": "Reviewer Id",
+            "type": "string"
+          },
+          "sampling_audit_id": {
+            "format": "uuid",
+            "title": "Sampling Audit Id",
+            "type": "string"
+          },
+          "sampling_plan_id": {
+            "format": "uuid",
+            "title": "Sampling Plan Id",
+            "type": "string"
+          },
+          "tenant_id": {
+            "format": "uuid",
+            "title": "Tenant Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tenant_id",
+          "sampling_audit_id",
+          "sampling_plan_id",
+          "report_run_id",
+          "file_version_id",
+          "decision",
+          "reviewer_id",
+          "reviewed_at",
+          "note",
+          "reused_existing"
+        ],
+        "title": "SamplingReviewResult",
+        "type": "object"
+      },
+      "SamplingSelection": {
+        "additionalProperties": false,
+        "description": "One selected eligible row with its frozen deterministic rank evidence.",
+        "properties": {
+          "row_no": {
+            "minimum": 1.0,
+            "title": "Row No",
+            "type": "integer"
+          },
+          "selection_rank": {
+            "minimum": 1.0,
+            "title": "Selection Rank",
+            "type": "integer"
+          },
+          "selection_score_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Selection Score Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "row_no",
+          "selection_rank",
+          "selection_score_sha256"
+        ],
+        "title": "SamplingSelection",
         "type": "object"
       },
       "SaveBindingsRequest": {
@@ -6610,6 +7983,1323 @@
         "summary": "List Parse Errors",
         "tags": [
           "reports"
+        ]
+      }
+    },
+    "/api/reports/{report_id}/review-plan": {
+      "get": {
+        "operationId": "reviews_get_review_plan",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "discriminator": {
+                    "mapping": {
+                      "completed": "#/components/schemas/CompletedSamplingPlanResponse",
+                      "legacy_not_initialized": "#/components/schemas/LegacySamplingPlanResponse"
+                    },
+                    "propertyName": "status"
+                  },
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CompletedSamplingPlanResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LegacySamplingPlanResponse"
+                    }
+                  ],
+                  "title": "Response Reviews Get Review Plan"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get Review Plan",
+        "tags": [
+          "reviews"
+        ]
+      },
+      "post": {
+        "operationId": "reviews_create_review_plan",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 8,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompletedSamplingPlanResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompletedSamplingPlanResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Create Review Plan",
+        "tags": [
+          "reviews"
+        ]
+      }
+    },
+    "/api/review/sampling-config": {
+      "get": {
+        "operationId": "reviews_get_sampling_config",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SamplingConfigHistoryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get Sampling Config",
+        "tags": [
+          "reviews"
+        ]
+      },
+      "put": {
+        "operationId": "reviews_put_sampling_config",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 8,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SamplingConfigCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SamplingConfigResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SamplingConfigResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Put Sampling Config",
+        "tags": [
+          "reviews"
+        ]
+      }
+    },
+    "/api/reviews/findings/{report_item_id}": {
+      "get": {
+        "operationId": "reviews_get_finding_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "report_item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Item Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FindingReviewDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get Finding Detail",
+        "tags": [
+          "reviews"
+        ]
+      }
+    },
+    "/api/reviews/findings/{report_item_id}/decision": {
+      "post": {
+        "operationId": "reviews_submit_finding_decision",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "report_item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Item Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 8,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "discriminator": {
+                  "mapping": {
+                    "clearance_sample": "#/components/schemas/SamplingDecisionRequest",
+                    "finding": "#/components/schemas/FindingDecisionRequest"
+                  },
+                  "propertyName": "kind"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/FindingDecisionRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SamplingDecisionRequest"
+                  }
+                ],
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FindingReviewResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FindingReviewResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Submit Finding Decision",
+        "tags": [
+          "reviews"
+        ]
+      }
+    },
+    "/api/reviews/queue": {
+      "get": {
+        "operationId": "reviews_list_queue",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "default": "pending",
+              "enum": [
+                "pending",
+                "completed"
+              ],
+              "title": "Status",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "finding",
+                    "clearance_sample"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          },
+          {
+            "in": "query",
+            "name": "report_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Report Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "file_version_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "File Version Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort_by",
+            "required": false,
+            "schema": {
+              "const": "default",
+              "default": "default",
+              "title": "Sort By",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewQueuePage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List Queue",
+        "tags": [
+          "reviews"
+        ]
+      }
+    },
+    "/api/reviews/samples/{sampling_audit_id}": {
+      "get": {
+        "operationId": "reviews_get_sample_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sampling_audit_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Sampling Audit Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClearanceReviewDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get Sample Detail",
+        "tags": [
+          "reviews"
+        ]
+      }
+    },
+    "/api/reviews/samples/{sampling_audit_id}/decision": {
+      "post": {
+        "operationId": "reviews_submit_sample_decision",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sampling_audit_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Sampling Audit Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 8,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "discriminator": {
+                  "mapping": {
+                    "clearance_sample": "#/components/schemas/SamplingDecisionRequest",
+                    "finding": "#/components/schemas/FindingDecisionRequest"
+                  },
+                  "propertyName": "kind"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/FindingDecisionRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SamplingDecisionRequest"
+                  }
+                ],
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SamplingReviewResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SamplingReviewResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Submit Sample Decision",
+        "tags": [
+          "reviews"
+        ]
+      }
+    },
+    "/api/reviews/summary": {
+      "get": {
+        "operationId": "reviews_get_summary",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get Summary",
+        "tags": [
+          "reviews"
         ]
       }
     },

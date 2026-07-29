@@ -100,6 +100,25 @@ export type ReportItem = components["schemas"]["ReportItemSnapshot"];
 export type ReportParseErrorPage = components["schemas"]["ParseErrorPage"];
 export type ReportExport = components["schemas"]["ReportExportResponse"];
 
+/** F5 人工复核与被放行样本抽检契约。 */
+export type SamplingConfigHistory = components["schemas"]["SamplingConfigHistoryResponse"];
+export type SamplingConfig = components["schemas"]["SamplingConfigResult"];
+export type SamplingConfigCreateRequest = components["schemas"]["SamplingConfigCreateRequest"];
+export type SamplingPlanResponse =
+  | components["schemas"]["CompletedSamplingPlanResponse"]
+  | components["schemas"]["LegacySamplingPlanResponse"];
+export type ReviewQueuePage = components["schemas"]["ReviewQueuePage"];
+export type ReviewQueueItem = ReviewQueuePage["items"][number];
+export type ReviewItemEvidence = components["schemas"]["ReviewItemEvidence"];
+export type ReviewCitationEvidence = components["schemas"]["ReviewCitationEvidence"];
+export type FindingReviewDetail = components["schemas"]["FindingReviewDetail"];
+export type ClearanceReviewDetail = components["schemas"]["ClearanceReviewDetail"];
+export type ReviewSummary = components["schemas"]["ReviewSummary"];
+export type FindingDecisionRequest = components["schemas"]["FindingDecisionRequest"];
+export type SamplingDecisionRequest = components["schemas"]["SamplingDecisionRequest"];
+export type FindingReviewResult = components["schemas"]["FindingReviewResult"];
+export type SamplingReviewResult = components["schemas"]["SamplingReviewResult"];
+
 /**
  * 后端权限标识。
  *
@@ -131,4 +150,13 @@ export function apiErrorMessage(error: unknown): string | undefined {
   if (typeof wrapped !== "object" || wrapped === null) return undefined;
   const message = (wrapped as { message?: unknown }).message;
   return typeof message === "string" ? message : undefined;
+}
+
+/** 从统一 ErrorResponse 中安全提取稳定错误码。 */
+export function apiErrorCode(error: unknown): string | undefined {
+  if (typeof error !== "object" || error === null) return undefined;
+  const wrapped = (error as { error?: unknown }).error;
+  if (typeof wrapped !== "object" || wrapped === null) return undefined;
+  const code = (wrapped as { code?: unknown }).code;
+  return typeof code === "string" ? code : undefined;
 }

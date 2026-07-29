@@ -211,6 +211,14 @@ class ReportItem(Base, TenantScopedMixin, TimestampMixin):
             "report_run_id",
             name="uq_report_item_id_tenant_id_report_run_id",
         ),
+        UniqueConstraint(
+            "id",
+            "tenant_id",
+            "report_run_id",
+            "file_version_id",
+            "finding_id",
+            name="uq_report_item_review_identity",
+        ),
         Index(
             "ix_report_item_report_attention_order",
             "report_run_id",

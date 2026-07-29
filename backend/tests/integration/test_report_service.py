@@ -18,6 +18,8 @@ from app.core.reports.service import (
     generate_report,
     load_report_snapshot,
 )
+from app.core.reviews.models import SamplingConfigParameters
+from app.core.reviews.sampling import canonical_sampling_config_fingerprint
 from app.core.rules import rule_config_fingerprint, validate_rule_definition
 from app.core.tenancy.locking import lock_tenant_nowait
 from app.core.tenancy.scope import bind_tenant
@@ -26,6 +28,7 @@ from app.db.base import utc_now
 from app.db.models.audit import AuditLog
 from app.db.models.batch import ExpenseRow, FileVersion, ParseStatus
 from app.db.models.config import RuleConfig, SchemaMappingVersion
+from app.db.models.findings import ReviewSamplingConfig
 from app.db.models.policy import (
     PolicyClause,
     PolicyDocument,
@@ -47,7 +50,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.usefixtures("clean_db")]
 
 
 async def _seed_tenant_and_rules(
-    session: AsyncSession, *, slug: str
+    session: AsyncSession, *, slug: str, with_sampling_config: bool = True
 ) -> tuple[uuid.UUID, uuid.UUID, uuid.UUID]:
     tenant = Tenant(slug=slug, name=f"{slug} tenant")
     session.add(tenant)
@@ -62,6 +65,28 @@ async def _seed_tenant_and_rules(
     )
     session.add(user)
     await session.flush()
+    if with_sampling_config:
+        sampling_parameters = SamplingConfigParameters(
+            rate_bps=10_000,
+            min_sample_size=1,
+            max_sample_size=5_000,
+        )
+        session.add(
+            ReviewSamplingConfig(
+                tenant_id=tenant.id,
+                version=1,
+                rate_bps=sampling_parameters.rate_bps,
+                min_sample_size=sampling_parameters.min_sample_size,
+                max_sample_size=sampling_parameters.max_sample_size,
+                algorithm_version=sampling_parameters.algorithm_version,
+                config_fingerprint=canonical_sampling_config_fingerprint(sampling_parameters),
+                idempotency_key_hash=_sha256("report-test-sampling-config"),
+                request_fingerprint=_sha256("report-test-sampling-request"),
+                created_by=user.id,
+                change_reason="report integration test setup",
+            )
+        )
+        await session.flush()
     mapping = SchemaMappingVersion(
         tenant_id=tenant.id,
         header_signature="1" * 64,
@@ -186,10 +211,17 @@ def _normalized(mapping_id: uuid.UUID, *, amount: str, invoice_no: str) -> dict[
 
 
 async def _seed_validated_batch(
-    session_factory: async_sessionmaker[AsyncSession], *, slug: str
+    session_factory: async_sessionmaker[AsyncSession],
+    *,
+    slug: str,
+    with_sampling_config: bool = True,
 ) -> tuple[uuid.UUID, uuid.UUID, uuid.UUID]:
     async with session_factory() as session:
-        tenant_id, actor_id, mapping_id = await _seed_tenant_and_rules(session, slug=slug)
+        tenant_id, actor_id, mapping_id = await _seed_tenant_and_rules(
+            session,
+            slug=slug,
+            with_sampling_config=with_sampling_config,
+        )
         batch = FileVersion(
             tenant_id=tenant_id,
             filename="report.xlsx",
@@ -536,7 +568,14 @@ async def test_report故障回滚全部snapshot并独立写安全失败审计(
         assert [audit.action for audit in audits] == ["batch.report_failed"]
         serialized = str(audits[0].payload_json)
         assert "sentinel quote" not in serialized
-        assert set(audits[0].payload_json or {}) == {"error_category", "file_version_id"}
+        assert set(audits[0].payload_json or {}) == {
+            "error_category",
+            "file_version_id",
+            "sampling_reason_code",
+        }
+        assert (audits[0].payload_json or {})["sampling_reason_code"] == (
+            "SAMPLING_PLAN_INTERNAL_ERROR"
+        )
 
     async with session_factory() as session:
         bind_tenant(session.sync_session, tenant_id)

@@ -6,8 +6,8 @@ import { AppShell } from "@/components/AppShell";
 import { BatchesPage } from "@/pages/BatchesPage";
 import { HealthPage } from "@/pages/HealthPage";
 import { LoginPage } from "@/pages/LoginPage";
-import { PlaceholderPage } from "@/pages/PlaceholderPage";
 import { PoliciesPage } from "@/pages/PoliciesPage";
+import { ReviewPage } from "@/pages/ReviewPage";
 import { RulesPage } from "@/pages/RulesPage";
 
 /** 受保护区域的外壳。`RequireAuth` 已保证此处 user 必然存在。 */
@@ -32,10 +32,7 @@ export function App() {
         <Route index element={<Navigate to="/health" replace />} />
         <Route path="health" element={<HealthPage />} />
         <Route path="batches" element={<BatchesPage />} />
-        <Route
-          path="review"
-          element={<PlaceholderPage title="复核台" feature="F5 · 人工复核台" />}
-        />
+        <Route path="review" element={<ReviewPage />} />
         <Route path="rules" element={<RulesPage />} />
         <Route path="policies" element={<PoliciesPage />} />
         {/* 兜底也放在受保护区内:未登录访问任意未知路径应先走登录，

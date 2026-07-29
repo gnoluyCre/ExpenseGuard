@@ -33,6 +33,13 @@ class ReviewDecision(StrEnum):
     FALSE_POSITIVE = "false_positive"
 
 
+class SamplingReviewDecision(StrEnum):
+    """被放行样本的人工结论，与 finding review 语义分离。"""
+
+    CLEARANCE_CONFIRMED = "clearance_confirmed"
+    MISSED_ISSUE = "missed_issue"
+
+
 class CapabilityStatus(StrEnum):
     """检测器的能力状态。
 
@@ -206,22 +213,255 @@ class Review(Base, TenantScopedMixin, TimestampMixin):
     """
 
     __tablename__ = "review"
-    __table_args__ = (UniqueConstraint("finding_id"),)
+    __table_args__ = (
+        UniqueConstraint("finding_id"),
+        UniqueConstraint("report_item_id", name="uq_review_report_item_id"),
+        UniqueConstraint(
+            "tenant_id",
+            "idempotency_key_hash",
+            name="uq_review_tenant_idempotency_key",
+        ),
+        ForeignKeyConstraint(
+            [
+                "report_item_id",
+                "tenant_id",
+                "report_run_id",
+                "file_version_id",
+                "finding_id",
+            ],
+            [
+                "report_item.id",
+                "report_item.tenant_id",
+                "report_item.report_run_id",
+                "report_item.file_version_id",
+                "report_item.finding_id",
+            ],
+            name="fk_review_report_item_identity",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["report_run_id", "tenant_id", "file_version_id"],
+            ["report_run.id", "report_run.tenant_id", "report_run.file_version_id"],
+            name="fk_review_report_tenant_file",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["finding_id", "tenant_id", "file_version_id"],
+            ["finding.id", "finding.tenant_id", "finding.file_version_id"],
+            name="fk_review_finding_tenant_file",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["file_version_id", "tenant_id"],
+            ["file_version.id", "file_version.tenant_id"],
+            name="fk_review_file_version_tenant",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["reviewer_id", "tenant_id"],
+            ["app_user.id", "app_user.tenant_id"],
+            name="fk_review_reviewer_tenant",
+            ondelete="RESTRICT",
+        ),
+        CheckConstraint(
+            "decision IN ('confirmed', 'false_positive')",
+            name="decision_values",
+        ),
+        CheckConstraint(
+            "note IS NULL OR (char_length(note) BETWEEN 1 AND 2000 AND note !~ '[[:cntrl:]]')",
+            name="note_valid",
+        ),
+        CheckConstraint(
+            "decision <> 'false_positive' OR note IS NOT NULL",
+            name="false_positive_note_required",
+        ),
+        CheckConstraint(
+            "char_length(idempotency_key_hash) = 64",
+            name="idempotency_hash_length",
+        ),
+        CheckConstraint(
+            "char_length(request_fingerprint) = 64",
+            name="request_fingerprint_length",
+        ),
+    )
 
     id: Mapped[uuid.UUID] = uuid_pk()
-    finding_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("finding.id", ondelete="CASCADE"), nullable=False
-    )
+    report_run_id: Mapped[uuid.UUID] = mapped_column(nullable=False, index=True)
+    report_item_id: Mapped[uuid.UUID] = mapped_column(nullable=False)
+    file_version_id: Mapped[uuid.UUID] = mapped_column(nullable=False, index=True)
+    finding_id: Mapped[uuid.UUID] = mapped_column(nullable=False)
     decision: Mapped[ReviewDecision] = mapped_column(
         str_enum(ReviewDecision, "review_decision_enum"), nullable=False
     )
-    reviewer_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("app_user.id", ondelete="RESTRICT"), nullable=False
-    )
+    reviewer_id: Mapped[uuid.UUID] = mapped_column(nullable=False)
     reviewed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    idempotency_key_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    request_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+
+
+class ReviewSamplingConfig(Base, TenantScopedMixin, TimestampMixin):
+    """租户级追加版本的抽样配置。"""
+
+    __tablename__ = "review_sampling_config"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "version", name="uq_review_sampling_config_version"),
+        UniqueConstraint(
+            "tenant_id",
+            "idempotency_key_hash",
+            name="uq_review_sampling_config_idempotency_key",
+        ),
+        UniqueConstraint("id", "tenant_id", name="uq_review_sampling_config_id_tenant"),
+        UniqueConstraint(
+            "id",
+            "tenant_id",
+            "version",
+            "config_fingerprint",
+            "rate_bps",
+            "min_sample_size",
+            "max_sample_size",
+            "algorithm_version",
+            name="uq_review_sampling_config_snapshot",
+        ),
+        ForeignKeyConstraint(
+            ["created_by", "tenant_id"],
+            ["app_user.id", "app_user.tenant_id"],
+            name="fk_review_sampling_config_creator_tenant",
+            ondelete="RESTRICT",
+        ),
+        CheckConstraint("version > 0", name="version_positive"),
+        CheckConstraint("rate_bps BETWEEN 1 AND 10000", name="rate_bps_range"),
+        CheckConstraint("min_sample_size >= 1", name="min_sample_size_positive"),
+        CheckConstraint("max_sample_size >= min_sample_size", name="sample_size_order"),
+        CheckConstraint(
+            "algorithm_version = 'sha256-rank-v1'",
+            name="algorithm_version_value",
+        ),
+        CheckConstraint("char_length(config_fingerprint) = 64", name="fingerprint_length"),
+        CheckConstraint(
+            "char_length(idempotency_key_hash) = 64",
+            name="idempotency_hash_length",
+        ),
+        CheckConstraint(
+            "char_length(request_fingerprint) = 64",
+            name="request_fingerprint_length",
+        ),
+        CheckConstraint(
+            "char_length(change_reason) BETWEEN 1 AND 500 AND change_reason !~ '[[:cntrl:]]'",
+            name="change_reason_valid",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    rate_bps: Mapped[int] = mapped_column(Integer, nullable=False)
+    min_sample_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    max_sample_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    algorithm_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    config_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    idempotency_key_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    request_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_by: Mapped[uuid.UUID] = mapped_column(nullable=False)
+    change_reason: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+class ReviewSamplingPlan(Base, TenantScopedMixin, TimestampMixin):
+    """completed report 的一次性、可复算抽样计划。"""
+
+    __tablename__ = "review_sampling_plan"
+    __table_args__ = (
+        UniqueConstraint("report_run_id", name="uq_review_sampling_plan_report_run_id"),
+        UniqueConstraint("id", "tenant_id", name="uq_review_sampling_plan_id_tenant"),
+        UniqueConstraint(
+            "id",
+            "tenant_id",
+            "report_run_id",
+            name="uq_review_sampling_plan_id_tenant_report",
+        ),
+        UniqueConstraint(
+            "id",
+            "tenant_id",
+            "report_run_id",
+            "file_version_id",
+            name="uq_review_sampling_plan_identity",
+        ),
+        ForeignKeyConstraint(
+            ["report_run_id", "tenant_id", "file_version_id"],
+            ["report_run.id", "report_run.tenant_id", "report_run.file_version_id"],
+            name="fk_review_sampling_plan_report_tenant_file",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["file_version_id", "tenant_id"],
+            ["file_version.id", "file_version.tenant_id"],
+            name="fk_review_sampling_plan_file_tenant",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            [
+                "sampling_config_id",
+                "tenant_id",
+                "config_version",
+                "config_fingerprint",
+                "rate_bps",
+                "min_sample_size",
+                "max_sample_size",
+                "algorithm_version",
+            ],
+            [
+                "review_sampling_config.id",
+                "review_sampling_config.tenant_id",
+                "review_sampling_config.version",
+                "review_sampling_config.config_fingerprint",
+                "review_sampling_config.rate_bps",
+                "review_sampling_config.min_sample_size",
+                "review_sampling_config.max_sample_size",
+                "review_sampling_config.algorithm_version",
+            ],
+            name="fk_review_sampling_plan_config_snapshot",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["created_by", "tenant_id"],
+            ["app_user.id", "app_user.tenant_id"],
+            name="fk_review_sampling_plan_creator_tenant",
+            ondelete="RESTRICT",
+        ),
+        CheckConstraint("config_version > 0", name="config_version_positive"),
+        CheckConstraint("rate_bps BETWEEN 1 AND 10000", name="rate_bps_range"),
+        CheckConstraint("min_sample_size >= 1", name="min_sample_size_positive"),
+        CheckConstraint("max_sample_size >= min_sample_size", name="sample_size_order"),
+        CheckConstraint(
+            "algorithm_version = 'sha256-rank-v1'",
+            name="algorithm_version_value",
+        ),
+        CheckConstraint("char_length(config_fingerprint) = 64", name="fingerprint_length"),
+        CheckConstraint("seed_hex ~ '^[0-9a-f]{64}$'", name="seed_hex_format"),
+        CheckConstraint(
+            "(eligible_count = 0 AND sample_size = 0) OR "
+            "(eligible_count > 0 AND sample_size = LEAST("
+            "eligible_count, max_sample_size, GREATEST("
+            "min_sample_size, ((eligible_count::bigint * rate_bps + 9999) / 10000)::integer)))",
+            name="counts_consistent",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    report_run_id: Mapped[uuid.UUID] = mapped_column(nullable=False, index=True)
+    file_version_id: Mapped[uuid.UUID] = mapped_column(nullable=False, index=True)
+    sampling_config_id: Mapped[uuid.UUID] = mapped_column(nullable=False, index=True)
+    config_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    config_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    rate_bps: Mapped[int] = mapped_column(Integer, nullable=False)
+    min_sample_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    max_sample_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    algorithm_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    seed_hex: Mapped[str] = mapped_column(String(64), nullable=False)
+    eligible_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    sample_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_by: Mapped[uuid.UUID] = mapped_column(nullable=False)
 
 
 class SamplingAudit(Base, TenantScopedMixin, TimestampMixin):
@@ -239,13 +479,79 @@ class SamplingAudit(Base, TenantScopedMixin, TimestampMixin):
     __tablename__ = "sampling_audit"
     __table_args__ = (
         UniqueConstraint("file_version_id", "row_no"),
-        file_version_fk(),
+        UniqueConstraint(
+            "sampling_plan_id",
+            "selection_rank",
+            name="uq_sampling_audit_plan_rank",
+        ),
+        UniqueConstraint(
+            "sampling_plan_id",
+            "row_no",
+            name="uq_sampling_audit_plan_row",
+        ),
+        UniqueConstraint(
+            "id",
+            "tenant_id",
+            "sampling_plan_id",
+            "report_run_id",
+            "file_version_id",
+            name="uq_sampling_audit_review_identity",
+        ),
+        ForeignKeyConstraint(
+            ["sampling_plan_id", "tenant_id", "report_run_id", "file_version_id"],
+            [
+                "review_sampling_plan.id",
+                "review_sampling_plan.tenant_id",
+                "review_sampling_plan.report_run_id",
+                "review_sampling_plan.file_version_id",
+            ],
+            name="fk_sampling_audit_plan_identity",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["report_run_id", "tenant_id", "file_version_id"],
+            ["report_run.id", "report_run.tenant_id", "report_run.file_version_id"],
+            name="fk_sampling_audit_report_tenant_file",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["file_version_id", "row_no", "tenant_id"],
+            ["expense_row.file_version_id", "expense_row.row_no", "expense_row.tenant_id"],
+            name="fk_sampling_audit_expense_row_identity",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["file_version_id", "row_no", "tenant_id"],
+            ["row_result.file_version_id", "row_result.row_no", "row_result.tenant_id"],
+            name="fk_sampling_audit_row_result_identity",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["reviewer_id", "tenant_id"],
+            ["app_user.id", "app_user.tenant_id"],
+            name="fk_sampling_audit_legacy_reviewer_tenant",
+            ondelete="RESTRICT",
+        ),
+        CheckConstraint("selection_rank > 0", name="selection_rank_positive"),
+        CheckConstraint(
+            "char_length(selection_score_sha256) = 64",
+            name="selection_score_length",
+        ),
+        CheckConstraint(
+            "decision IS NULL AND reviewer_id IS NULL AND reviewed_at IS NULL",
+            name="legacy_review_fields_null",
+        ),
         Index("ix_sampling_audit_file_version_id", "file_version_id"),
+        Index("ix_sampling_audit_sampling_plan_id", "sampling_plan_id"),
     )
 
     id: Mapped[uuid.UUID] = uuid_pk()
+    sampling_plan_id: Mapped[uuid.UUID] = mapped_column(nullable=False)
+    report_run_id: Mapped[uuid.UUID] = mapped_column(nullable=False, index=True)
     file_version_id: Mapped[uuid.UUID] = mapped_column(nullable=False)
     row_no: Mapped[int] = mapped_column(Integer, nullable=False)
+    selection_rank: Mapped[int] = mapped_column(Integer, nullable=False)
+    selection_score_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
     sampled_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -253,10 +559,149 @@ class SamplingAudit(Base, TenantScopedMixin, TimestampMixin):
     decision: Mapped[ReviewDecision | None] = mapped_column(
         str_enum(ReviewDecision, "review_decision_enum"), nullable=True
     )
-    reviewer_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("app_user.id", ondelete="RESTRICT"), nullable=True
-    )
+    reviewer_id: Mapped[uuid.UUID | None] = mapped_column(nullable=True)
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class SamplingReview(Base, TenantScopedMixin, TimestampMixin):
+    """被放行抽检样本的一次性最终人工结论。"""
+
+    __tablename__ = "sampling_review"
+    __table_args__ = (
+        UniqueConstraint("sampling_audit_id", name="uq_sampling_review_sampling_audit_id"),
+        UniqueConstraint(
+            "tenant_id",
+            "idempotency_key_hash",
+            name="uq_sampling_review_tenant_idempotency_key",
+        ),
+        ForeignKeyConstraint(
+            [
+                "sampling_audit_id",
+                "tenant_id",
+                "sampling_plan_id",
+                "report_run_id",
+                "file_version_id",
+            ],
+            [
+                "sampling_audit.id",
+                "sampling_audit.tenant_id",
+                "sampling_audit.sampling_plan_id",
+                "sampling_audit.report_run_id",
+                "sampling_audit.file_version_id",
+            ],
+            name="fk_sampling_review_sample_identity",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["sampling_plan_id", "tenant_id", "report_run_id", "file_version_id"],
+            [
+                "review_sampling_plan.id",
+                "review_sampling_plan.tenant_id",
+                "review_sampling_plan.report_run_id",
+                "review_sampling_plan.file_version_id",
+            ],
+            name="fk_sampling_review_plan_identity",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["report_run_id", "tenant_id", "file_version_id"],
+            ["report_run.id", "report_run.tenant_id", "report_run.file_version_id"],
+            name="fk_sampling_review_report_tenant_file",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["file_version_id", "tenant_id"],
+            ["file_version.id", "file_version.tenant_id"],
+            name="fk_sampling_review_file_tenant",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["reviewer_id", "tenant_id"],
+            ["app_user.id", "app_user.tenant_id"],
+            name="fk_sampling_review_reviewer_tenant",
+            ondelete="RESTRICT",
+        ),
+        CheckConstraint(
+            "decision IN ('clearance_confirmed', 'missed_issue')",
+            name="decision_values",
+        ),
+        CheckConstraint(
+            "note IS NULL OR (char_length(note) BETWEEN 1 AND 2000 AND note !~ '[[:cntrl:]]')",
+            name="note_valid",
+        ),
+        CheckConstraint(
+            "decision <> 'missed_issue' OR note IS NOT NULL",
+            name="missed_issue_note_required",
+        ),
+        CheckConstraint(
+            "char_length(idempotency_key_hash) = 64",
+            name="idempotency_hash_length",
+        ),
+        CheckConstraint(
+            "char_length(request_fingerprint) = 64",
+            name="request_fingerprint_length",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    sampling_audit_id: Mapped[uuid.UUID] = mapped_column(nullable=False)
+    sampling_plan_id: Mapped[uuid.UUID] = mapped_column(nullable=False)
+    report_run_id: Mapped[uuid.UUID] = mapped_column(nullable=False)
+    file_version_id: Mapped[uuid.UUID] = mapped_column(nullable=False)
+    decision: Mapped[SamplingReviewDecision] = mapped_column(
+        str_enum(SamplingReviewDecision, "sampling_review_decision_enum"),
+        nullable=False,
+    )
+    reviewer_id: Mapped[uuid.UUID] = mapped_column(nullable=False)
+    reviewed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    idempotency_key_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    request_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+
+
+class ReviewPlanRequest(Base, TenantScopedMixin, TimestampMixin):
+    """历史 completed report 补建/复用 sampling plan 的幂等账本。"""
+
+    __tablename__ = "review_plan_request"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id",
+            "idempotency_key_hash",
+            name="uq_review_plan_request_tenant_idempotency_key",
+        ),
+        ForeignKeyConstraint(
+            ["report_run_id", "tenant_id"],
+            ["report_run.id", "report_run.tenant_id"],
+            name="fk_review_plan_request_report_tenant",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["sampling_plan_id", "tenant_id", "report_run_id"],
+            [
+                "review_sampling_plan.id",
+                "review_sampling_plan.tenant_id",
+                "review_sampling_plan.report_run_id",
+            ],
+            name="fk_review_plan_request_plan_tenant_report",
+            ondelete="RESTRICT",
+        ),
+        CheckConstraint(
+            "char_length(idempotency_key_hash) = 64",
+            name="idempotency_hash_length",
+        ),
+        CheckConstraint(
+            "char_length(request_fingerprint) = 64",
+            name="request_fingerprint_length",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    report_run_id: Mapped[uuid.UUID] = mapped_column(nullable=False, index=True)
+    sampling_plan_id: Mapped[uuid.UUID] = mapped_column(nullable=False, index=True)
+    idempotency_key_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    request_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
 
 
 class CapabilityDeclaration(Base, TenantScopedMixin, TimestampMixin):
