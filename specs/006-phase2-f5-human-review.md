@@ -1,9 +1,9 @@
 # Spec 006 — Phase 2 F5 人工复核台与被放行样本抽检
 
-**状态：** CP-F5.0 规格固化 ✅
+**状态：** CP-F5.0–CP-F5.2 已完成 ✅
 **日期：** 2026-07-29
 **前置检查点：** F4 / CP-F4.5 已完成
-**下一实施检查点：** CP-F5.1 持久化 schema 与 ORM
+**下一实施检查点：** CP-F5.3 API 与 OpenAPI 契约
 
 ---
 
@@ -648,3 +648,11 @@ payload 只含 tenant 内对象 ID、decision enum、版本、hash/fingerprint�
 - 原 `row_result(file_version_id,row_no)`、`sampling_audit(file_version_id,row_no)` 与 F3/F4 唯一/FK/CHECK 均保留；仅为完整租户 FK 追加 `report_item`/`expense_row`/`row_result` 冗余唯一键。六类 F5 表的 UPDATE/DELETE 由数据库触发器统一拒绝，全部 F5 FK 为 `ON DELETE RESTRICT`，legacy sampling decision/reviewer/reviewed_at 由 CHECK 强制全 NULL。
 - 默认库 pre-0007 full/schema/affected-data custom archive 位于 gitignored `data/private/backups/cp-f5.1/pre-0007-20260729-160753/`，均通过 `pg_restore --list` 与容器/本地 SHA-256 交叉校验；哈希依次为 `6c9baa69e6abe88ced0810f9cd510540c821bd160d94094765395a363cea3cd4`、`53b1a21488b6f609d9ce8d085f15229b579cade332f18f89ef8f75ea0baf80e0`、`188ea6f89bbcf9a5e15747c4e53ee828155f30ec7d06713ac2426798ea71c9cd`。
 - 迁移/受保护约束定向 `36 passed`，后端全量 `355 passed, 1 skipped`；Ruff lint/format、strict mypy（106 源文件）、默认/测试双库 `0007 (head)` 与 Alembic 零漂移通过。本检查点未实现 sampling 算法、服务、API、UI 或 F6/F8。
+
+### CP-F5.2 实际落地记录（2026-07-29）
+
+- 新增 `backend/app/core/reviews/` 领域层，落地严格 Pydantic 内部模型、sampling config canonical/fingerprint、整数样本量公式、32-byte CSPRNG seed 与 `sha256-rank-v1` golden score/rank；UUID 使用 RFC 4122 network-order bytes，row number 使用 unsigned big-endian 8-byte 编码，候选输入顺序与 Python hash seed 不影响结果。
+- config 服务在 Tenant NOWAIT 锁内执行连续版本与 expected-version CAS，同 key 同请求只读复用，同 key 异请求/陈旧版本显式冲突；config 与 decision request fingerprint 只保存 note/reason hash，不把原文写入审计。联合 queue/detail/summary 只读 completed F4 snapshot、原始行与已冻结 plan，不读取 F6/F8，不调用 Qdrant、embedding、rerank 或 LLM。
+- 新 report 在既有 Tenant→FileVersion NOWAIT 与 F4 单事务内，于 report completed 前写入 plan、全部 `sampling_audit` 与 `sampling.plan_create`；缺 config 在任何 report 写入前返回 `SAMPLING_CONFIG_REQUIRED`。plan/sample/audit 任一故障使 report 全部回滚，只以独立事务写一条带稳定 `sampling_reason_code` 的 `batch.report_failed`。legacy completed report 通过显式 key ledger 补建/复用，新 key 不重抽样、不新增成功审计；legacy 系统故障独立写 `sampling.plan_failed`。
+- finding review 仅接受 high/manual report item，clearance review 再校验 sample 绑定的 row_result 仍为 passed；两类结论均在 Tenant→FileVersion→target 锁序内一次性追加并与成功审计同事务，key 重放、新 key 重复、key 异请求、NOWAIT 并发与 kill/restart 均 fail closed。`sampling_audit` legacy decision 三列保持 NULL；任何人工结论均不改写 finding/report/item/citation/row_result，也不因 `missed_issue` 创建 finding。
+- CP-F5.2/F4 定向 `39 passed`；后端全量 `386 passed, 1 skipped`；Ruff lint/format（155 文件）与 strict mypy（114 源文件）通过。未新增依赖、迁移、API/UI 或 OpenAPI/client 变更；下一检查点为 CP-F5.3。

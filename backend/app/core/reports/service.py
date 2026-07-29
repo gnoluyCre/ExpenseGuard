@@ -29,6 +29,8 @@ from app.core.reports.models import (
     ReportSnapshot,
     ReportSummary,
 )
+from app.core.reviews.config_service import require_latest_sampling_config
+from app.core.reviews.plan_service import create_plan_for_new_report
 from app.core.rules import RowVerdict, RuleEvaluation, RuleOutcome
 from app.core.security.auth_service import write_audit
 from app.core.tenancy.locking import lock_tenant_nowait
@@ -87,6 +89,10 @@ class ReportInternalError(ReportError):
             code="REPORT_GENERATE_INTERNAL_ERROR",
             message="报告生成遇到内部错误，本次业务写入已回滚",
         )
+
+
+class _SamplingPlanFailure(Exception):
+    """Internal marker used to keep one failed audit with a stable sampling reason."""
 
 
 @dataclass(frozen=True)
@@ -219,6 +225,16 @@ async def generate_report(
             file_version_id=file_version_id,
         )
         raise ReportInternalError from exc
+    except _SamplingPlanFailure as exc:
+        await _rollback_and_record_failure(
+            db,
+            session_factory,
+            tenant_id=tenant_id,
+            actor_id=actor_id,
+            file_version_id=file_version_id,
+            sampling_reason_code="SAMPLING_PLAN_INTERNAL_ERROR",
+        )
+        raise ReportInternalError from exc
     except ExpenseGuardError:
         raise
     except Exception as exc:
@@ -314,6 +330,7 @@ async def _generate_report(
         batch=batch,
         template_version=template_version,
     )
+    sampling_config = await require_latest_sampling_config(db, tenant_id=tenant_id)
     request_fingerprint = report_request_fingerprint(
         file_version_id=file_version_id,
         validation_run_id=prepared.validation.id,
@@ -385,6 +402,19 @@ async def _generate_report(
     await db.flush()
     _fault(fault_hook, "parse_errors_persisted")
 
+    try:
+        await create_plan_for_new_report(
+            db,
+            tenant_id=tenant_id,
+            actor_id=actor_id,
+            report=report,
+            config=sampling_config,
+            fault_hook=fault_hook,
+        )
+    except ExpenseGuardError:
+        raise
+    except Exception as exc:
+        raise _SamplingPlanFailure from exc
     report.status = ReportRunStatus.COMPLETED
     report.completed_at = utc_now()
     await write_audit(
@@ -933,11 +963,18 @@ async def _rollback_and_record_failure(
     tenant_id: uuid.UUID,
     actor_id: uuid.UUID,
     file_version_id: uuid.UUID,
+    sampling_reason_code: str | None = None,
 ) -> None:
     await db.rollback()
     async with session_factory() as audit_db:
         bind_tenant(audit_db.sync_session, tenant_id)
         actor = await audit_db.scalar(select(AppUser).where(AppUser.id == actor_id))
+        payload = {
+            "error_category": "internal_error",
+            "file_version_id": str(file_version_id),
+        }
+        if sampling_reason_code is not None:
+            payload["sampling_reason_code"] = sampling_reason_code
         await write_audit(
             audit_db,
             tenant_id=tenant_id,
@@ -945,10 +982,7 @@ async def _rollback_and_record_failure(
             action="batch.report_failed",
             target_type="file_version",
             target_id=str(file_version_id),
-            payload={
-                "error_category": "internal_error",
-                "file_version_id": str(file_version_id),
-            },
+            payload=payload,
         )
         await audit_db.commit()
 
