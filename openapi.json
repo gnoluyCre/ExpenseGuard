@@ -47,6 +47,15 @@
         "title": "AvailabilityEvidence",
         "type": "object"
       },
+      "AvailabilityStatus": {
+        "enum": [
+          "available",
+          "inferred",
+          "missing"
+        ],
+        "title": "AvailabilityStatus",
+        "type": "string"
+      },
       "AvailabilityThresholdsRequest": {
         "additionalProperties": false,
         "properties": {
@@ -146,6 +155,51 @@
           "rows"
         ],
         "title": "BatchDetailResponse",
+        "type": "object"
+      },
+      "BatchDetectionResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "capabilities": {
+            "items": {
+              "$ref": "#/components/schemas/CapabilityResponse"
+            },
+            "title": "Capabilities",
+            "type": "array"
+          },
+          "config_stale": {
+            "title": "Config Stale",
+            "type": "boolean"
+          },
+          "current_config_fingerprint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Config Fingerprint"
+          },
+          "run": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DetectionRunResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "run",
+          "capabilities",
+          "current_config_fingerprint",
+          "config_stale"
+        ],
+        "title": "BatchDetectionResponse",
         "type": "object"
       },
       "BatchImportResponse": {
@@ -587,6 +641,143 @@
         "title": "Body_policies_upload_document",
         "type": "object"
       },
+      "CapabilityDetails": {
+        "additionalProperties": false,
+        "properties": {
+          "causes": {
+            "items": {
+              "$ref": "#/components/schemas/CapabilityReason"
+            },
+            "title": "Causes",
+            "type": "array"
+          },
+          "dependencies": {
+            "items": {
+              "$ref": "#/components/schemas/DependencyAvailability"
+            },
+            "title": "Dependencies",
+            "type": "array"
+          },
+          "eligible_rate_bps": {
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Eligible Rate Bps",
+            "type": "integer"
+          },
+          "eligible_row_count": {
+            "minimum": 0.0,
+            "title": "Eligible Row Count",
+            "type": "integer"
+          },
+          "excluded_row_count": {
+            "minimum": 0.0,
+            "title": "Excluded Row Count",
+            "type": "integer"
+          },
+          "exclusion_counts": {
+            "items": {
+              "$ref": "#/components/schemas/ExclusionCount"
+            },
+            "title": "Exclusion Counts",
+            "type": "array"
+          },
+          "parsed_row_count": {
+            "minimum": 0.0,
+            "title": "Parsed Row Count",
+            "type": "integer"
+          },
+          "runtime": {
+            "$ref": "#/components/schemas/DetectorRuntimeFacts"
+          },
+          "source_row_count": {
+            "minimum": 0.0,
+            "title": "Source Row Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "source_row_count",
+          "parsed_row_count",
+          "eligible_row_count",
+          "excluded_row_count",
+          "eligible_rate_bps",
+          "dependencies",
+          "causes",
+          "exclusion_counts",
+          "runtime"
+        ],
+        "title": "CapabilityDetails",
+        "type": "object"
+      },
+      "CapabilityReason": {
+        "enum": [
+          "CONFIG_DISABLED",
+          "REQUIRED_FIELD_MISSING",
+          "INSUFFICIENT_ELIGIBLE_ROWS",
+          "INSUFFICIENT_POPULATION",
+          "ZONE_MAPPING_BELOW_MINIMUM",
+          "INFERRED_FIELD_USED",
+          "CURRENCY_CONFLICT",
+          "THRESHOLD_CURRENCY_UNCONFIGURED",
+          "PARTIAL_PERIOD_SKIPPED",
+          "SERIAL_UNPARSEABLE",
+          "LOCATION_UNMAPPED",
+          "READY"
+        ],
+        "title": "CapabilityReason",
+        "type": "string"
+      },
+      "CapabilityResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "details": {
+            "$ref": "#/components/schemas/CapabilityDetails"
+          },
+          "detector": {
+            "$ref": "#/components/schemas/DetectorKind"
+          },
+          "detector_version": {
+            "title": "Detector Version",
+            "type": "string"
+          },
+          "finding_count": {
+            "minimum": 0.0,
+            "title": "Finding Count",
+            "type": "integer"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "reason_code": {
+            "title": "Reason Code",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CapabilityStatus"
+          }
+        },
+        "required": [
+          "detector",
+          "detector_version",
+          "status",
+          "reason_code",
+          "reason",
+          "details",
+          "finding_count"
+        ],
+        "title": "CapabilityResponse",
+        "type": "object"
+      },
+      "CapabilityStatus": {
+        "enum": [
+          "enabled",
+          "degraded",
+          "unavailable"
+        ],
+        "title": "CapabilityStatus",
+        "type": "string"
+      },
       "CitationSnapshot": {
         "additionalProperties": false,
         "description": "One verified citation copied from PostgreSQL into a report snapshot.",
@@ -992,6 +1183,31 @@
         "title": "ConstantInferenceRule",
         "type": "object"
       },
+      "CorrelationEvidence": {
+        "discriminator": {
+          "mapping": {
+            "frequency_anomaly": "#/components/schemas/FrequencyAnomalyEvidence",
+            "sequential_invoice": "#/components/schemas/SequentialInvoiceEvidence",
+            "spatiotemporal_tier0": "#/components/schemas/SpatiotemporalTier0Evidence",
+            "split_invoice": "#/components/schemas/SplitInvoiceEvidence"
+          },
+          "propertyName": "detector"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/SplitInvoiceEvidence"
+          },
+          {
+            "$ref": "#/components/schemas/SequentialInvoiceEvidence"
+          },
+          {
+            "$ref": "#/components/schemas/FrequencyAnomalyEvidence"
+          },
+          {
+            "$ref": "#/components/schemas/SpatiotemporalTier0Evidence"
+          }
+        ]
+      },
       "CreatePolicyFamilyRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1140,6 +1356,23 @@
         "title": "CurrentUser",
         "type": "object"
       },
+      "DependencyAvailability": {
+        "additionalProperties": false,
+        "properties": {
+          "field_name": {
+            "$ref": "#/components/schemas/UnifiedField"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AvailabilityStatus"
+          }
+        },
+        "required": [
+          "field_name",
+          "status"
+        ],
+        "title": "DependencyAvailability",
+        "type": "object"
+      },
       "DependencyHealth": {
         "description": "单个依赖的健康状况。",
         "properties": {
@@ -1177,6 +1410,325 @@
         ],
         "title": "DependencyStatus",
         "type": "string"
+      },
+      "DetectionConfigCreateRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "change_reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Change Reason",
+            "type": "string"
+          },
+          "definition": {
+            "$ref": "#/components/schemas/DetectionProfileDefinition"
+          },
+          "expected_current_version": {
+            "minimum": 0.0,
+            "title": "Expected Current Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_current_version",
+          "definition",
+          "change_reason"
+        ],
+        "title": "DetectionConfigCreateRequest",
+        "type": "object"
+      },
+      "DetectionConfigHistoryResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "current": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DetectionConfigResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/DetectionConfigResponse"
+            },
+            "title": "History",
+            "type": "array"
+          },
+          "limit": {
+            "maximum": 200.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "minimum": 0.0,
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "minimum": 0.0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "current",
+          "history",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "DetectionConfigHistoryResponse",
+        "type": "object"
+      },
+      "DetectionConfigResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "algorithm_bundle_version": {
+            "title": "Algorithm Bundle Version",
+            "type": "string"
+          },
+          "change_reason": {
+            "title": "Change Reason",
+            "type": "string"
+          },
+          "config_fingerprint": {
+            "title": "Config Fingerprint",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "format": "uuid",
+            "title": "Created By",
+            "type": "string"
+          },
+          "definition": {
+            "$ref": "#/components/schemas/DetectionProfileDefinition"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "reused_existing": {
+            "title": "Reused Existing",
+            "type": "boolean"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "definition",
+          "config_fingerprint",
+          "algorithm_bundle_version",
+          "created_by",
+          "created_at",
+          "change_reason",
+          "reused_existing"
+        ],
+        "title": "DetectionConfigResponse",
+        "type": "object"
+      },
+      "DetectionProfileDefinition": {
+        "additionalProperties": false,
+        "properties": {
+          "algorithm_bundle_version": {
+            "const": "correlation-v1",
+            "default": "correlation-v1",
+            "title": "Algorithm Bundle Version",
+            "type": "string"
+          },
+          "detectors": {
+            "items": {
+              "$ref": "#/components/schemas/DetectorDefinition"
+            },
+            "maxItems": 4,
+            "minItems": 4,
+            "title": "Detectors",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "detectors"
+        ],
+        "title": "DetectionProfileDefinition",
+        "type": "object"
+      },
+      "DetectionRunResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "algorithm_bundle_version": {
+            "title": "Algorithm Bundle Version",
+            "type": "string"
+          },
+          "completed_at": {
+            "format": "date-time",
+            "title": "Completed At",
+            "type": "string"
+          },
+          "config_fingerprint": {
+            "title": "Config Fingerprint",
+            "type": "string"
+          },
+          "config_version": {
+            "title": "Config Version",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "format": "uuid",
+            "title": "Created By",
+            "type": "string"
+          },
+          "detection_config_id": {
+            "format": "uuid",
+            "title": "Detection Config Id",
+            "type": "string"
+          },
+          "error_row_count": {
+            "minimum": 0.0,
+            "title": "Error Row Count",
+            "type": "integer"
+          },
+          "file_version_id": {
+            "format": "uuid",
+            "title": "File Version Id",
+            "type": "string"
+          },
+          "finding_count": {
+            "minimum": 0.0,
+            "title": "Finding Count",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "input_fingerprint": {
+            "title": "Input Fingerprint",
+            "type": "string"
+          },
+          "parsed_row_count": {
+            "minimum": 0.0,
+            "title": "Parsed Row Count",
+            "type": "integer"
+          },
+          "reused_existing": {
+            "title": "Reused Existing",
+            "type": "boolean"
+          },
+          "run_fingerprint": {
+            "title": "Run Fingerprint",
+            "type": "string"
+          },
+          "source_row_count": {
+            "minimum": 0.0,
+            "title": "Source Row Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "file_version_id",
+          "detection_config_id",
+          "config_version",
+          "config_fingerprint",
+          "algorithm_bundle_version",
+          "input_fingerprint",
+          "run_fingerprint",
+          "source_row_count",
+          "parsed_row_count",
+          "error_row_count",
+          "finding_count",
+          "created_by",
+          "created_at",
+          "completed_at",
+          "reused_existing"
+        ],
+        "title": "DetectionRunResponse",
+        "type": "object"
+      },
+      "DetectorDefinition": {
+        "discriminator": {
+          "mapping": {
+            "frequency_anomaly": "#/components/schemas/FrequencyAnomalyDefinition",
+            "sequential_invoice": "#/components/schemas/SequentialInvoiceDefinition",
+            "spatiotemporal_tier0": "#/components/schemas/SpatiotemporalTier0Definition",
+            "split_invoice": "#/components/schemas/SplitInvoiceDefinition"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/SplitInvoiceDefinition"
+          },
+          {
+            "$ref": "#/components/schemas/SequentialInvoiceDefinition"
+          },
+          {
+            "$ref": "#/components/schemas/FrequencyAnomalyDefinition"
+          },
+          {
+            "$ref": "#/components/schemas/SpatiotemporalTier0Definition"
+          }
+        ]
+      },
+      "DetectorKind": {
+        "enum": [
+          "split_invoice",
+          "sequential_invoice",
+          "frequency_anomaly",
+          "spatiotemporal_tier0"
+        ],
+        "title": "DetectorKind",
+        "type": "string"
+      },
+      "DetectorRuntimeFacts": {
+        "discriminator": {
+          "mapping": {
+            "frequency_anomaly": "#/components/schemas/FrequencyRuntimeFacts",
+            "sequential_invoice": "#/components/schemas/SequentialRuntimeFacts",
+            "spatiotemporal_tier0": "#/components/schemas/SpatiotemporalRuntimeFacts",
+            "split_invoice": "#/components/schemas/SplitRuntimeFacts"
+          },
+          "propertyName": "detector"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/SplitRuntimeFacts"
+          },
+          {
+            "$ref": "#/components/schemas/SequentialRuntimeFacts"
+          },
+          {
+            "$ref": "#/components/schemas/FrequencyRuntimeFacts"
+          },
+          {
+            "$ref": "#/components/schemas/SpatiotemporalRuntimeFacts"
+          }
+        ]
       },
       "DirectAvailabilityEvidence": {
         "additionalProperties": false,
@@ -1250,6 +1802,40 @@
         ],
         "title": "ErrorResponse",
         "type": "object"
+      },
+      "ExclusionCount": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "exclusiveMinimum": 0.0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "reason_code": {
+            "$ref": "#/components/schemas/ExclusionReason"
+          }
+        },
+        "required": [
+          "reason_code",
+          "count"
+        ],
+        "title": "ExclusionCount",
+        "type": "object"
+      },
+      "ExclusionReason": {
+        "enum": [
+          "AMOUNT_BELOW_INDIVIDUAL_FLOOR",
+          "AMOUNT_NOT_BELOW_THRESHOLD",
+          "AMOUNT_NOT_POSITIVE",
+          "CURRENCY_CONFLICT",
+          "LOCATION_UNMAPPED",
+          "PARSE_ERROR",
+          "REQUIRED_VALUE_MISSING",
+          "SERIAL_UNPARSEABLE",
+          "THRESHOLD_CURRENCY_UNCONFIGURED"
+        ],
+        "title": "ExclusionReason",
+        "type": "string"
       },
       "ExemptionCondition": {
         "additionalProperties": false,
@@ -1496,6 +2082,76 @@
         "title": "FindingDecisionRequest",
         "type": "object"
       },
+      "FindingDetailResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "completed": {
+            "minimum": 0.0,
+            "title": "Completed",
+            "type": "integer"
+          },
+          "detector": {
+            "$ref": "#/components/schemas/DetectorKind"
+          },
+          "detector_version": {
+            "title": "Detector Version",
+            "type": "string"
+          },
+          "evidence": {
+            "$ref": "#/components/schemas/CorrelationEvidence"
+          },
+          "file_version_id": {
+            "format": "uuid",
+            "title": "File Version Id",
+            "type": "string"
+          },
+          "finding_key": {
+            "title": "Finding Key",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "reasoning": {
+            "title": "Reasoning",
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/ParticipatingRowResponse"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "run_id": {
+            "format": "uuid",
+            "title": "Run Id",
+            "type": "string"
+          },
+          "total": {
+            "minimum": 0.0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "run_id",
+          "file_version_id",
+          "detector",
+          "detector_version",
+          "finding_key",
+          "evidence",
+          "reasoning",
+          "rows",
+          "completed",
+          "total"
+        ],
+        "title": "FindingDetailResponse",
+        "type": "object"
+      },
       "FindingItemResponse": {
         "properties": {
           "evidence": {
@@ -1555,6 +2211,42 @@
           "verdict"
         ],
         "title": "FindingItemResponse",
+        "type": "object"
+      },
+      "FindingPageResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/FindingSummaryResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "maximum": 200.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "minimum": 0.0,
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "minimum": 0.0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "FindingPageResponse",
         "type": "object"
       },
       "FindingReviewDetail": {
@@ -1811,6 +2503,58 @@
         "title": "FindingReviewResult",
         "type": "object"
       },
+      "FindingSummaryResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "detector": {
+            "$ref": "#/components/schemas/DetectorKind"
+          },
+          "detector_version": {
+            "title": "Detector Version",
+            "type": "string"
+          },
+          "finding_key": {
+            "title": "Finding Key",
+            "type": "string"
+          },
+          "first_row_no": {
+            "minimum": 1.0,
+            "title": "First Row No",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "participating_row_count": {
+            "minimum": 2.0,
+            "title": "Participating Row Count",
+            "type": "integer"
+          },
+          "reasoning": {
+            "title": "Reasoning",
+            "type": "string"
+          },
+          "run_id": {
+            "format": "uuid",
+            "title": "Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "run_id",
+          "detector",
+          "detector_version",
+          "finding_key",
+          "reasoning",
+          "participating_row_count",
+          "first_row_no"
+        ],
+        "title": "FindingSummaryResponse",
+        "type": "object"
+      },
       "FindingsResponse": {
         "properties": {
           "file_version_id": {
@@ -1846,6 +2590,202 @@
           "items"
         ],
         "title": "FindingsResponse",
+        "type": "object"
+      },
+      "FrequencyAnomalyDefinition": {
+        "additionalProperties": false,
+        "properties": {
+          "absolute_min_count": {
+            "maximum": 5000.0,
+            "minimum": 2.0,
+            "title": "Absolute Min Count",
+            "type": "integer"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "mad_floor": {
+            "title": "Mad Floor",
+            "type": "string"
+          },
+          "mad_multiplier": {
+            "title": "Mad Multiplier",
+            "type": "string"
+          },
+          "min_eligible_rate_bps": {
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Min Eligible Rate Bps",
+            "type": "integer"
+          },
+          "min_eligible_rows": {
+            "maximum": 5000.0,
+            "minimum": 2.0,
+            "title": "Min Eligible Rows",
+            "type": "integer"
+          },
+          "min_population": {
+            "maximum": 5000.0,
+            "minimum": 3.0,
+            "title": "Min Population",
+            "type": "integer"
+          },
+          "period": {
+            "enum": [
+              "calendar_week_monday",
+              "calendar_month"
+            ],
+            "title": "Period",
+            "type": "string"
+          },
+          "type": {
+            "const": "frequency_anomaly",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "enabled",
+          "min_eligible_rows",
+          "min_eligible_rate_bps",
+          "type",
+          "period",
+          "min_population",
+          "absolute_min_count",
+          "mad_multiplier",
+          "mad_floor"
+        ],
+        "title": "FrequencyAnomalyDefinition",
+        "type": "object"
+      },
+      "FrequencyAnomalyEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "detector": {
+            "const": "frequency_anomaly",
+            "title": "Detector",
+            "type": "string"
+          },
+          "detector_version": {
+            "title": "Detector Version",
+            "type": "string"
+          },
+          "facts": {
+            "$ref": "#/components/schemas/FrequencyAnomalyFacts"
+          },
+          "group_key_fingerprint": {
+            "title": "Group Key Fingerprint",
+            "type": "string"
+          },
+          "profile_fingerprint": {
+            "title": "Profile Fingerprint",
+            "type": "string"
+          },
+          "reason_code": {
+            "const": "STATISTICAL_CANDIDATE",
+            "default": "STATISTICAL_CANDIDATE",
+            "title": "Reason Code",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "detector",
+          "detector_version",
+          "profile_fingerprint",
+          "group_key_fingerprint",
+          "facts"
+        ],
+        "title": "FrequencyAnomalyEvidence",
+        "type": "object"
+      },
+      "FrequencyAnomalyFacts": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "minimum": 2.0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "effective_denominator": {
+            "$ref": "#/components/schemas/RationalValue"
+          },
+          "mad": {
+            "$ref": "#/components/schemas/RationalValue"
+          },
+          "median": {
+            "$ref": "#/components/schemas/RationalValue"
+          },
+          "multiplier": {
+            "$ref": "#/components/schemas/RationalValue"
+          },
+          "observed_ratio": {
+            "$ref": "#/components/schemas/RationalValue"
+          },
+          "period_key": {
+            "title": "Period Key",
+            "type": "string"
+          },
+          "population": {
+            "minimum": 3.0,
+            "title": "Population",
+            "type": "integer"
+          },
+          "positive_delta": {
+            "$ref": "#/components/schemas/RationalValue"
+          }
+        },
+        "required": [
+          "period_key",
+          "population",
+          "count",
+          "median",
+          "mad",
+          "effective_denominator",
+          "multiplier",
+          "positive_delta",
+          "observed_ratio"
+        ],
+        "title": "FrequencyAnomalyFacts",
+        "type": "object"
+      },
+      "FrequencyRuntimeFacts": {
+        "additionalProperties": false,
+        "properties": {
+          "detector": {
+            "const": "frequency_anomaly",
+            "title": "Detector",
+            "type": "string"
+          },
+          "eligible_period_count": {
+            "minimum": 0.0,
+            "title": "Eligible Period Count",
+            "type": "integer"
+          },
+          "period_count": {
+            "minimum": 0.0,
+            "title": "Period Count",
+            "type": "integer"
+          },
+          "skipped_period_count": {
+            "minimum": 0.0,
+            "title": "Skipped Period Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "detector",
+          "period_count",
+          "eligible_period_count",
+          "skipped_period_count"
+        ],
+        "title": "FrequencyRuntimeFacts",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -2811,6 +3751,163 @@
         "title": "MappingVersionResponse",
         "type": "object"
       },
+      "NormalizedExpenseRecord": {
+        "additionalProperties": false,
+        "description": "写入 ``expense_row.normalized_json`` 的唯一 schema。",
+        "properties": {
+          "amount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Z]{3}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "employee": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee"
+          },
+          "expense_date": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "title": "Expense Date",
+            "type": "string"
+          },
+          "expense_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expense Type"
+          },
+          "field_provenance": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FieldProvenance"
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/UnifiedField"
+            },
+            "title": "Field Provenance",
+            "type": "object"
+          },
+          "invoice_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice No"
+          },
+          "invoice_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Title"
+          },
+          "invoice_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Type"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "mapping_version_id": {
+            "format": "uuid",
+            "title": "Mapping Version Id",
+            "type": "string"
+          },
+          "merchant": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Merchant"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "submission_date": {
+            "anyOf": [
+              {
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submission Date"
+          }
+        },
+        "required": [
+          "mapping_version_id",
+          "amount",
+          "expense_date",
+          "field_provenance"
+        ],
+        "title": "NormalizedExpenseRecord",
+        "type": "object"
+      },
       "ParseBatchRequest": {
         "additionalProperties": false,
         "description": "触发解析所需的不可变映射版本。",
@@ -3039,6 +4136,56 @@
           "items"
         ],
         "title": "ParseErrorsResponse",
+        "type": "object"
+      },
+      "ParticipatingRowResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "normalized": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NormalizedExpenseRecord"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ordinal": {
+            "minimum": 1.0,
+            "title": "Ordinal",
+            "type": "integer"
+          },
+          "parse_error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parse Error Code"
+          },
+          "raw": {
+            "additionalProperties": true,
+            "title": "Raw",
+            "type": "object"
+          },
+          "row_no": {
+            "minimum": 1.0,
+            "title": "Row No",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ordinal",
+          "row_no",
+          "raw",
+          "normalized",
+          "parse_error_code"
+        ],
+        "title": "ParticipatingRowResponse",
         "type": "object"
       },
       "PolicyClauseView": {
@@ -3466,6 +4613,26 @@
           "reused_existing"
         ],
         "title": "PublishPolicyResponse",
+        "type": "object"
+      },
+      "RationalValue": {
+        "additionalProperties": false,
+        "properties": {
+          "denominator": {
+            "exclusiveMinimum": 0.0,
+            "title": "Denominator",
+            "type": "integer"
+          },
+          "numerator": {
+            "title": "Numerator",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "numerator",
+          "denominator"
+        ],
+        "title": "RationalValue",
         "type": "object"
       },
       "ReadinessResponse": {
@@ -5229,6 +6396,203 @@
         "title": "SchemaMappingsResponse",
         "type": "object"
       },
+      "SequentialInvoiceDefinition": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "min_eligible_rate_bps": {
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Min Eligible Rate Bps",
+            "type": "integer"
+          },
+          "min_eligible_rows": {
+            "maximum": 5000.0,
+            "minimum": 2.0,
+            "title": "Min Eligible Rows",
+            "type": "integer"
+          },
+          "min_sequence_length": {
+            "maximum": 50.0,
+            "minimum": 2.0,
+            "title": "Min Sequence Length",
+            "type": "integer"
+          },
+          "numeric_suffix_max_digits": {
+            "maximum": 32.0,
+            "minimum": 1.0,
+            "title": "Numeric Suffix Max Digits",
+            "type": "integer"
+          },
+          "numeric_suffix_min_digits": {
+            "maximum": 32.0,
+            "minimum": 1.0,
+            "title": "Numeric Suffix Min Digits",
+            "type": "integer"
+          },
+          "partition_fields": {
+            "items": {
+              "$ref": "#/components/schemas/SequentialPartitionField"
+            },
+            "title": "Partition Fields",
+            "type": "array"
+          },
+          "type": {
+            "const": "sequential_invoice",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "enabled",
+          "min_eligible_rows",
+          "min_eligible_rate_bps",
+          "type",
+          "min_sequence_length",
+          "numeric_suffix_min_digits",
+          "numeric_suffix_max_digits",
+          "partition_fields"
+        ],
+        "title": "SequentialInvoiceDefinition",
+        "type": "object"
+      },
+      "SequentialInvoiceEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "detector": {
+            "const": "sequential_invoice",
+            "title": "Detector",
+            "type": "string"
+          },
+          "detector_version": {
+            "title": "Detector Version",
+            "type": "string"
+          },
+          "facts": {
+            "$ref": "#/components/schemas/SequentialInvoiceFacts"
+          },
+          "group_key_fingerprint": {
+            "title": "Group Key Fingerprint",
+            "type": "string"
+          },
+          "profile_fingerprint": {
+            "title": "Profile Fingerprint",
+            "type": "string"
+          },
+          "reason_code": {
+            "const": "STATISTICAL_CANDIDATE",
+            "default": "STATISTICAL_CANDIDATE",
+            "title": "Reason Code",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "detector",
+          "detector_version",
+          "profile_fingerprint",
+          "group_key_fingerprint",
+          "facts"
+        ],
+        "title": "SequentialInvoiceEvidence",
+        "type": "object"
+      },
+      "SequentialInvoiceFacts": {
+        "additionalProperties": false,
+        "properties": {
+          "end_serial": {
+            "title": "End Serial",
+            "type": "string"
+          },
+          "ordered_row_nos": {
+            "items": {
+              "type": "integer"
+            },
+            "minItems": 2,
+            "title": "Ordered Row Nos",
+            "type": "array"
+          },
+          "prefix_fingerprint": {
+            "title": "Prefix Fingerprint",
+            "type": "string"
+          },
+          "sequence_length": {
+            "minimum": 2.0,
+            "title": "Sequence Length",
+            "type": "integer"
+          },
+          "start_serial": {
+            "title": "Start Serial",
+            "type": "string"
+          },
+          "suffix_width": {
+            "maximum": 32.0,
+            "minimum": 1.0,
+            "title": "Suffix Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "prefix_fingerprint",
+          "suffix_width",
+          "start_serial",
+          "end_serial",
+          "sequence_length",
+          "ordered_row_nos"
+        ],
+        "title": "SequentialInvoiceFacts",
+        "type": "object"
+      },
+      "SequentialPartitionField": {
+        "enum": [
+          "employee",
+          "merchant",
+          "invoice_type"
+        ],
+        "title": "SequentialPartitionField",
+        "type": "string"
+      },
+      "SequentialRuntimeFacts": {
+        "additionalProperties": false,
+        "properties": {
+          "detector": {
+            "const": "sequential_invoice",
+            "title": "Detector",
+            "type": "string"
+          },
+          "duplicate_serial_row_count": {
+            "minimum": 0.0,
+            "title": "Duplicate Serial Row Count",
+            "type": "integer"
+          },
+          "serial_parse_count": {
+            "minimum": 0.0,
+            "title": "Serial Parse Count",
+            "type": "integer"
+          },
+          "serial_unparseable_count": {
+            "minimum": 0.0,
+            "title": "Serial Unparseable Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "detector",
+          "serial_parse_count",
+          "serial_unparseable_count",
+          "duplicate_serial_row_count"
+        ],
+        "title": "SequentialRuntimeFacts",
+        "type": "object"
+      },
       "SortDirection": {
         "enum": [
           "asc",
@@ -5236,6 +6600,449 @@
         ],
         "title": "SortDirection",
         "type": "string"
+      },
+      "SpatiotemporalRuntimeFacts": {
+        "additionalProperties": false,
+        "properties": {
+          "detector": {
+            "const": "spatiotemporal_tier0",
+            "title": "Detector",
+            "type": "string"
+          },
+          "location_value_count": {
+            "minimum": 0.0,
+            "title": "Location Value Count",
+            "type": "integer"
+          },
+          "zone_mapped_row_count": {
+            "minimum": 0.0,
+            "title": "Zone Mapped Row Count",
+            "type": "integer"
+          },
+          "zone_mapping_rate_bps": {
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Zone Mapping Rate Bps",
+            "type": "integer"
+          },
+          "zone_unmapped_row_count": {
+            "minimum": 0.0,
+            "title": "Zone Unmapped Row Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "detector",
+          "location_value_count",
+          "zone_mapped_row_count",
+          "zone_unmapped_row_count",
+          "zone_mapping_rate_bps"
+        ],
+        "title": "SpatiotemporalRuntimeFacts",
+        "type": "object"
+      },
+      "SpatiotemporalTier0Definition": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "incompatible_zone_pairs": {
+            "items": {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "type": "array"
+            },
+            "maxItems": 10000,
+            "title": "Incompatible Zone Pairs",
+            "type": "array"
+          },
+          "location_aliases": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "maxProperties": 5000,
+            "title": "Location Aliases",
+            "type": "object"
+          },
+          "min_eligible_rate_bps": {
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Min Eligible Rate Bps",
+            "type": "integer"
+          },
+          "min_eligible_rows": {
+            "maximum": 5000.0,
+            "minimum": 2.0,
+            "title": "Min Eligible Rows",
+            "type": "integer"
+          },
+          "min_zone_mapping_rate_bps": {
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Min Zone Mapping Rate Bps",
+            "type": "integer"
+          },
+          "type": {
+            "const": "spatiotemporal_tier0",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "enabled",
+          "min_eligible_rows",
+          "min_eligible_rate_bps",
+          "type",
+          "location_aliases",
+          "incompatible_zone_pairs",
+          "min_zone_mapping_rate_bps"
+        ],
+        "title": "SpatiotemporalTier0Definition",
+        "type": "object"
+      },
+      "SpatiotemporalTier0Evidence": {
+        "additionalProperties": false,
+        "properties": {
+          "detector": {
+            "const": "spatiotemporal_tier0",
+            "title": "Detector",
+            "type": "string"
+          },
+          "detector_version": {
+            "title": "Detector Version",
+            "type": "string"
+          },
+          "facts": {
+            "$ref": "#/components/schemas/SpatiotemporalTier0Facts"
+          },
+          "group_key_fingerprint": {
+            "title": "Group Key Fingerprint",
+            "type": "string"
+          },
+          "profile_fingerprint": {
+            "title": "Profile Fingerprint",
+            "type": "string"
+          },
+          "reason_code": {
+            "const": "STATISTICAL_CANDIDATE",
+            "default": "STATISTICAL_CANDIDATE",
+            "title": "Reason Code",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "detector",
+          "detector_version",
+          "profile_fingerprint",
+          "group_key_fingerprint",
+          "facts"
+        ],
+        "title": "SpatiotemporalTier0Evidence",
+        "type": "object"
+      },
+      "SpatiotemporalTier0Facts": {
+        "additionalProperties": false,
+        "properties": {
+          "expense_date": {
+            "title": "Expense Date",
+            "type": "string"
+          },
+          "incompatible_zone_pairs": {
+            "items": {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "type": "array"
+            },
+            "minItems": 1,
+            "title": "Incompatible Zone Pairs",
+            "type": "array"
+          },
+          "zone_row_counts": {
+            "items": {
+              "$ref": "#/components/schemas/ZoneRowCount"
+            },
+            "minItems": 2,
+            "title": "Zone Row Counts",
+            "type": "array"
+          }
+        },
+        "required": [
+          "expense_date",
+          "incompatible_zone_pairs",
+          "zone_row_counts"
+        ],
+        "title": "SpatiotemporalTier0Facts",
+        "type": "object"
+      },
+      "SplitInvoiceDefinition": {
+        "additionalProperties": false,
+        "properties": {
+          "aggregate_operator": {
+            "enum": [
+              "gt",
+              "gte"
+            ],
+            "title": "Aggregate Operator",
+            "type": "string"
+          },
+          "approval_thresholds": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "maxProperties": 500,
+            "minProperties": 1,
+            "title": "Approval Thresholds",
+            "type": "object"
+          },
+          "currency_mode": {
+            "enum": [
+              "field",
+              "fixed"
+            ],
+            "title": "Currency Mode",
+            "type": "string"
+          },
+          "date_window_days": {
+            "maximum": 31.0,
+            "minimum": 0.0,
+            "title": "Date Window Days",
+            "type": "integer"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "fixed_currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fixed Currency"
+          },
+          "individual_floor_bps": {
+            "maximum": 9999.0,
+            "minimum": 1.0,
+            "title": "Individual Floor Bps",
+            "type": "integer"
+          },
+          "merchant_aliases": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "maxProperties": 5000,
+            "title": "Merchant Aliases",
+            "type": "object"
+          },
+          "min_eligible_rate_bps": {
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Min Eligible Rate Bps",
+            "type": "integer"
+          },
+          "min_eligible_rows": {
+            "maximum": 5000.0,
+            "minimum": 2.0,
+            "title": "Min Eligible Rows",
+            "type": "integer"
+          },
+          "min_rows": {
+            "maximum": 50.0,
+            "minimum": 2.0,
+            "title": "Min Rows",
+            "type": "integer"
+          },
+          "type": {
+            "const": "split_invoice",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "enabled",
+          "min_eligible_rows",
+          "min_eligible_rate_bps",
+          "type",
+          "approval_thresholds",
+          "currency_mode",
+          "fixed_currency",
+          "aggregate_operator",
+          "individual_floor_bps",
+          "date_window_days",
+          "min_rows",
+          "merchant_aliases"
+        ],
+        "title": "SplitInvoiceDefinition",
+        "type": "object"
+      },
+      "SplitInvoiceEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "detector": {
+            "const": "split_invoice",
+            "title": "Detector",
+            "type": "string"
+          },
+          "detector_version": {
+            "title": "Detector Version",
+            "type": "string"
+          },
+          "facts": {
+            "$ref": "#/components/schemas/SplitInvoiceFacts"
+          },
+          "group_key_fingerprint": {
+            "title": "Group Key Fingerprint",
+            "type": "string"
+          },
+          "profile_fingerprint": {
+            "title": "Profile Fingerprint",
+            "type": "string"
+          },
+          "reason_code": {
+            "const": "STATISTICAL_CANDIDATE",
+            "default": "STATISTICAL_CANDIDATE",
+            "title": "Reason Code",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "detector",
+          "detector_version",
+          "profile_fingerprint",
+          "group_key_fingerprint",
+          "facts"
+        ],
+        "title": "SplitInvoiceEvidence",
+        "type": "object"
+      },
+      "SplitInvoiceFacts": {
+        "additionalProperties": false,
+        "properties": {
+          "aggregate_operator": {
+            "enum": [
+              "gt",
+              "gte"
+            ],
+            "title": "Aggregate Operator",
+            "type": "string"
+          },
+          "amounts": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 2,
+            "title": "Amounts",
+            "type": "array"
+          },
+          "approval_threshold": {
+            "title": "Approval Threshold",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "date_end": {
+            "title": "Date End",
+            "type": "string"
+          },
+          "date_start": {
+            "title": "Date Start",
+            "type": "string"
+          },
+          "individual_floor_bps": {
+            "title": "Individual Floor Bps",
+            "type": "integer"
+          },
+          "row_count": {
+            "minimum": 2.0,
+            "title": "Row Count",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "string"
+          }
+        },
+        "required": [
+          "currency",
+          "approval_threshold",
+          "individual_floor_bps",
+          "aggregate_operator",
+          "date_start",
+          "date_end",
+          "row_count",
+          "amounts",
+          "total"
+        ],
+        "title": "SplitInvoiceFacts",
+        "type": "object"
+      },
+      "SplitRuntimeFacts": {
+        "additionalProperties": false,
+        "properties": {
+          "currency_conflict_row_count": {
+            "minimum": 0.0,
+            "title": "Currency Conflict Row Count",
+            "type": "integer"
+          },
+          "detector": {
+            "const": "split_invoice",
+            "title": "Detector",
+            "type": "string"
+          },
+          "threshold_currency_count": {
+            "minimum": 0.0,
+            "title": "Threshold Currency Count",
+            "type": "integer"
+          },
+          "unconfigured_currency_row_count": {
+            "minimum": 0.0,
+            "title": "Unconfigured Currency Row Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "detector",
+          "threshold_currency_count",
+          "unconfigured_currency_row_count",
+          "currency_conflict_row_count"
+        ],
+        "title": "SplitRuntimeFacts",
+        "type": "object"
       },
       "TimelinessEvidence": {
         "additionalProperties": false,
@@ -5577,6 +7384,26 @@
         ],
         "title": "ValidationSummaryResponse",
         "type": "object"
+      },
+      "ZoneRowCount": {
+        "additionalProperties": false,
+        "properties": {
+          "row_count": {
+            "exclusiveMinimum": 0.0,
+            "title": "Row Count",
+            "type": "integer"
+          },
+          "zone_id": {
+            "title": "Zone Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "zone_id",
+          "row_count"
+        ],
+        "title": "ZoneRowCount",
+        "type": "object"
       }
     }
   },
@@ -5891,6 +7718,245 @@
         "summary": "Detail",
         "tags": [
           "batches"
+        ]
+      }
+    },
+    "/api/batches/{file_version_id}/detect": {
+      "post": {
+        "operationId": "detection_run_batch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_version_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "File Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 8,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DetectionRunResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DetectionRunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Run Batch",
+        "tags": [
+          "detection"
+        ]
+      }
+    },
+    "/api/batches/{file_version_id}/detection": {
+      "get": {
+        "operationId": "detection_get_batch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_version_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "File Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchDetectionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get Batch",
+        "tags": [
+          "detection"
         ]
       }
     },
@@ -6918,6 +8984,672 @@
         "summary": "Validation",
         "tags": [
           "batches"
+        ]
+      }
+    },
+    "/api/correlation-findings/{finding_id}": {
+      "get": {
+        "operationId": "detection_get_finding",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "finding_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Finding Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "row_limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Row Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "row_offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Row Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FindingDetailResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get Finding",
+        "tags": [
+          "detection"
+        ]
+      }
+    },
+    "/api/detection-runs/{run_id}": {
+      "get": {
+        "operationId": "detection_get_run",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DetectionRunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get Run",
+        "tags": [
+          "detection"
+        ]
+      }
+    },
+    "/api/detection-runs/{run_id}/findings": {
+      "get": {
+        "operationId": "detection_list_findings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "detector",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/DetectorKind"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Detector"
+            }
+          },
+          {
+            "in": "query",
+            "name": "capability_status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/CapabilityStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Capability Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort_by",
+            "required": false,
+            "schema": {
+              "const": "default",
+              "default": "default",
+              "title": "Sort By",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FindingPageResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List Findings",
+        "tags": [
+          "detection"
+        ]
+      }
+    },
+    "/api/detection/configs": {
+      "get": {
+        "operationId": "detection_list_configs",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DetectionConfigHistoryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List Configs",
+        "tags": [
+          "detection"
+        ]
+      },
+      "put": {
+        "operationId": "detection_put_config",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 8,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DetectionConfigCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DetectionConfigResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DetectionConfigResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Put Config",
+        "tags": [
+          "detection"
         ]
       }
     },

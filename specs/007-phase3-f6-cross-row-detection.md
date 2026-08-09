@@ -1,9 +1,9 @@
 # Spec 007 — Phase 3 F6 跨行关联检测（统计层）
 
-**状态：** CP-F6.0 规格固化完成 ✅
-**日期：** 2026-07-29
+**状态：** CP-F6.4 API、契约与桌面工作流完成 ✅
+**日期：** 2026-08-01
 **前置检查点：** F5 / CP-F5.5 已完成
-**下一实施检查点：** CP-F6.1 持久化 schema 与 ORM
+**实施状态：** CP-F6.0–CP-F6.5 已全部完成；F7/F8 不属于本规格范围且尚未开始
 
 ---
 
@@ -120,6 +120,12 @@ DetectionProfileDefinition
   detectors = exactly one of each detector kind, fixed enum order
 ```
 
+机械编码进一步固定为 `json.dumps(..., ensure_ascii=False, sort_keys=True,
+separators=(",", ":"), allow_nan=False)` 的 UTF-8 字节；config fingerprint 为这些
+canonical UTF-8 字节的直接 SHA-256 小写十六进制，不增加 domain prefix。canonical
+encoder 对 `float`、非有限 Decimal/Fraction、未知对象和非字符串 mapping key 一律
+fail closed，不能依赖 `default=str` 猜测序列化语义。
+
 每个 detector 共有：
 
 - `type`：四种固定 discriminator 之一；
@@ -212,6 +218,20 @@ min_zone_mapping_rate_bps: 1..10000
 
 优先级固定为 `unavailable > degraded > enabled`；reason code 取固定优先级中的第一项，全部成因仍以排序数组写入 details。不能因为零 finding 把 enabled 改成 unavailable，也不能因为找到 finding 把 degraded 升级为 enabled。
 
+同一状态内的 primary reason 优先级固定如下；未列出的系统异常不得进入 capability：
+
+1. unavailable：`CONFIG_DISABLED` → `REQUIRED_FIELD_MISSING` →
+   `INSUFFICIENT_ELIGIBLE_ROWS` → `INSUFFICIENT_POPULATION` →
+   `ZONE_MAPPING_BELOW_MINIMUM`；
+2. degraded：`INFERRED_FIELD_USED` → `CURRENCY_CONFLICT` →
+   `THRESHOLD_CURRENCY_UNCONFIGURED` → `PARTIAL_PERIOD_SKIPPED` →
+   `SERIAL_UNPARSEABLE` → `LOCATION_UNMAPPED`；
+3. enabled：`READY`。
+
+`details.causes` 必须按上述全局优先级去重排序；exclusion counts 另按 reason code
+字典序保存。稳定中文 reason snapshot 只由 primary reason code 的代码常量映射生成，
+不得拼接字段值、alias 或异常文本。
+
 ### 5.2 declaration 内容
 
 每条 declaration 至少冻结：
@@ -223,6 +243,14 @@ min_zone_mapping_rate_bps: 1..10000
 - 按稳定 reason code 排序的 exclusion counts；
 - detector-specific runtime counts（period population、zone mapping、serial parse、duplicate serial 等）；
 - finding count。
+
+纯核心返回的 declaration draft 不携带 run/file/profile UUID；CP-F6.3 只负责补齐
+这些持久化身份。typed details 公共字段固定为 `source_row_count`、
+`parsed_row_count`、`eligible_row_count`、`excluded_row_count`、
+`eligible_rate_bps`、按固定顺序的 dependency status、`causes`、
+`exclusion_counts` 与 detector-specific runtime facts；四个 detector 的 runtime facts
+分别保存 threshold coverage、serial parse/duplicate、period population/skip、zone mapping
+计数，不得保存原始或规范化字段值。
 
 details 禁止 raw/normalized row、员工/商户/发票/地点原文、alias 原文、配置 change reason 或 Idempotency-Key。字段值证据只在 finding/detail 授权路径中读取。
 
@@ -573,7 +601,7 @@ payload 只含 tenant 内对象 ID、detector enum、版本、status/reason code
 
 **退出条件：** 无 P1 实施语义未决项；算法可机械复算且复杂度有界；旧 skeleton 覆盖决定明确；`git diff --check` 与文档审查通过。
 
-### 14.2 CP-F6.1 · 持久化 schema 与 ORM
+### 14.2 CP-F6.1 · 持久化 schema 与 ORM ✅
 
 **目标：** 用新增 `0008_f6_cross_row_detection.py` 落地 §8。
 
@@ -585,7 +613,7 @@ payload 只含 tenant 内对象 ID、detector enum、版本、status/reason code
 
 **退出条件：** 私有备份与校验完成，迁移/ORM/Ruff/mypy 通过，CP-F6.2 无需再决定字段或约束。
 
-### 14.3 CP-F6.2 · 强类型 profile、能力与纯 detector 核心
+### 14.3 CP-F6.2 · 强类型 profile、能力与纯 detector 核心 ✅
 
 **目标：** 实现 §4–§7 的纯确定性领域层。
 
@@ -597,7 +625,7 @@ payload 只含 tenant 内对象 ID、detector enum、版本、status/reason code
 
 **退出条件：** 固定输入产生固定字节级 canonical 结果；无 float/hash/random/regex/subset-sum；Ruff/format/strict mypy 通过。
 
-### 14.4 CP-F6.3 · Run 编排、查询、幂等与恢复
+### 14.4 CP-F6.3 · Run 编排、查询、幂等与恢复 ✅
 
 **目标：** 将 CP-F6.1 持久化与 CP-F6.2 纯核心组合为原子、可重放服务。
 
@@ -609,7 +637,7 @@ payload 只含 tenant 内对象 ID、detector enum、版本、status/reason code
 
 **退出条件：** 所有 F6 side effect 最多一次，失败全回滚，既有机器/人工快照零改写，服务可直接被 CP-F6.4 路由调用。
 
-### 14.5 CP-F6.4 · API、契约与桌面工作流
+### 14.5 CP-F6.4 · API、契约与桌面工作流 ✅
 
 **目标：** 实现 §10–§12 的强类型 API 与关联检测补充视图。
 
@@ -621,7 +649,7 @@ payload 只含 tenant 内对象 ID、detector enum、版本、status/reason code
 
 **退出条件：** 路由无 SQL；degraded/unavailable/zero finding 清晰可辨；OpenAPI 二次无 diff；前端全部静态/测试/build 门禁通过。
 
-### 14.6 CP-F6.5 · 契约与交付门禁
+### 14.6 CP-F6.5 · 契约与交付门禁 ✅
 
 **目标：** F6 全量回归、迁移/约束、契约、安全、5000 行性能与桌面交付门禁。
 
@@ -641,3 +669,47 @@ payload 只含 tenant 内对象 ID、detector enum、版本、status/reason code
 - 关键边界：F6 候选不是已证实违规；不改写 F3/F4/F5，不进入现有复核标签，不调用模型/Qdrant，不计算 F8 severity；时空 Tier 1、模糊实体合并、跨批次历史关联留给后续明确阶段。
 - 对旧 skeleton 的主要覆盖是以 `detection_run` 为身份中心、以 `correlation_finding_row` 物理闭合全部参与行，并把 capability 从可选 reason 文本升级为每 run 恰好四条的不可变结构化声明。旧 skeleton 有数据时 CP-F6.1 必须 fail closed。
 - 本检查点仅修改规格与项目状态文件，没有创建迁移、服务、API、UI、依赖或测试数量。验证范围为现有架构/需求审查与 `git diff --check`。
+
+### CP-F6.1 实际落地记录（2026-07-31）
+
+- 只新增 `0008_f6_cross_row_detection.py`，未修改 `0001`–`0007`；新增 `detection_config`、`detection_run`、`detection_request`、`correlation_finding_row`，并把 legacy `capability_declaration`/`correlation_finding` 空 skeleton 强化为 run 级不可变事实。upgrade 在任何 DDL 前检查两个 skeleton 均为空；downgrade 在 config/run/request/declaration/finding/row 任一事实存在时于任何 DDL 前拒绝。
+- config/run/file/user、declaration/run、finding/run 和 participating-row/finding/expense-row 均由完整复合租户 FK 闭合，全部新 FK 使用 RESTRICT；旧 capability file 级 unique 替换为 `(detection_run_id,detector)`，旧 `participating_row_nos` 删除并由 `correlation_finding_row` 物理身份重建。六类 F6 表均由独立 `f6_reject_update_delete()` 触发器拒绝 UPDATE/DELETE；legacy severity 固定为 `0/0`。
+- `detection_config` 同时冻结 JSONB `definition` 与 `definition_canonical` 文本。数据库 CHECK 保证二者 JSON 语义等价，并对 canonical 文本的 UTF-8 字节数执行 256 KiB 上限；CP-F6.2 负责进一步证明文本满足规格的排序、紧凑分隔符与 Decimal 表示，不以 PostgreSQL `jsonb::text` 冒充 canonical JSON。
+- 默认开发库升级前的 full/schema/affected-data custom archive 位于 gitignored `data/private/backups/cp-f6.1/pre-0008-20260731-140425/`；三份归档均通过 `pg_restore --list`、容器/本地 SHA-256 交叉校验，full archive 另恢复到隔离库验证 `0007`、legacy 行数与受保护约束。SHA-256（affected/full/schema）依次为 `a405e3ee6d5f65025a5f2adea7476de7ecd81c74805040ae80fc156973aef60d`、`67ec5b6a95983bde97bb42c0cf63cf46cb1247e1a8a9b3f7a17823533d4f8d5f`、`479da9031b0103df79369a9a0ac0f959068bc1514fbacd28685f7904d662b224`。
+- F6+基础迁移定向 `24 passed`，迁移/恢复组在全量中 `44 passed`，后端全量 `397 passed, 1 skipped`；Ruff、160 文件 format check、strict mypy（117 个源文件）、默认/测试双库 `0008 (head)` 与 Alembic 零漂移、pre-commit/gitleaks、`pip-audit --strict` 全部通过。未新增依赖、Pydantic/API/OpenAPI、detector/service/UI 或 F7/F8 行为。
+
+### CP-F6.2 实际落地记录（2026-08-01）
+
+- 新增纯领域包 `app.core.detection`，运行路径不导入或访问 ORM/session/settings/network/time：四类 strict/frozen profile、source row、runtime facts 与 typed evidence 均由 Pydantic 判别联合约束，并直接复用 F2 `NormalizedExpenseRecord`/`UnifiedField`；parse-error 行以显式 identity 进入 source/coverage 分母但永不进入 finding。
+- profile canonical 固定为 `ensure_ascii=False`、sort keys、紧凑分隔符、UTF-8 bytes，Decimal/Fraction 使用无 float 的精确表示，未知对象与非字符串 mapping key fail closed；profile/group/finding 均使用 SHA-256，finding key 精确绑定 detector/version/profile/排序参与行/typed facts，不含 UUID、时间或 reasoning。全局 finding 去重检测同 key 异 payload 并 fail closed，排序固定为 detector → first row → rows → key。
+- capability lattice 以显式 reason 全序综合 config、F2 availability、eligible coverage 与 detector runtime，只能降级；四 detector 分别实现 `split-window-v1` 贪心非重叠窗口、`invoice-sequence-v1` 手写 ASCII 后缀与最大连续链、`frequency-mad-v1` Fraction median/MAD、`spatiotemporal-pair-v1` exact alias 与 canonical 无向 zone pair。无 regex、Python hash、random、float、subset-sum 或隐藏当前时间。
+- 新增 `app.synth.correlation` 独立跨行 pattern builder，不复用旧单行 random injector；四类 case 均含正样本、负/噪声、等号/边界与字段降级，输入列严格等于 `DATA_COLUMNS`，truth 标签物理分离。
+- detection 36 项与 F6 synth 4 项定向测试通过；核心 statement/branch 覆盖 `90.90%`，canonical/finding-key helper `100%`。后端全量 `437 passed, 1 skipped`；Ruff、170 文件 format check、strict mypy（121 源文件）、OpenAPI/client 连续二次 SHA-256 稳定、pre-commit/gitleaks 与 `uvx pip-audit --strict` 全绿。未新增依赖、迁移、service/API/UI 或 CP-F6.3+/F7/F8 行为。
+
+### CP-F6.3 实际落地记录（2026-08-01）
+
+- 新增 `errors.py`、`service_models.py`、`config_service.py`、`input_snapshot.py`、`run_service.py` 与 `query_service.py`。config mutation 只取 Tenant NOWAIT 锁，以 expected version CAS 追加 canonical profile；input snapshot 固定绑定 tenant/file revision、content/mapping identity、按 row_no 的 normalized/parse-error 行与按统一字段顺序的 12 项 availability，数据库物理返回顺序不参与 identity。
+- run mutation 固定 `Tenant → FileVersion NOWAIT`，并显式核验 actor/tenant。相同 key 读取 ledger 绑定的历史 run，先校验 request fingerprint，再重建 input fingerprint；整个 replay 不读 current config、不执行 detector。新 key + 同 file/profile 只追加 `detection_request` alias；profile fingerprint 变化才创建新 run。input drift 返回 `DETECTION_INPUT_DRIFT`，历史事实不更新。
+- 首次 run 在锁内、写入前执行 CP-F6.2 纯核心与稳定 finding 校验；随后单事务追加 completed run、恰四条 declaration、全部 finding/ordinal row links、request ledger 与一次 `detection.run_complete`。六个 fault hook 覆盖 run/部分 declaration/部分 finding/部分 row/request/success audit；任一点失败业务与成功审计全回滚，独立 tenant session 只写稳定 ID/hash/reason code 的 `detection.run_failed`。另以子进程在 success audit 后 `os._exit(91)`，证明连接断开后 PostgreSQL 回滚全部未提交事实，fresh-process 同 key 重试最终最多一次。
+- query service 只读 immutable snapshot：批次最近实际 run/current config stale、显式 run、finding summary 与参与行 detail 均显式 tenant predicate；detector/first row/finding key/id 和 ordinal/row/id 形成稳定数据库排序，list/detail 使用数据库 limit/offset 与独立 exact count，不在内存全量切片。
+- 新增 13 项 CP-F6.3 集成测试；与 F3/F5/F6 锁序、ledger、恢复、迁移及纯核心组成的定向回归 `90 passed`。detection 49 项综合 statement/branch `89%`，canonical `100%`、run service `87%`、query `81%`；后端全量 `450 passed, 1 skipped`。Ruff、178 文件 format check、strict mypy（127 源文件）、默认/测试双库 `0008 (head)` 与 Alembic 零漂移、OpenAPI/client 无语义漂移、pre-commit/gitleaks、`uvx pip-audit --strict` 全绿。
+- 契约门禁发现 `scripts/export_openapi.py` 在 Windows 以 `Path.write_text()` 把固定 `\n` 翻译为 CRLF，造成跨平台字节 SHA 漂移但无语义 diff；改为 UTF-8 `write_bytes()` 后恢复既有 OpenAPI SHA-256 `1bed4a3adbc62382dd4a75534e1855c6dbb0d68f16f4ec8b91ab6f884b2c65bc`，连续导出与 `--check` 稳定。未新增依赖、迁移、HTTP/UI、F4/F5 写入、模型/Qdrant 或 CP-F6.4+/F7/F8 行为。
+
+### CP-F6.4 实际落地记录（2026-08-01）
+
+- 新增 `app.api.routes.detection`，按 §10 暴露 7 个 config/run/finding endpoint；所有写操作要求 8–128 字符 `Idempotency-Key`，201/200 区分创建与复用，所有 F6 数据响应使用 `private, no-store`。CONFIG_READ/WRITE、BATCH_IMPORT/READ 沿用既有 permission 数据，未登录/无权限/跨租户分别稳定返回 401/403/404；路由只做 transport adapter，不含 SQL 或 detector 逻辑。
+- API schema 直接复用 `DetectionProfileDefinition`、`CapabilityDetails` 与 `CorrelationEvidence` 的 discriminator；config history 返回 current 与稳定分页 history 的 exact total/limit/offset，finding list 在 service 层补齐 detector/capability-status 过滤和固定 default sort，detail 的参与行继续独立分页。API/UI 均不暴露或解释 legacy severity `0/0`。
+- 前端新增 `/detection-config` 权限入口、current/history profile、四 detector 依赖/算法/exact alias 与 zone-pair 表、Zod fail-closed 校验和 expected-version/历史不可变确认；批次工作区新增独立“关联检测”页签，展示 run/profile/input、config stale、四 capability、候选筛选分页、typed facts/reasoning 与参与行分页。viewer 只读，auditor/configurator 可在显式确认后触发；统计候选明确不是已确认违规，不进入 F5 queue 或 review decision。
+- 后端 API/service 定向 `16 passed`，后端全量 `453 passed, 1 skipped`；Ruff、180 文件 format check、strict mypy（128 个源文件）通过。前端 13 文件 `53 passed`，typecheck、oxlint、Prettier 与 production build 通过；build 只有既有单 chunk >500 kB 非阻断提示。
+- OpenAPI/client 连续二次生成的 SHA-256 分别稳定为 `08a3383a65ac8b55fb24ef6f1260e92e1655294fa0774a0c418c83b36b887c1a` 与 `30f36a3ebb3a3ef2bf1c1a77f997ce3b084daf6406aac970f130d97036511646`；pre-commit/gitleaks、`uvx pip-audit --strict` 与 `npm audit --audit-level=high` 全绿。
+- Chrome 1440×1000 覆盖 configurator 配置/history、auditor stale+长参与行详情、viewer 只读和配置错误态；四场景均为页面级横向溢出 0、非模块 script/image 执行 0、恶意标记 0、local/session storage 0，私有截图与脚本位于 `data/private/cp-f6.4/`。本检查点未新增依赖/迁移，未修改 F4 XLSX/F5 queue，未执行 CP-F6.5 的 5000 行/p95/SQL 交付门禁，也未进入 Tier 1/F7/F8。
+
+### CP-F6.5 实际落地记录（2026-08-01）
+
+- 固定 seed=3500 的 5000 行 F1→F6 夹具在标签与 XLSX 物理分离前提下嵌入拆单、连号、频次与时空冲突四类确定性模式；四项预期参与行真值全部由已提交 `correlation_finding_row` 机械命中。完整链路含 25 次 replay/list/detail 交互采样总耗时 `102.931691s`，低于 900 秒硬上限。
+- 首轮初次 detect 为 `3.066590s`，定位到逐 finding/row-link flush 与 input snapshot 全 ORM/raw JSON 装载。服务改为四条 declaration 单批、finding/row-link 每 250 条有界批量 flush，并将输入查询收窄为 `row_no/normalized_json/parse_error_code` 与 availability 必需列；所有事实仍在同一事务，批次后 fault hook、六类故障点与 `os._exit(91)` hard-kill 恢复语义保持不变。最终纯算法 `0.155957s`，初次 detect `1.973916s`/21 SQL/SQL `0.395481s`；25 次 replay/list/detail p95 分别为 `1.687987s`、`0.014404s`、`0.012844s`，最大响应体分别为 737、19457、5007 bytes。
+- 5000 行正式 run 产出恰四条 capability：split `enabled/READY`（eligible 1001、finding 39），sequential `degraded/SERIAL_UNPARSEABLE`（eligible 10、finding 1），frequency `degraded/PARTIAL_PERIOD_SKIPPED`（eligible 5000、finding 21），spatiotemporal `degraded/LOCATION_UNMAPPED`（eligible 1489、finding 69）；总 finding 130、物理参与行 866。审计扫描不含合成员工/商户、Idempotency-Key 或 change reason 明文，F6 全程无 LLM/Qdrant/网络调用。
+- F6/迁移/恢复/受保护约束定向 `112 passed`，优化后恢复/API 定向 `16 passed`；后端全量 `453 passed, 1 skipped`，Ruff、180 文件 format、strict mypy（128 个源文件）通过。前端 13 文件 `53 passed`，typecheck、oxlint、Prettier 与 production build 通过；默认/测试双库均为 `0008 (head)` 且 Alembic 零漂移。
+- OpenAPI/client 连续二次 SHA-256 稳定为 `08a3383a65ac8b55fb24ef6f1260e92e1655294fa0774a0c418c83b36b887c1a` 与 `30f36a3ebb3a3ef2bf1c1a77f997ce3b084daf6406aac970f130d97036511646`；pre-commit/gitleaks、`uvx pip-audit --strict` 与 `npm audit --audit-level=high` 全绿。
+- Chrome 1440×1000 的 15 个状态指标/19 张截图覆盖 config current/history/missing/error、run absent/current/stale/loading/conflict/replayed、enabled/degraded/unavailable、finding normal/empty/loading/error、75 行详情及 configurator/auditor/viewer；所有场景页面级横向溢出、非模块 script/image 执行、恶意标记及 local/session storage 均为 0。性能脚本、结果、视觉脚本、metrics 与截图均位于 gitignored `data/private/cp-f6.5/`。
+- 本检查点未新增依赖或迁移，未修改受保护基础设施、F4 XLSX、F5 queue/review，也未实现 Tier 1、F7 或 F8；F6 至此闭包。

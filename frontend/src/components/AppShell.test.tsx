@@ -40,6 +40,7 @@ describe("AppShell 的权限菜单", () => {
   it("configurator 能看到规则配置", () => {
     renderShell(CONFIGURATOR);
     expect(screen.getByRole("link", { name: "规则配置" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "关联检测" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "复核台" })).toBeInTheDocument();
     expect(screen.getByText("配置管理员")).toBeInTheDocument();
   });
@@ -55,6 +56,7 @@ describe("AppShell 的权限菜单", () => {
     expect(screen.getByRole("link", { name: "批次" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "复核台" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "规则配置" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "关联检测" })).not.toBeInTheDocument();
     expect(screen.getByText("只读查看")).toBeInTheDocument();
   });
 });

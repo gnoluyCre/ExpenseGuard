@@ -53,7 +53,10 @@ async def _handle_request_validation_error(request: Request, exc: Exception) -> 
     if not isinstance(exc, RequestValidationError):  # pragma: no cover
         raise exc
     logger.info("request validation error", extra={"path": request.url.path})
-    if request.method == "PUT" and request.url.path == "/api/rules":
+    if request.method == "PUT" and request.url.path == "/api/detection/configs":
+        code = "DETECTION_CONFIG_INVALID"
+        message = "关联检测配置无效"
+    elif request.method == "PUT" and request.url.path == "/api/rules":
         code = "RULE_CONFIG_INVALID"
         message = "规则配置无效"
     elif (

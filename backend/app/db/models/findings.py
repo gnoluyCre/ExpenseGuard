@@ -6,7 +6,6 @@ from enum import StrEnum
 from typing import Any
 
 from sqlalchemy import (
-    ARRAY,
     CheckConstraint,
     DateTime,
     ForeignKey,
@@ -23,6 +22,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, TimestampMixin
+from app.db.models.detection import DetectorKind
 from app.db.models.mixins import TenantScopedMixin, file_version_fk, str_enum, uuid_pk
 
 
@@ -163,18 +163,59 @@ class CorrelationFinding(Base, TenantScopedMixin, TimestampMixin):
 
     __tablename__ = "correlation_finding"
     __table_args__ = (
-        file_version_fk(),
+        UniqueConstraint(
+            "detection_run_id",
+            "detector",
+            "finding_key",
+            name="uq_correlation_finding_run_detector_key",
+        ),
+        UniqueConstraint(
+            "id",
+            "detection_run_id",
+            "file_version_id",
+            "tenant_id",
+            name="uq_correlation_finding_identity",
+        ),
+        ForeignKeyConstraint(
+            ["detection_run_id", "tenant_id", "file_version_id"],
+            ["detection_run.id", "detection_run.tenant_id", "detection_run.file_version_id"],
+            name="fk_correlation_finding_run_identity",
+            ondelete="RESTRICT",
+        ),
+        CheckConstraint(
+            "(detector = 'split_invoice' AND detector_version = 'split-window-v1') OR "
+            "(detector = 'sequential_invoice' AND detector_version = 'invoice-sequence-v1') OR "
+            "(detector = 'frequency_anomaly' AND detector_version = 'frequency-mad-v1') OR "
+            "(detector = 'spatiotemporal_tier0' "
+            "AND detector_version = 'spatiotemporal-pair-v1')",
+            name="detector_version_pair",
+        ),
+        CheckConstraint(
+            "finding_key ~ '^[0-9a-f]{64}$'",
+            name="finding_key_format",
+        ),
+        CheckConstraint("evidence_schema_version = 1", name="evidence_schema_version_value"),
+        CheckConstraint("jsonb_typeof(evidence_json) = 'object'", name="evidence_object"),
+        CheckConstraint(
+            "char_length(reasoning_snapshot) > 0",
+            name="reasoning_snapshot_non_empty",
+        ),
+        CheckConstraint(
+            "severity_impact = 0 AND severity_confidence = 0",
+            name="severity_ungraded",
+        ),
         Index("ix_correlation_finding_file_version_id", "file_version_id"),
     )
 
     id: Mapped[uuid.UUID] = uuid_pk()
     file_version_id: Mapped[uuid.UUID] = mapped_column(nullable=False)
-    #: 检测器名，如 "split_invoice" / "sequential_invoice_no"
-    detector: Mapped[str] = mapped_column(String(64), nullable=False)
-    #: 参与该关联的**全部**行号
-    participating_row_nos: Mapped[list[int]] = mapped_column(ARRAY(Integer), nullable=False)
-    #: 判定依据，如 {"threshold": 5000, "sum": 14700, "employee": "...", "date": "..."}
+    detection_run_id: Mapped[uuid.UUID] = mapped_column(nullable=False, index=True)
+    detector: Mapped[DetectorKind] = mapped_column(String(64), nullable=False)
+    detector_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    finding_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    evidence_schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
     evidence_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    reasoning_snapshot: Mapped[str] = mapped_column(Text, nullable=False)
     severity_impact: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     severity_confidence: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
@@ -714,16 +755,61 @@ class CapabilityDeclaration(Base, TenantScopedMixin, TimestampMixin):
 
     __tablename__ = "capability_declaration"
     __table_args__ = (
-        UniqueConstraint("file_version_id", "detector"),
-        file_version_fk(),
+        UniqueConstraint(
+            "detection_run_id",
+            "detector",
+            name="uq_capability_declaration_run_detector",
+        ),
+        ForeignKeyConstraint(
+            ["detection_run_id", "tenant_id", "file_version_id", "config_fingerprint"],
+            [
+                "detection_run.id",
+                "detection_run.tenant_id",
+                "detection_run.file_version_id",
+                "detection_run.config_fingerprint",
+            ],
+            name="fk_capability_declaration_run_identity",
+            ondelete="RESTRICT",
+        ),
+        CheckConstraint(
+            "(detector = 'split_invoice' AND detector_version = 'split-window-v1') OR "
+            "(detector = 'sequential_invoice' AND detector_version = 'invoice-sequence-v1') OR "
+            "(detector = 'frequency_anomaly' AND detector_version = 'frequency-mad-v1') OR "
+            "(detector = 'spatiotemporal_tier0' "
+            "AND detector_version = 'spatiotemporal-pair-v1')",
+            name="detector_version_pair",
+        ),
+        CheckConstraint(
+            "config_fingerprint ~ '^[0-9a-f]{64}$'",
+            name="config_fingerprint_format",
+        ),
+        CheckConstraint(
+            "status IN ('enabled', 'degraded', 'unavailable')",
+            name="status_values",
+        ),
+        CheckConstraint(
+            "reason_code ~ '^[A-Z][A-Z0-9_]{0,63}$'",
+            name="reason_code_format",
+        ),
+        CheckConstraint(
+            "char_length(reason) BETWEEN 1 AND 500 AND reason !~ '[[:cntrl:]]'",
+            name="reason_valid",
+        ),
+        CheckConstraint("jsonb_typeof(details_json) = 'object'", name="details_object"),
+        CheckConstraint("finding_count >= 0", name="finding_count_non_negative"),
         Index("ix_capability_declaration_file_version_id", "file_version_id"),
     )
 
     id: Mapped[uuid.UUID] = uuid_pk()
     file_version_id: Mapped[uuid.UUID] = mapped_column(nullable=False)
-    detector: Mapped[str] = mapped_column(String(64), nullable=False)
+    detection_run_id: Mapped[uuid.UUID] = mapped_column(nullable=False, index=True)
+    config_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    detector: Mapped[DetectorKind] = mapped_column(String(64), nullable=False)
+    detector_version: Mapped[str] = mapped_column(String(32), nullable=False)
     status: Mapped[CapabilityStatus] = mapped_column(
         str_enum(CapabilityStatus, "capability_status_enum"), nullable=False
     )
-    #: 状态成因的人类可读说明，直接进报告
-    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reason_code: Mapped[str] = mapped_column(String(64), nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    details_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    finding_count: Mapped[int] = mapped_column(Integer, nullable=False)

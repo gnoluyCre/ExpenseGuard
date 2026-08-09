@@ -16,6 +16,12 @@ F6 的关联检测、以及召回率门禁都需要**已知真值**的数据才�
     uv run python -m app.synth --seed 42 --rows 50 --out ../data/synthetic
 """
 
+from app.synth.correlation import (
+    CorrelationScenario,
+    CorrelationSyntheticCase,
+    CorrelationTruth,
+    build_f6_synthetic_cases,
+)
 from app.synth.generator import (
     DATA_COLUMNS,
     DEFAULT_ANCHOR_DATE,
@@ -37,9 +43,13 @@ __all__ = [
     "INJECTORS",
     "BatchFiles",
     "BatchManifest",
+    "CorrelationScenario",
+    "CorrelationSyntheticCase",
+    "CorrelationTruth",
     "RowLabel",
     "SyntheticBatch",
     "ViolationKind",
+    "build_f6_synthetic_cases",
     "generate_batch",
     "read_labels",
     "write_batch",

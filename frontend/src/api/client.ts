@@ -119,6 +119,29 @@ export type SamplingDecisionRequest = components["schemas"]["SamplingDecisionReq
 export type FindingReviewResult = components["schemas"]["FindingReviewResult"];
 export type SamplingReviewResult = components["schemas"]["SamplingReviewResult"];
 
+/** F6 关联检测不可变配置、运行、能力与候选证据契约。 */
+export type DetectorKind = components["schemas"]["DetectorKind"];
+export type CapabilityStatus = components["schemas"]["CapabilityStatus"];
+export type DetectionConfigCreateRequest = NonNullable<
+  paths["/api/detection/configs"]["put"]["requestBody"]
+>["content"]["application/json"];
+export type DetectionProfileDefinition = DetectionConfigCreateRequest["definition"];
+export type DetectionConfig =
+  paths["/api/detection/configs"]["put"]["responses"][200]["content"]["application/json"];
+export type DetectionConfigHistory =
+  paths["/api/detection/configs"]["get"]["responses"][200]["content"]["application/json"];
+export type DetectionRun =
+  paths["/api/batches/{file_version_id}/detect"]["post"]["responses"][200]["content"]["application/json"];
+export type DetectionCapability =
+  paths["/api/batches/{file_version_id}/detection"]["get"]["responses"][200]["content"]["application/json"]["capabilities"][number];
+export type BatchDetection =
+  paths["/api/batches/{file_version_id}/detection"]["get"]["responses"][200]["content"]["application/json"];
+export type CorrelationFindingPage =
+  paths["/api/detection-runs/{run_id}/findings"]["get"]["responses"][200]["content"]["application/json"];
+export type CorrelationFindingSummary = CorrelationFindingPage["items"][number];
+export type CorrelationFindingDetail =
+  paths["/api/correlation-findings/{finding_id}"]["get"]["responses"][200]["content"]["application/json"];
+
 /**
  * 后端权限标识。
  *

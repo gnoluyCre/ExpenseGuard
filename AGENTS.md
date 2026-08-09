@@ -85,10 +85,10 @@
 - **流程纪律:** pre-commit 钩子(format / lint / secret 扫描)必须通过方可提交(或先询问再绕过)。CI 评测门禁:召回率低于基线阈值即阻断合并。
 
 ## 当前状态 📍
-**最近更新:** 2026-07-29
-**正在进行:** 阶段 3 F6 的 CP-F6.0 规格固化已完成；下一实施点为 CP-F6.1 持久化 schema 与 ORM。
-**最近完成:** CP0 仓库重置 / CP1 后端地基 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离 / **CP4 前端垂直切片 + OpenAPI 契约 + CI** / **F1 Excel 导入** / **F2 CP-F2.0–CP-F2.5** / **F3 CP-F3.0–CP-F3.5** / **F4 CP-F4.0–CP-F4.5 报告生成闭包**（制度导入/发布/本地检索、configurator-confirmed binding、严格逐字引用、原子报告 snapshot、typed API、桌面工作流、五表 XLSX、安全回读、5000 行性能与交付门禁）/ **F5 CP-F5.0–CP-F5.5 人工复核闭包**（规格、持久化、可复算抽样与一次性 decision 服务；强类型 API/OpenAPI；权限驱动桌面复核台；SQL 联合分页；固定 seed 5000 行性能、全状态 Chrome、安全与交付门禁）/ **F6 CP-F6.0 规格固化**（四类稳定统计 detector、版本化 profile、能力声明、证据/参与行完整性、原子 run 幂等与 F7/F8 边界）
-**受阻于:** 无(CP-F6.1 可开始；W0 模型容器运行态仍需外部镜像/离线权重输入,见 `MEMORY.md`)
+**最近更新:** 2026-08-01
+**正在进行:** 阶段 3 F6 的 CP-F6.0–CP-F6.5 已全部完成；F7/F8 尚未开始。
+**最近完成:** CP0 仓库重置 / CP1 后端地基 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离 / **CP4 前端垂直切片 + OpenAPI 契约 + CI** / **F1 Excel 导入** / **F2 CP-F2.0–CP-F2.5** / **F3 CP-F3.0–CP-F3.5** / **F4 CP-F4.0–CP-F4.5 报告生成闭包**（制度导入/发布/本地检索、configurator-confirmed binding、严格逐字引用、原子报告 snapshot、typed API、桌面工作流、五表 XLSX、安全回读、5000 行性能与交付门禁）/ **F5 CP-F5.0–CP-F5.5 人工复核闭包**（规格、持久化、可复算抽样与一次性 decision 服务；强类型 API/OpenAPI；权限驱动桌面复核台；SQL 联合分页；固定 seed 5000 行性能、全状态 Chrome、安全与交付门禁）/ **F6 CP-F6.0–CP-F6.5 跨行关联检测闭包**（四类纯 detector、能力声明、物理参与行、原子幂等恢复、强类型 API/OpenAPI、权限驱动桌面补充视图、固定 seed 5000 行性能、安全与全状态 Chrome 门禁）
+**受阻于:** 无（F6 已闭包；W0 模型容器运行态仍需外部镜像/离线权重输入,见 `MEMORY.md`）
 **已知缺口 / 状态(三项):**
 1. **W0 运行态未闭环** —— 代码侧本地模型/Qdrant 私有化边界与真实 Qdrant 已验证；但 pinned Infinity 镜像在 registry layer 拉取无进展且 manifest 查询超时，实际 embed/rerank、资源占用及客户离线权重包仍待外部输入后验证。
 2. **CI 远端闭环** —— 2026-07-29 已由 F4/F5 PR 实测 backend / frontend / contract / secrets / eval-gate 全绿；backend job 显式启动 PostgreSQL 与 pinned Qdrant，并验证测试库创建、gitleaks 镜像及 setup-uv/setup-node 缓存路径可用。
@@ -114,7 +114,7 @@
 - [x] **F5 · 人工复核台** —— CP-F5.0–CP-F5.5 已完成；按风险排序队列;同屏展示原始行 + 判定理由 + 条款引用;标记 confirmed / false_positive 带复核人与时间戳写审计日志;**触发被放行样本随机抽检**；固定 seed 5000 行性能、契约、安全与桌面交付门禁通过。
 
 ### 阶段 3:差异化能力(P1)与打磨
-- [ ] **F6 · 跨行关联检测(统计层)** —— CP-F6.0 规格已固化；待 CP-F6.1–CP-F6.5 落地拆单 / 连号 / 频次异常 / 时空冲突、统一能力声明(enabled/degraded/unavailable)、参与行复合证据链与交付门禁
+- [x] **F6 · 跨行关联检测(统计层)** —— CP-F6.0–CP-F6.5 已完成；四类 detector、能力声明、幂等恢复、契约、安全、5000 行性能与桌面交付门禁全部通过
 - [ ] **F7 · 异常取证 Agent(ReAct)** —— 只读工具集;最大步数上限;每步落 `evidence_step`;终止给出「证据是否充分」显式判断
 - [ ] **F8 · 二维分级** —— severity_impact / severity_confidence 分列;代价敏感阈值参数化
 - [ ] 错误处理完善、性能达标(5000 行 ≤ 15 分钟)、优雅退出(SIGTERM 后完成当前行 + 写 checkpoint 再退出)

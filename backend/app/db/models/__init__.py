@@ -15,6 +15,13 @@ from app.db.models.batch import (
     RowResult,
 )
 from app.db.models.config import RuleConfig, SchemaMapping, SchemaMappingVersion
+from app.db.models.detection import (
+    CorrelationFindingRow,
+    DetectionConfig,
+    DetectionRequest,
+    DetectionRun,
+    DetectorKind,
+)
 from app.db.models.findings import (
     CapabilityDeclaration,
     CapabilityStatus,
@@ -68,6 +75,11 @@ __all__ = [
     "CapabilityDeclaration",
     "CapabilityStatus",
     "CorrelationFinding",
+    "CorrelationFindingRow",
+    "DetectionConfig",
+    "DetectionRequest",
+    "DetectionRun",
+    "DetectorKind",
     "EvidenceStep",
     "ExpenseRow",
     "FieldAvailability",

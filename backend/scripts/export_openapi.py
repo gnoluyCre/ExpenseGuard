@@ -77,7 +77,10 @@ def main() -> int:
         sys.stderr.write("OpenAPI 契约无漂移\n")
         return 0
 
-    OPENAPI_PATH.write_text(content, encoding="utf-8")
+    # write_text() translates ``\n`` to CRLF on Windows.  The repository
+    # contract is explicitly LF, so write bytes to keep generated output
+    # byte-identical across developer and CI platforms.
+    OPENAPI_PATH.write_bytes(content.encode("utf-8"))
     sys.stderr.write(f"已写入 {OPENAPI_PATH}\n")
     return 0
 

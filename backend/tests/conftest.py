@@ -85,10 +85,11 @@ def pytest_asyncio_loop_factories(
 _TRUNCATE_SQL = text(
     """
     TRUNCATE TABLE
-        audit_log, review_plan_request, sampling_review, sampling_audit,
+        audit_log, correlation_finding_row, detection_request,
+        capability_declaration, correlation_finding, detection_run, detection_config,
+        review_plan_request, sampling_review, sampling_audit,
         review, review_sampling_plan, review_sampling_config,
-        capability_declaration, evidence_step,
-        correlation_finding, finding, field_availability, row_result, expense_row,
+        evidence_step, finding, field_availability, row_result, expense_row,
         file_version, policy_clause, policy_document, rule_config, schema_mapping,
         schema_mapping_version,
         user_session, app_user, tenant

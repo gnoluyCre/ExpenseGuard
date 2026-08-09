@@ -114,6 +114,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/batches/{file_version_id}/detect": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Run Batch */
+    post: operations["detection_run_batch"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/batches/{file_version_id}/detection": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Batch */
+    get: operations["detection_get_batch"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/batches/{file_version_id}/field-availability": {
     parameters: {
       query?: never;
@@ -269,6 +303,75 @@ export interface paths {
     /** Validation */
     get: operations["batches_validation"];
     put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/correlation-findings/{finding_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Finding */
+    get: operations["detection_get_finding"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/detection-runs/{run_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Run */
+    get: operations["detection_get_run"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/detection-runs/{run_id}/findings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Findings */
+    get: operations["detection_list_findings"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/detection/configs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Configs */
+    get: operations["detection_list_configs"];
+    /** Put Config */
+    put: operations["detection_put_config"];
     post?: never;
     delete?: never;
     options?: never;
@@ -698,6 +801,11 @@ export interface components {
       /** Total Rows */
       total_rows: number;
     };
+    /**
+     * AvailabilityStatus
+     * @enum {string}
+     */
+    AvailabilityStatus: "available" | "inferred" | "missing";
     /** AvailabilityThresholdsRequest */
     AvailabilityThresholdsRequest: {
       /**
@@ -746,6 +854,16 @@ export interface components {
        * Format: uuid
        */
       uploaded_by: string;
+    };
+    /** BatchDetectionResponse */
+    BatchDetectionResponse: {
+      /** Capabilities */
+      capabilities: components["schemas"]["CapabilityResponse"][];
+      /** Config Stale */
+      config_stale: boolean;
+      /** Current Config Fingerprint */
+      current_config_fingerprint: string | null;
+      run: components["schemas"]["DetectionRunResponse"] | null;
     };
     /**
      * BatchImportResponse
@@ -975,6 +1093,62 @@ export interface components {
       /** Version */
       version: string;
     };
+    /** CapabilityDetails */
+    CapabilityDetails: {
+      /** Causes */
+      causes: components["schemas"]["CapabilityReason"][];
+      /** Dependencies */
+      dependencies: components["schemas"]["DependencyAvailability"][];
+      /** Eligible Rate Bps */
+      eligible_rate_bps: number;
+      /** Eligible Row Count */
+      eligible_row_count: number;
+      /** Excluded Row Count */
+      excluded_row_count: number;
+      /** Exclusion Counts */
+      exclusion_counts: components["schemas"]["ExclusionCount"][];
+      /** Parsed Row Count */
+      parsed_row_count: number;
+      runtime: components["schemas"]["DetectorRuntimeFacts"];
+      /** Source Row Count */
+      source_row_count: number;
+    };
+    /**
+     * CapabilityReason
+     * @enum {string}
+     */
+    CapabilityReason:
+      | "CONFIG_DISABLED"
+      | "REQUIRED_FIELD_MISSING"
+      | "INSUFFICIENT_ELIGIBLE_ROWS"
+      | "INSUFFICIENT_POPULATION"
+      | "ZONE_MAPPING_BELOW_MINIMUM"
+      | "INFERRED_FIELD_USED"
+      | "CURRENCY_CONFLICT"
+      | "THRESHOLD_CURRENCY_UNCONFIGURED"
+      | "PARTIAL_PERIOD_SKIPPED"
+      | "SERIAL_UNPARSEABLE"
+      | "LOCATION_UNMAPPED"
+      | "READY";
+    /** CapabilityResponse */
+    CapabilityResponse: {
+      details: components["schemas"]["CapabilityDetails"];
+      detector: components["schemas"]["DetectorKind"];
+      /** Detector Version */
+      detector_version: string;
+      /** Finding Count */
+      finding_count: number;
+      /** Reason */
+      reason: string;
+      /** Reason Code */
+      reason_code: string;
+      status: components["schemas"]["CapabilityStatus"];
+    };
+    /**
+     * CapabilityStatus
+     * @enum {string}
+     */
+    CapabilityStatus: "enabled" | "degraded" | "unavailable";
     /**
      * CitationSnapshot
      * @description One verified citation copied from PostgreSQL into a report snapshot.
@@ -1170,6 +1344,11 @@ export interface components {
       /** Value */
       value: string;
     };
+    CorrelationEvidence:
+      | components["schemas"]["SplitInvoiceEvidence"]
+      | components["schemas"]["SequentialInvoiceEvidence"]
+      | components["schemas"]["FrequencyAnomalyEvidence"]
+      | components["schemas"]["SpatiotemporalTier0Evidence"];
     /** CreatePolicyFamilyRequest */
     CreatePolicyFamilyRequest: {
       /** Display Name */
@@ -1230,6 +1409,11 @@ export interface components {
       /** User Id */
       user_id: string;
     };
+    /** DependencyAvailability */
+    DependencyAvailability: {
+      field_name: components["schemas"]["UnifiedField"];
+      status: components["schemas"]["AvailabilityStatus"];
+    };
     /**
      * DependencyHealth
      * @description 单个依赖的健康状况。
@@ -1247,6 +1431,141 @@ export interface components {
      * @enum {string}
      */
     DependencyStatus: "up" | "down";
+    /** DetectionConfigCreateRequest */
+    DetectionConfigCreateRequest: {
+      /** Change Reason */
+      change_reason: string;
+      definition: components["schemas"]["DetectionProfileDefinition"];
+      /** Expected Current Version */
+      expected_current_version: number;
+    };
+    /** DetectionConfigHistoryResponse */
+    DetectionConfigHistoryResponse: {
+      current: components["schemas"]["DetectionConfigResponse"] | null;
+      /** History */
+      history: components["schemas"]["DetectionConfigResponse"][];
+      /** Limit */
+      limit: number;
+      /** Offset */
+      offset: number;
+      /** Total */
+      total: number;
+    };
+    /** DetectionConfigResponse */
+    DetectionConfigResponse: {
+      /** Algorithm Bundle Version */
+      algorithm_bundle_version: string;
+      /** Change Reason */
+      change_reason: string;
+      /** Config Fingerprint */
+      config_fingerprint: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Created By
+       * Format: uuid
+       */
+      created_by: string;
+      definition: components["schemas"]["DetectionProfileDefinition"];
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Reused Existing */
+      reused_existing: boolean;
+      /** Version */
+      version: number;
+    };
+    /** DetectionProfileDefinition */
+    DetectionProfileDefinition: {
+      /**
+       * Algorithm Bundle Version
+       * @default correlation-v1
+       * @constant
+       */
+      algorithm_bundle_version: "correlation-v1";
+      /** Detectors */
+      detectors: components["schemas"]["DetectorDefinition"][];
+      /**
+       * Schema Version
+       * @default 1
+       * @constant
+       */
+      schema_version: 1;
+    };
+    /** DetectionRunResponse */
+    DetectionRunResponse: {
+      /** Algorithm Bundle Version */
+      algorithm_bundle_version: string;
+      /**
+       * Completed At
+       * Format: date-time
+       */
+      completed_at: string;
+      /** Config Fingerprint */
+      config_fingerprint: string;
+      /** Config Version */
+      config_version: number;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Created By
+       * Format: uuid
+       */
+      created_by: string;
+      /**
+       * Detection Config Id
+       * Format: uuid
+       */
+      detection_config_id: string;
+      /** Error Row Count */
+      error_row_count: number;
+      /**
+       * File Version Id
+       * Format: uuid
+       */
+      file_version_id: string;
+      /** Finding Count */
+      finding_count: number;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Input Fingerprint */
+      input_fingerprint: string;
+      /** Parsed Row Count */
+      parsed_row_count: number;
+      /** Reused Existing */
+      reused_existing: boolean;
+      /** Run Fingerprint */
+      run_fingerprint: string;
+      /** Source Row Count */
+      source_row_count: number;
+    };
+    DetectorDefinition:
+      | components["schemas"]["SplitInvoiceDefinition"]
+      | components["schemas"]["SequentialInvoiceDefinition"]
+      | components["schemas"]["FrequencyAnomalyDefinition"]
+      | components["schemas"]["SpatiotemporalTier0Definition"];
+    /**
+     * DetectorKind
+     * @enum {string}
+     */
+    DetectorKind:
+      "split_invoice" | "sequential_invoice" | "frequency_anomaly" | "spatiotemporal_tier0";
+    DetectorRuntimeFacts:
+      | components["schemas"]["SplitRuntimeFacts"]
+      | components["schemas"]["SequentialRuntimeFacts"]
+      | components["schemas"]["FrequencyRuntimeFacts"]
+      | components["schemas"]["SpatiotemporalRuntimeFacts"];
     /**
      * DirectAvailabilityEvidence
      * @description 直接映射的非空率证据。
@@ -1280,6 +1599,26 @@ export interface components {
     ErrorResponse: {
       error: components["schemas"]["ErrorDetail"];
     };
+    /** ExclusionCount */
+    ExclusionCount: {
+      /** Count */
+      count: number;
+      reason_code: components["schemas"]["ExclusionReason"];
+    };
+    /**
+     * ExclusionReason
+     * @enum {string}
+     */
+    ExclusionReason:
+      | "AMOUNT_BELOW_INDIVIDUAL_FLOOR"
+      | "AMOUNT_NOT_BELOW_THRESHOLD"
+      | "AMOUNT_NOT_POSITIVE"
+      | "CURRENCY_CONFLICT"
+      | "LOCATION_UNMAPPED"
+      | "PARSE_ERROR"
+      | "REQUIRED_VALUE_MISSING"
+      | "SERIAL_UNPARSEABLE"
+      | "THRESHOLD_CURRENCY_UNCONFIGURED";
     /** ExemptionCondition */
     ExemptionCondition: {
       field: components["schemas"]["ExemptionField"];
@@ -1383,6 +1722,38 @@ export interface components {
       /** Note */
       note?: string | null;
     };
+    /** FindingDetailResponse */
+    FindingDetailResponse: {
+      /** Completed */
+      completed: number;
+      detector: components["schemas"]["DetectorKind"];
+      /** Detector Version */
+      detector_version: string;
+      evidence: components["schemas"]["CorrelationEvidence"];
+      /**
+       * File Version Id
+       * Format: uuid
+       */
+      file_version_id: string;
+      /** Finding Key */
+      finding_key: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Reasoning */
+      reasoning: string;
+      /** Rows */
+      rows: components["schemas"]["ParticipatingRowResponse"][];
+      /**
+       * Run Id
+       * Format: uuid
+       */
+      run_id: string;
+      /** Total */
+      total: number;
+    };
     /** FindingItemResponse */
     FindingItemResponse: {
       evidence: components["schemas"]["RuleEvidence"];
@@ -1403,6 +1774,17 @@ export interface components {
       /** Rule Version */
       rule_version: string | null;
       verdict: components["schemas"]["RowVerdict"];
+    };
+    /** FindingPageResponse */
+    FindingPageResponse: {
+      /** Items */
+      items: components["schemas"]["FindingSummaryResponse"][];
+      /** Limit */
+      limit: number;
+      /** Offset */
+      offset: number;
+      /** Total */
+      total: number;
     };
     /** FindingReviewDetail */
     FindingReviewDetail: {
@@ -1525,6 +1907,30 @@ export interface components {
        */
       tenant_id: string;
     };
+    /** FindingSummaryResponse */
+    FindingSummaryResponse: {
+      detector: components["schemas"]["DetectorKind"];
+      /** Detector Version */
+      detector_version: string;
+      /** Finding Key */
+      finding_key: string;
+      /** First Row No */
+      first_row_no: number;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Participating Row Count */
+      participating_row_count: number;
+      /** Reasoning */
+      reasoning: string;
+      /**
+       * Run Id
+       * Format: uuid
+       */
+      run_id: string;
+    };
     /** FindingsResponse */
     FindingsResponse: {
       /**
@@ -1540,6 +1946,89 @@ export interface components {
       page_size: number;
       /** Total */
       total: number;
+    };
+    /** FrequencyAnomalyDefinition */
+    FrequencyAnomalyDefinition: {
+      /** Absolute Min Count */
+      absolute_min_count: number;
+      /** Enabled */
+      enabled: boolean;
+      /** Mad Floor */
+      mad_floor: string;
+      /** Mad Multiplier */
+      mad_multiplier: string;
+      /** Min Eligible Rate Bps */
+      min_eligible_rate_bps: number;
+      /** Min Eligible Rows */
+      min_eligible_rows: number;
+      /** Min Population */
+      min_population: number;
+      /**
+       * Period
+       * @enum {string}
+       */
+      period: "calendar_week_monday" | "calendar_month";
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "frequency_anomaly";
+    };
+    /** FrequencyAnomalyEvidence */
+    FrequencyAnomalyEvidence: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      detector: "frequency_anomaly";
+      /** Detector Version */
+      detector_version: string;
+      facts: components["schemas"]["FrequencyAnomalyFacts"];
+      /** Group Key Fingerprint */
+      group_key_fingerprint: string;
+      /** Profile Fingerprint */
+      profile_fingerprint: string;
+      /**
+       * Reason Code
+       * @default STATISTICAL_CANDIDATE
+       * @constant
+       */
+      reason_code: "STATISTICAL_CANDIDATE";
+      /**
+       * Schema Version
+       * @default 1
+       * @constant
+       */
+      schema_version: 1;
+    };
+    /** FrequencyAnomalyFacts */
+    FrequencyAnomalyFacts: {
+      /** Count */
+      count: number;
+      effective_denominator: components["schemas"]["RationalValue"];
+      mad: components["schemas"]["RationalValue"];
+      median: components["schemas"]["RationalValue"];
+      multiplier: components["schemas"]["RationalValue"];
+      observed_ratio: components["schemas"]["RationalValue"];
+      /** Period Key */
+      period_key: string;
+      /** Population */
+      population: number;
+      positive_delta: components["schemas"]["RationalValue"];
+    };
+    /** FrequencyRuntimeFacts */
+    FrequencyRuntimeFacts: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      detector: "frequency_anomaly";
+      /** Eligible Period Count */
+      eligible_period_count: number;
+      /** Period Count */
+      period_count: number;
+      /** Skipped Period Count */
+      skipped_period_count: number;
     };
     /** HTTPValidationError */
     HTTPValidationError: {
@@ -1953,6 +2442,51 @@ export interface components {
       version: number;
     };
     /**
+     * NormalizedExpenseRecord
+     * @description 写入 ``expense_row.normalized_json`` 的唯一 schema。
+     */
+    NormalizedExpenseRecord: {
+      /** Amount */
+      amount: string;
+      /** Currency */
+      currency?: string | null;
+      /** Description */
+      description?: string | null;
+      /** Employee */
+      employee?: string | null;
+      /** Expense Date */
+      expense_date: string;
+      /** Expense Type */
+      expense_type?: string | null;
+      /** Field Provenance */
+      field_provenance: {
+        [key: string]: components["schemas"]["FieldProvenance"];
+      };
+      /** Invoice No */
+      invoice_no?: string | null;
+      /** Invoice Title */
+      invoice_title?: string | null;
+      /** Invoice Type */
+      invoice_type?: string | null;
+      /** Location */
+      location?: string | null;
+      /**
+       * Mapping Version Id
+       * Format: uuid
+       */
+      mapping_version_id: string;
+      /** Merchant */
+      merchant?: string | null;
+      /**
+       * Schema Version
+       * @default 1
+       * @constant
+       */
+      schema_version: 1;
+      /** Submission Date */
+      submission_date?: string | null;
+    };
+    /**
      * ParseBatchRequest
      * @description 触发解析所需的不可变映射版本。
      */
@@ -2065,6 +2599,20 @@ export interface components {
       offset: number;
       /** Total */
       total: number;
+    };
+    /** ParticipatingRowResponse */
+    ParticipatingRowResponse: {
+      normalized: components["schemas"]["NormalizedExpenseRecord"] | null;
+      /** Ordinal */
+      ordinal: number;
+      /** Parse Error Code */
+      parse_error_code: string | null;
+      /** Raw */
+      raw: {
+        [key: string]: unknown;
+      };
+      /** Row No */
+      row_no: number;
     };
     /** PolicyClauseView */
     PolicyClauseView: {
@@ -2211,6 +2759,13 @@ export interface components {
       reused_existing: boolean;
       /** Status */
       status: string;
+    };
+    /** RationalValue */
+    RationalValue: {
+      /** Denominator */
+      denominator: number;
+      /** Numerator */
+      numerator: number;
     };
     /**
      * ReadinessResponse
@@ -3004,11 +3559,273 @@ export interface components {
       /** Versions */
       versions: components["schemas"]["MappingVersionResponse"][];
     };
+    /** SequentialInvoiceDefinition */
+    SequentialInvoiceDefinition: {
+      /** Enabled */
+      enabled: boolean;
+      /** Min Eligible Rate Bps */
+      min_eligible_rate_bps: number;
+      /** Min Eligible Rows */
+      min_eligible_rows: number;
+      /** Min Sequence Length */
+      min_sequence_length: number;
+      /** Numeric Suffix Max Digits */
+      numeric_suffix_max_digits: number;
+      /** Numeric Suffix Min Digits */
+      numeric_suffix_min_digits: number;
+      /** Partition Fields */
+      partition_fields: components["schemas"]["SequentialPartitionField"][];
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "sequential_invoice";
+    };
+    /** SequentialInvoiceEvidence */
+    SequentialInvoiceEvidence: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      detector: "sequential_invoice";
+      /** Detector Version */
+      detector_version: string;
+      facts: components["schemas"]["SequentialInvoiceFacts"];
+      /** Group Key Fingerprint */
+      group_key_fingerprint: string;
+      /** Profile Fingerprint */
+      profile_fingerprint: string;
+      /**
+       * Reason Code
+       * @default STATISTICAL_CANDIDATE
+       * @constant
+       */
+      reason_code: "STATISTICAL_CANDIDATE";
+      /**
+       * Schema Version
+       * @default 1
+       * @constant
+       */
+      schema_version: 1;
+    };
+    /** SequentialInvoiceFacts */
+    SequentialInvoiceFacts: {
+      /** End Serial */
+      end_serial: string;
+      /** Ordered Row Nos */
+      ordered_row_nos: number[];
+      /** Prefix Fingerprint */
+      prefix_fingerprint: string;
+      /** Sequence Length */
+      sequence_length: number;
+      /** Start Serial */
+      start_serial: string;
+      /** Suffix Width */
+      suffix_width: number;
+    };
+    /**
+     * SequentialPartitionField
+     * @enum {string}
+     */
+    SequentialPartitionField: "employee" | "merchant" | "invoice_type";
+    /** SequentialRuntimeFacts */
+    SequentialRuntimeFacts: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      detector: "sequential_invoice";
+      /** Duplicate Serial Row Count */
+      duplicate_serial_row_count: number;
+      /** Serial Parse Count */
+      serial_parse_count: number;
+      /** Serial Unparseable Count */
+      serial_unparseable_count: number;
+    };
     /**
      * SortDirection
      * @enum {string}
      */
     SortDirection: "asc" | "desc";
+    /** SpatiotemporalRuntimeFacts */
+    SpatiotemporalRuntimeFacts: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      detector: "spatiotemporal_tier0";
+      /** Location Value Count */
+      location_value_count: number;
+      /** Zone Mapped Row Count */
+      zone_mapped_row_count: number;
+      /** Zone Mapping Rate Bps */
+      zone_mapping_rate_bps: number;
+      /** Zone Unmapped Row Count */
+      zone_unmapped_row_count: number;
+    };
+    /** SpatiotemporalTier0Definition */
+    SpatiotemporalTier0Definition: {
+      /** Enabled */
+      enabled: boolean;
+      /** Incompatible Zone Pairs */
+      incompatible_zone_pairs: [string, string][];
+      /** Location Aliases */
+      location_aliases: {
+        [key: string]: string;
+      };
+      /** Min Eligible Rate Bps */
+      min_eligible_rate_bps: number;
+      /** Min Eligible Rows */
+      min_eligible_rows: number;
+      /** Min Zone Mapping Rate Bps */
+      min_zone_mapping_rate_bps: number;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "spatiotemporal_tier0";
+    };
+    /** SpatiotemporalTier0Evidence */
+    SpatiotemporalTier0Evidence: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      detector: "spatiotemporal_tier0";
+      /** Detector Version */
+      detector_version: string;
+      facts: components["schemas"]["SpatiotemporalTier0Facts"];
+      /** Group Key Fingerprint */
+      group_key_fingerprint: string;
+      /** Profile Fingerprint */
+      profile_fingerprint: string;
+      /**
+       * Reason Code
+       * @default STATISTICAL_CANDIDATE
+       * @constant
+       */
+      reason_code: "STATISTICAL_CANDIDATE";
+      /**
+       * Schema Version
+       * @default 1
+       * @constant
+       */
+      schema_version: 1;
+    };
+    /** SpatiotemporalTier0Facts */
+    SpatiotemporalTier0Facts: {
+      /** Expense Date */
+      expense_date: string;
+      /** Incompatible Zone Pairs */
+      incompatible_zone_pairs: [string, string][];
+      /** Zone Row Counts */
+      zone_row_counts: components["schemas"]["ZoneRowCount"][];
+    };
+    /** SplitInvoiceDefinition */
+    SplitInvoiceDefinition: {
+      /**
+       * Aggregate Operator
+       * @enum {string}
+       */
+      aggregate_operator: "gt" | "gte";
+      /** Approval Thresholds */
+      approval_thresholds: {
+        [key: string]: string;
+      };
+      /**
+       * Currency Mode
+       * @enum {string}
+       */
+      currency_mode: "field" | "fixed";
+      /** Date Window Days */
+      date_window_days: number;
+      /** Enabled */
+      enabled: boolean;
+      /** Fixed Currency */
+      fixed_currency: string | null;
+      /** Individual Floor Bps */
+      individual_floor_bps: number;
+      /** Merchant Aliases */
+      merchant_aliases: {
+        [key: string]: string;
+      };
+      /** Min Eligible Rate Bps */
+      min_eligible_rate_bps: number;
+      /** Min Eligible Rows */
+      min_eligible_rows: number;
+      /** Min Rows */
+      min_rows: number;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "split_invoice";
+    };
+    /** SplitInvoiceEvidence */
+    SplitInvoiceEvidence: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      detector: "split_invoice";
+      /** Detector Version */
+      detector_version: string;
+      facts: components["schemas"]["SplitInvoiceFacts"];
+      /** Group Key Fingerprint */
+      group_key_fingerprint: string;
+      /** Profile Fingerprint */
+      profile_fingerprint: string;
+      /**
+       * Reason Code
+       * @default STATISTICAL_CANDIDATE
+       * @constant
+       */
+      reason_code: "STATISTICAL_CANDIDATE";
+      /**
+       * Schema Version
+       * @default 1
+       * @constant
+       */
+      schema_version: 1;
+    };
+    /** SplitInvoiceFacts */
+    SplitInvoiceFacts: {
+      /**
+       * Aggregate Operator
+       * @enum {string}
+       */
+      aggregate_operator: "gt" | "gte";
+      /** Amounts */
+      amounts: string[];
+      /** Approval Threshold */
+      approval_threshold: string;
+      /** Currency */
+      currency: string;
+      /** Date End */
+      date_end: string;
+      /** Date Start */
+      date_start: string;
+      /** Individual Floor Bps */
+      individual_floor_bps: number;
+      /** Row Count */
+      row_count: number;
+      /** Total */
+      total: string;
+    };
+    /** SplitRuntimeFacts */
+    SplitRuntimeFacts: {
+      /** Currency Conflict Row Count */
+      currency_conflict_row_count: number;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      detector: "split_invoice";
+      /** Threshold Currency Count */
+      threshold_currency_count: number;
+      /** Unconfigured Currency Row Count */
+      unconfigured_currency_row_count: number;
+    };
     /** TimelinessEvidence */
     TimelinessEvidence: {
       /** Actual Calendar Days */
@@ -3154,6 +3971,13 @@ export interface components {
       ruleset_fingerprint: string;
       /** Total Row Count */
       total_row_count: number;
+    };
+    /** ZoneRowCount */
+    ZoneRowCount: {
+      /** Row Count */
+      row_count: number;
+      /** Zone Id */
+      zone_id: string;
     };
   };
   responses: never;
@@ -3352,6 +4176,173 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  detection_run_batch: {
+    parameters: {
+      query?: never;
+      header: {
+        "Idempotency-Key": string;
+      };
+      path: {
+        file_version_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DetectionRunResponse"];
+        };
+      };
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DetectionRunResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  detection_get_batch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        file_version_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BatchDetectionResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
         };
       };
     };
@@ -4010,6 +5001,419 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  detection_get_finding: {
+    parameters: {
+      query?: {
+        row_limit?: number;
+        row_offset?: number;
+      };
+      header?: never;
+      path: {
+        finding_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FindingDetailResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  detection_get_run: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        run_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DetectionRunResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  detection_list_findings: {
+    parameters: {
+      query?: {
+        detector?: components["schemas"]["DetectorKind"] | null;
+        capability_status?: components["schemas"]["CapabilityStatus"] | null;
+        sort_by?: "default";
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path: {
+        run_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FindingPageResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  detection_list_configs: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DetectionConfigHistoryResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  detection_put_config: {
+    parameters: {
+      query?: never;
+      header: {
+        "Idempotency-Key": string;
+      };
+      path?: never;
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DetectionConfigCreateRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DetectionConfigResponse"];
+        };
+      };
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DetectionConfigResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
         };
       };
     };
