@@ -1803,6 +1803,130 @@
         "title": "ErrorResponse",
         "type": "object"
       },
+      "EvidenceStepPageResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceStepResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "minimum": 0.0,
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "minimum": 0.0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "EvidenceStepPageResponse",
+        "type": "object"
+      },
+      "EvidenceStepResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "action_kind": {
+            "title": "Action Kind",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "decision_summary": {
+            "title": "Decision Summary",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "investigation_run_id": {
+            "format": "uuid",
+            "title": "Investigation Run Id",
+            "type": "string"
+          },
+          "model_action": {
+            "additionalProperties": true,
+            "title": "Model Action",
+            "type": "object"
+          },
+          "step_no": {
+            "maximum": 12.0,
+            "minimum": 1.0,
+            "title": "Step No",
+            "type": "integer"
+          },
+          "tool_input": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Input"
+          },
+          "tool_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Name"
+          },
+          "tool_output": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Output"
+          }
+        },
+        "required": [
+          "id",
+          "investigation_run_id",
+          "step_no",
+          "action_kind",
+          "model_action",
+          "decision_summary",
+          "tool_name",
+          "tool_input",
+          "tool_output",
+          "created_at"
+        ],
+        "title": "EvidenceStepResponse",
+        "type": "object"
+      },
       "ExclusionCount": {
         "additionalProperties": false,
         "properties": {
@@ -2840,6 +2964,293 @@
           "threshold"
         ],
         "title": "InferenceAvailabilityEvidence",
+        "type": "object"
+      },
+      "InvestigationCapability": {
+        "additionalProperties": false,
+        "properties": {
+          "max_steps": {
+            "maximum": 12.0,
+            "minimum": 1.0,
+            "title": "Max Steps",
+            "type": "integer"
+          },
+          "policy_retrieval_status": {
+            "enum": [
+              "enabled",
+              "unavailable"
+            ],
+            "title": "Policy Retrieval Status",
+            "type": "string"
+          },
+          "provider_kind": {
+            "enum": [
+              "disabled",
+              "openai_compatible"
+            ],
+            "title": "Provider Kind",
+            "type": "string"
+          },
+          "provider_model": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Model"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "reason_code": {
+            "pattern": "^[A-Z][A-Z0-9_]{2,63}$",
+            "title": "Reason Code",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "enabled",
+              "unavailable"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "reason_code",
+          "reason",
+          "provider_kind",
+          "max_steps",
+          "policy_retrieval_status"
+        ],
+        "title": "InvestigationCapability",
+        "type": "object"
+      },
+      "InvestigationHistoryResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/InvestigationResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "minimum": 0.0,
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "minimum": 0.0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "InvestigationHistoryResponse",
+        "type": "object"
+      },
+      "InvestigationResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InvestigationResultResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reused_existing": {
+            "title": "Reused Existing",
+            "type": "boolean"
+          },
+          "run": {
+            "$ref": "#/components/schemas/InvestigationRunResponse"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceStepResponse"
+            },
+            "title": "Steps",
+            "type": "array"
+          }
+        },
+        "required": [
+          "run",
+          "steps",
+          "result",
+          "reused_existing"
+        ],
+        "title": "InvestigationResponse",
+        "type": "object"
+      },
+      "InvestigationResultResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "citations": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "completed_at": {
+            "format": "date-time",
+            "title": "Completed At",
+            "type": "string"
+          },
+          "evidence_sufficient": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Sufficient"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "investigation_run_id": {
+            "format": "uuid",
+            "title": "Investigation Run Id",
+            "type": "string"
+          },
+          "outcome": {
+            "title": "Outcome",
+            "type": "string"
+          },
+          "reason_code": {
+            "title": "Reason Code",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "investigation_run_id",
+          "outcome",
+          "evidence_sufficient",
+          "summary",
+          "reason_code",
+          "citations",
+          "completed_at"
+        ],
+        "title": "InvestigationResultResponse",
+        "type": "object"
+      },
+      "InvestigationRunResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "action_schema_version": {
+            "title": "Action Schema Version",
+            "type": "integer"
+          },
+          "agent_version": {
+            "title": "Agent Version",
+            "type": "string"
+          },
+          "correlation_finding_id": {
+            "format": "uuid",
+            "title": "Correlation Finding Id",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "detection_run_id": {
+            "format": "uuid",
+            "title": "Detection Run Id",
+            "type": "string"
+          },
+          "file_version_id": {
+            "format": "uuid",
+            "title": "File Version Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "max_steps": {
+            "maximum": 12.0,
+            "minimum": 1.0,
+            "title": "Max Steps",
+            "type": "integer"
+          },
+          "prompt_template_version": {
+            "title": "Prompt Template Version",
+            "type": "string"
+          },
+          "provider_kind": {
+            "title": "Provider Kind",
+            "type": "string"
+          },
+          "provider_model": {
+            "title": "Provider Model",
+            "type": "string"
+          },
+          "redaction_version": {
+            "title": "Redaction Version",
+            "type": "string"
+          },
+          "timeout_seconds": {
+            "maximum": 120.0,
+            "minimum": 1.0,
+            "title": "Timeout Seconds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "correlation_finding_id",
+          "detection_run_id",
+          "file_version_id",
+          "provider_kind",
+          "provider_model",
+          "max_steps",
+          "timeout_seconds",
+          "redaction_version",
+          "agent_version",
+          "action_schema_version",
+          "prompt_template_version",
+          "created_at"
+        ],
+        "title": "InvestigationRunResponse",
         "type": "object"
       },
       "InvoiceDuplicateEvidence": {
@@ -12761,6 +13172,676 @@
         "summary": "Save",
         "tags": [
           "schema-mappings"
+        ]
+      }
+    },
+    "/api/v1/detection-runs/{detection_run_id}/findings/{correlation_finding_id}/investigations": {
+      "get": {
+        "operationId": "investigations_history",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "detection_run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Detection Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "correlation_finding_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Correlation Finding Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestigationHistoryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "History",
+        "tags": [
+          "investigations"
+        ]
+      },
+      "post": {
+        "operationId": "investigations_run",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "detection_run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Detection Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "correlation_finding_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Correlation Finding Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 8,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestigationResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestigationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Run",
+        "tags": [
+          "investigations"
+        ]
+      }
+    },
+    "/api/v1/investigations/capability": {
+      "get": {
+        "operationId": "investigations_capability",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestigationCapability"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Capability",
+        "tags": [
+          "investigations"
+        ]
+      }
+    },
+    "/api/v1/investigations/{investigation_run_id}": {
+      "get": {
+        "operationId": "investigations_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "investigation_run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Investigation Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestigationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Detail",
+        "tags": [
+          "investigations"
+        ]
+      }
+    },
+    "/api/v1/investigations/{investigation_run_id}/steps": {
+      "get": {
+        "operationId": "investigations_steps",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "investigation_run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Investigation Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceStepPageResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Steps",
+        "tags": [
+          "investigations"
         ]
       }
     }

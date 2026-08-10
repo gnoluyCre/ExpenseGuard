@@ -142,6 +142,12 @@ export type CorrelationFindingSummary = CorrelationFindingPage["items"][number];
 export type CorrelationFindingDetail =
   paths["/api/correlation-findings/{finding_id}"]["get"]["responses"][200]["content"]["application/json"];
 
+/** F7 受限异常取证能力、历史、步骤与显式终态。 */
+export type InvestigationCapability = components["schemas"]["InvestigationCapability"];
+export type Investigation = components["schemas"]["InvestigationResponse"];
+export type InvestigationHistory = components["schemas"]["InvestigationHistoryResponse"];
+export type InvestigationStepPage = components["schemas"]["EvidenceStepPageResponse"];
+
 /**
  * 后端权限标识。
  *

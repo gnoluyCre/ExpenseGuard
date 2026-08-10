@@ -5,7 +5,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 -->
 
 ## 🏗️ 当前阶段与目标
-**当前任务:阶段 3 F6 的 CP-F6.0–CP-F6.5 已全部完成。** `specs/007-phase3-f6-cross-row-detection.md` 是 F6 的唯一规范与交付证据来源；F7/F8 尚未开始。
+**当前任务:一次授权完成 ExpenseGuard 代码就绪 MVP。** F7 已闭包；当前进入 F8 CP-F8.1 持久化，完成后自动推进阶段 3/4 收尾，不再逐 checkpoint 等待人工确认。
 
 - CP0 仓库重置(干净历史、`.gitignore` 脱敏排除)
 - CP1 后端地基(uv + 18 张表 + Alembic 三层隔离)
@@ -13,7 +13,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - CP3 认证、RBAC、租户隔离(含反向验证)
 - CP4 前端垂直切片 + OpenAPI 契约门禁 + pre-commit/CI + 合成数据生成器(含反向验证)
 
-**下一步:** F6 已闭包；后续若启动 F7，须另行按规格/计划确认，不得把 F7/F8 行为回填进 F6 不可变候选。
+**下一步:** 按 Spec 009 执行 F8 CP-F8.1：先备份默认库，再新增 `0010` 与独立不可变 grading snapshot；不得回填 legacy severity、改写 F4/F5/F6/F7 事实或调用任何模型。
 `process_row_once` 的首个生产调用方现为 `app.core.validation.batch_service.validate_batch`；行内 finding 与 `row_result` 使用同一 session/事务，`row_result.rule_version` 固定保存规则集指纹。
 
 **开工前必读的两件事:**
@@ -22,8 +22,11 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 
 **遗留缺口:** W0 运行态仍未闭环 —— 2026-07-28 已验证代码侧 fake/HTTP 双路径、prod 禁 fake、模型/Qdrant 主机白名单和真实 Qdrant；但 pinned Infinity 镜像拉取停在 registry layer，`docker manifest inspect` 也超时，按有界策略终止。官方支持把预下载模型目录挂入容器并以容器内路径作为 `--model-id`，但客户离线权重包、镜像可达性、实际 embed/rerank 质量与资源占用仍需外部网络/权重输入后实测。
 
+**MVP 自动闭环授权（2026-08-10）:** 人工批准在 `codex/mvp-completion` 上连续完成 F7 → F8 → 阶段 3/4 代码就绪闭环。阶段内自动规格、实现、修复、门禁、文档、提交与推送；路线图内允许新增迁移及调整 Docker/CI。真实云 API、本地模型和客户批次不在自动测试中，统一列为 `external_validation_pending`。强 LLM 使用 OpenAI-compatible 云 API 抽象；embedding/rerank 保持内网 HTTP 边界；缺配置必须显式 `unavailable` 并转人工。
+
 ## 📂 架构决策
 *(把构建过程中做出的具体选择记录在此,便于后续 agent 遵循)*
+- 2026-08-10 — **F7 CP-F7.0–CP-F7.5 异常取证闭包完成。** 新增 `0009` 不可变 investigation run/request/step/result/PII-token 事实、稳定 tenant HMAC token、OpenAI-compatible + scripted provider、四个 tenant-bound 只读工具、五终态与业务库权威的 LangGraph/PostgreSQL 恢复；API/UI、权限、租户隔离、恶意文本、hard-kill、并发和 completed replay 零外部调用均通过。后端全量 `506 passed, 1 skipped`，前端 14 文件 `57 passed`，两端静态/构建、OpenAPI 二次稳定、pre-commit/gitleaks、`pip-audit` 和生产依赖 npm audit 通过。5000 行 F1→F7 总耗时 `115.321029s`，130 次调查用时 `8.167681s`，真实模型调用为 0。完整 npm audit 尚有 2 条仅开发期 `openapi-typescript -> Redocly 1.x -> js-yaml` 高危公告；无兼容升级路径且只解析仓库生成的 OpenAPI，已窄化接受并持续跟踪。真实云 API、本地模型、客户批次与生产部署均为 `external_validation_pending`。
 - 2026-08-01 — **F6 CP-F6.5 契约与交付门禁闭包完成。** 固定 seed=3500 的 5000 行夹具在标签与 XLSX 物理分离前提下嵌入拆单/连号/频次/时空四类确定性模式，F1→F6 含交互采样总耗时 `102.931691s`，四类真值全部机械命中；F6 纯算法 `0.155957s`，初次 detect `1.973916s`/21 SQL（SQL 累计 `0.395481s`），replay/list/detail p95 分别为 `1.687987s`/`0.014404s`/`0.012844s`，响应体上限分别为 737/19457/5007 bytes。首测 detect `3.066590s` 暴露逐 finding/参与行 flush 热点；改为声明单批、finding/row-link 每 250 条有界批量 flush，并把 input snapshot 查询收窄为 normalized/parse-error/availability 必需列后通过门禁，事务、六故障点与 hard-kill 恢复语义保持不变。F6 定向 112 passed、优化后恢复/API 16 passed，后端全量 `453 passed, 1 skipped`；Ruff/180 文件 format、strict mypy（128 源文件）、前端 13 文件/53 passed、typecheck/oxlint/Prettier/build、默认/测试双库 `0008` 与 Alembic 零漂移、OpenAPI/client 二次稳定、pre-commit/gitleaks 及两端依赖审计全绿。Chrome 1440×1000 共 15 个状态指标/19 张截图覆盖 config/run/finding/三角色/恶意文本，全部页面溢出、脚本/图片执行与浏览器持久化为 0；私有证据位于 `data/private/cp-f6.5/`。未新增依赖/迁移，未修改基础设施、F4/F5 语义或进入 F7/F8。
 - 2026-08-01 — **F6 CP-F6.4 强类型 API、契约与桌面补充工作流闭包完成。** 新增 7 个 config/run/finding endpoint，全部经 CP-F6.3 service 且路由零 SQL；config history 增精确 total/limit/offset，finding list 增 `capability_status` EXISTS 过滤，profile/evidence/runtime 由 Pydantic discriminator 单源约束，所有 F6 数据响应 `private, no-store`，RBAC 沿用 permission 数据且跨租户稳定 404。前端新增权限驱动的关联检测配置页与批次独立补充页签，Zod 对 exact Unicode/控制字符/正 Decimal/四 detector/partition 重复 fail closed；明确区分 enabled 零候选、degraded、unavailable 与 config stale，统计候选不进入 F5 queue、不展示 legacy severity。后端定向 16 passed、全量 453 passed/1 skipped，Ruff/180 文件 format、strict mypy（128 源文件）通过；前端 13 文件/53 passed、typecheck/oxlint/Prettier/build 全绿。OpenAPI/client 连续二次 SHA-256 稳定；pre-commit/gitleaks、两端依赖审计零漏洞。Chrome 1440×1000 覆盖配置/history、auditor stale/detail、viewer 只读与错误态，均零页面溢出、零恶意脚本/图片执行、零浏览器持久化；私有证据位于 `data/private/cp-f6.4/`。未新增依赖/迁移，未修改 F4 XLSX/F5 queue，未执行 CP-F6.5 的 5000 行/p95/SQL 门禁或 F7/F8。
 - 2026-08-01 — **F6 CP-F6.3 原子运行、查询、幂等与恢复闭包完成。** 新增 `config_service`/`input_snapshot`/`run_service`/`query_service` 与强类型 service results/errors；profile 保存只锁 Tenant，run 固定 `Tenant → FileVersion NOWAIT`，normalized/parse-error/12-field availability 构成 canonical input fingerprint。completed replay 先按 request ledger 绑定的历史 config 校验 key/request/input identity，不读取 current config、不执行 detector；新 key + 同 file/profile 仅追加 alias，不新增 run/finding/success audit。首次 run 在内存完成四 detector 与全量校验后，单事务追加 completed run、恰四 declaration、findings、物理 row links、request 与 `detection.run_complete`；未知异常全回滚后独立写无 PII failed audit，input drift fail closed。query 全部显式 tenant 条件、数据库稳定分页与精确 count。13 项 CP-F6.3 集成测试含六类 fault point、NOWAIT、同/异 key、alias、profile 变化、零 finding 四声明、跨进程 `os._exit(91)` hard-kill/restart；F3/F5/F6 定向 90 passed，detection 49 项 statement/branch 89%，全量 450 passed/1 skipped。Ruff/178 文件 format、strict mypy（127 源文件）、双库 `0008`/Alembic、OpenAPI/client、pre-commit/gitleaks 与 `pip-audit --strict` 全绿。顺带修复 OpenAPI 导出脚本 Windows `write_text` CRLF 字节漂移，改为 UTF-8 bytes 后恢复既有契约 SHA-256。未新增依赖、迁移、API/UI、模型/Qdrant 或 F7/F8 行为。

@@ -29,6 +29,10 @@ EXPECTED_TABLES = {
     "field_availability",
     "file_version",
     "finding",
+    "investigation_request",
+    "investigation_result",
+    "investigation_run",
+    "pii_token",
     "policy_clause",
     "policy_document",
     "review",
@@ -106,8 +110,8 @@ async def test_row_result_idempotency_constraint_exists(engine: AsyncEngine) -> 
         ("review", "uq_review_finding_id"),
         # 规则版本化:「相同输入 + 相同规则版本 → 相同输出」的前提
         ("rule_config", "uq_rule_config_tenant_id_rule_id_version"),
-        # ReAct 循环同样会被重放
-        ("evidence_step", "uq_evidence_step_finding_id_step_no"),
+        # ReAct 循环同样会被重放；F7 以 investigation run 为身份。
+        ("evidence_step", "uq_evidence_step_run_step_no"),
         # 被放行样本抽检:漏放率唯一的可测来源
         ("sampling_audit", "uq_sampling_audit_file_version_id_row_no"),
         # F2 必须保留 0002 的映射骨架唯一约束。

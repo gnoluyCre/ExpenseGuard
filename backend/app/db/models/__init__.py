@@ -38,6 +38,16 @@ from app.db.models.findings import (
     SamplingReview,
     SamplingReviewDecision,
 )
+from app.db.models.investigation import (
+    InvestigationActionKind,
+    InvestigationOutcome,
+    InvestigationProviderKind,
+    InvestigationRequest,
+    InvestigationResult,
+    InvestigationRun,
+    PiiKind,
+    PiiToken,
+)
 from app.db.models.policy import (
     PolicyChunk,
     PolicyClause,
@@ -86,7 +96,15 @@ __all__ = [
     "FieldStatus",
     "FileVersion",
     "Finding",
+    "InvestigationActionKind",
+    "InvestigationOutcome",
+    "InvestigationProviderKind",
+    "InvestigationRequest",
+    "InvestigationResult",
+    "InvestigationRun",
     "ParseStatus",
+    "PiiKind",
+    "PiiToken",
     "PolicyChunk",
     "PolicyClause",
     "PolicyDocument",

@@ -23,12 +23,15 @@ from app.api.routes import (
     batches,
     detection,
     health,
+    investigations,
     policies,
     reports,
     reviews,
     rules,
     schema_mappings,
 )
+from app.core.agent.checkpoint_reconciler import LangGraphCheckpointReconciler
+from app.core.orchestration.checkpointer import checkpointer
 from app.core.tenancy.scope import install_tenant_guard
 from app.db.engine import create_engine_from_settings, create_session_factory
 from app.settings import Settings, get_settings
@@ -64,7 +67,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("应用启动完成 env=%s", settings.app_env)
 
     try:
-        yield
+        async with checkpointer(settings) as checkpoint_saver:
+            app.state.investigation_checkpoint_reconciler = LangGraphCheckpointReconciler(
+                checkpoint_saver
+            )
+            yield
     finally:
         # 优雅退出:释放连接池
         await engine.dispose()
@@ -106,6 +113,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(policies.router)
     app.include_router(reports.router)
     app.include_router(reviews.router)
+    app.include_router(investigations.router)
     return app
 
 

@@ -48,10 +48,9 @@
     "vitest": "^4.1.10"
   },
   "_overrides_note": [
-    "两条 override 都是为了消掉 openapi-typescript 传递依赖里的高危 DoS 公告，",
-    "上游（@redocly/openapi-core）尚未放行新版本。",
-    "js-yaml 必须锁在 4.3.0 而不是 ^5 —— redocly 用的是 v4 的 types.merge API，",
-    "升到 5 会让 openapi-typescript 启动即 TypeError。踩过一次，勿再抬。"
+    "brace-expansion is overridden beyond its published high-severity DoS range.",
+    "openapi-typescript 7.13.0 requires @redocly/openapi-core 1.x and js-yaml 4.x; the 2026 js-yaml advisory has no compatible upstream release yet.",
+    "The remaining advisory is dev-only and only parses the repository-generated OpenAPI file; production audit must remain zero while upstream remediation is tracked."
   ],
   "overrides": {
     "brace-expansion": "^5.0.8",

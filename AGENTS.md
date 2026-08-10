@@ -65,6 +65,13 @@
 8. **善用子代理:** 若工具支持子代理或并行代理,分配角色并要求先出计划再编辑。
 9. **不确定必须显性化:** AI 失败 / 超步数时的回退一律是「转人工 + 显式标注」,绝不是「猜一个结论」。这与能力声明机制(enabled/degraded/unavailable)一致。
 
+### MVP 自动闭环授权（2026-08-10）
+- 人工已一次性批准从 F7 连续推进至「代码就绪 MVP」：阶段内自动执行规格固化、实现、测试、修复、全量门禁、文档更新、提交与推送，不再逐 checkpoint 等待确认。
+- 允许在既定路线图内新增 Alembic 迁移、Docker 配置与 CI 门禁；不得修改已有迁移、弱化受保护约束、删除数据、使用真实客户数据或执行生产发布。
+- 仅在以下边界暂停：不可逆/破坏性操作；需要真实凭据、付费服务或客户数据；需要改变 PII/检索不出内网等安全硬约束；权限/UAC 等外部阻塞；同一阻塞连续三次且无安全推进路径。
+- F7 强模型使用 OpenAI-compatible 云 API 抽象；embedding/rerank 继续走内网 HTTP API。MVP 自动测试仅使用无网络 deterministic/scripted provider，不调用真实云模型或真实本地模型。
+- 「代码就绪 MVP」不等于生产验收完成。真实云 API 冒烟、真实本地 embedding/rerank、真实客户月度批次和实际生产部署均标记 `external_validation_pending`。
+
 ## 禁止事项 ⛔
 - 不得未经明确确认删除文件。
 - 不得在无备份方案的情况下修改数据库 schema(幂等约束与审计表尤其敏感)。
@@ -85,10 +92,10 @@
 - **流程纪律:** pre-commit 钩子(format / lint / secret 扫描)必须通过方可提交(或先询问再绕过)。CI 评测门禁:召回率低于基线阈值即阻断合并。
 
 ## 当前状态 📍
-**最近更新:** 2026-08-01
-**正在进行:** 阶段 3 F6 的 CP-F6.0–CP-F6.5 已全部完成；F7/F8 尚未开始。
-**最近完成:** CP0 仓库重置 / CP1 后端地基 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离 / **CP4 前端垂直切片 + OpenAPI 契约 + CI** / **F1 Excel 导入** / **F2 CP-F2.0–CP-F2.5** / **F3 CP-F3.0–CP-F3.5** / **F4 CP-F4.0–CP-F4.5 报告生成闭包**（制度导入/发布/本地检索、configurator-confirmed binding、严格逐字引用、原子报告 snapshot、typed API、桌面工作流、五表 XLSX、安全回读、5000 行性能与交付门禁）/ **F5 CP-F5.0–CP-F5.5 人工复核闭包**（规格、持久化、可复算抽样与一次性 decision 服务；强类型 API/OpenAPI；权限驱动桌面复核台；SQL 联合分页；固定 seed 5000 行性能、全状态 Chrome、安全与交付门禁）/ **F6 CP-F6.0–CP-F6.5 跨行关联检测闭包**（四类纯 detector、能力声明、物理参与行、原子幂等恢复、强类型 API/OpenAPI、权限驱动桌面补充视图、固定 seed 5000 行性能、安全与全状态 Chrome 门禁）
-**受阻于:** 无（F6 已闭包；W0 模型容器运行态仍需外部镜像/离线权重输入,见 `MEMORY.md`）
+**最近更新:** 2026-08-10
+**正在进行:** 已完成 F7 CP-F7.0–CP-F7.5；MVP 自动闭环现进入 F8 CP-F8.1，随后继续阶段 3/4 代码就绪收尾。
+**最近完成:** CP0 仓库重置 / CP1 后端地基 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离 / **CP4 前端垂直切片 + OpenAPI 契约 + CI** / **F1 Excel 导入** / **F2 CP-F2.0–CP-F2.5** / **F3 CP-F3.0–CP-F3.5** / **F4 CP-F4.0–CP-F4.5 报告生成闭包** / **F5 CP-F5.0–CP-F5.5 人工复核闭包** / **F6 CP-F6.0–CP-F6.5 跨行关联检测闭包** / **F7 CP-F7.0–CP-F7.5 异常取证闭包**（OpenAI-compatible provider、稳定 PII token、四只读工具、LangGraph/PostgreSQL 恢复、五终态、强类型 API/UI、零真实模型 5000 行及安全门禁）
+**受阻于:** 无（W0 与真实云 API 均为 `external_validation_pending`，不阻塞离线代码闭环）
 **已知缺口 / 状态(三项):**
 1. **W0 运行态未闭环** —— 代码侧本地模型/Qdrant 私有化边界与真实 Qdrant 已验证；但 pinned Infinity 镜像在 registry layer 拉取无进展且 manifest 查询超时，实际 embed/rerank、资源占用及客户离线权重包仍待外部输入后验证。
 2. **CI 远端闭环** —— 2026-07-29 已由 F4/F5 PR 实测 backend / frontend / contract / secrets / eval-gate 全绿；backend job 显式启动 PostgreSQL 与 pinned Qdrant，并验证测试库创建、gitleaks 镜像及 setup-uv/setup-node 缓存路径可用。
@@ -115,7 +122,7 @@
 
 ### 阶段 3:差异化能力(P1)与打磨
 - [x] **F6 · 跨行关联检测(统计层)** —— CP-F6.0–CP-F6.5 已完成；四类 detector、能力声明、幂等恢复、契约、安全、5000 行性能与桌面交付门禁全部通过
-- [ ] **F7 · 异常取证 Agent(ReAct)** —— 只读工具集;最大步数上限;每步落 `evidence_step`;终止给出「证据是否充分」显式判断
+- [x] **F7 · 异常取证 Agent(ReAct)** —— CP-F7.0–CP-F7.5 已完成；只读工具、最大步数、追加证据步骤、五种显式终态、PII 出站边界、幂等恢复与桌面调查视图均已落地
 - [ ] **F8 · 二维分级** —— severity_impact / severity_confidence 分列;代价敏感阈值参数化
 - [ ] 错误处理完善、性能达标(5000 行 ≤ 15 分钟)、优雅退出(SIGTERM 后完成当前行 + 写 checkpoint 再退出)
 

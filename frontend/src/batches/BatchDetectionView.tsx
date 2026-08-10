@@ -16,6 +16,7 @@ import {
   useCorrelationFindings,
   useRunDetection,
 } from "@/detection/useDetection";
+import { InvestigationPanel } from "@/investigations/InvestigationPanel";
 import { cn } from "@/lib/utils";
 
 const DETECTORS = [
@@ -283,7 +284,13 @@ export function BatchDetectionView({
                 </div>
               ) : null}
             </section>
-            <FindingDetailPane query={detail} rowOffset={rowOffset} setRowOffset={setRowOffset} />
+            <FindingDetailPane
+              query={detail}
+              rowOffset={rowOffset}
+              setRowOffset={setRowOffset}
+              detectionRunId={runId ?? ""}
+              user={user}
+            />
           </div>
         </>
       )}
@@ -295,10 +302,14 @@ function FindingDetailPane({
   query,
   rowOffset,
   setRowOffset,
+  detectionRunId,
+  user,
 }: {
   query: ReturnType<typeof useCorrelationFinding>;
   rowOffset: number;
   setRowOffset: (value: number) => void;
+  detectionRunId: string;
+  user: CurrentUser;
 }) {
   if (query.isLoading) return <StateMessage>正在读取候选证据…</StateMessage>;
   if (query.isError) return <StateMessage error>{query.error.message}</StateMessage>;
@@ -329,6 +340,7 @@ function FindingDetailPane({
       <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap break-all rounded-lg bg-slate-950 p-3 text-xs leading-5 text-slate-100">
         {JSON.stringify(item.evidence.facts, null, 2)}
       </pre>
+      <InvestigationPanel detectionRunId={detectionRunId} findingId={item.id} user={user} />
       <div className="mt-4 overflow-x-auto rounded-lg border">
         <div className="min-w-[720px]">
           <div className="grid grid-cols-[60px_70px_1fr_1fr] bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">

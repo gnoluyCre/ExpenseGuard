@@ -9,7 +9,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Annotated, Literal, Self
 
-from pydantic import Field, PostgresDsn, field_validator, model_validator
+from pydantic import Field, PostgresDsn, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 #: backend/app/settings.py → backend/app → backend → 仓库根
@@ -96,6 +96,19 @@ class Settings(BaseSettings):
     policy_rerank_revision: str = "unpinned-dev"
     policy_candidate_top_k: int = Field(default=20, ge=1, le=100)
     policy_candidate_cutoff: float = Field(default=-1.0, ge=-1.0, le=1.0)
+
+    # —— F7 异常取证强模型 ——
+    # 缺少真实配置时应用仍可启动，调查能力由服务层显式声明 unavailable。
+    # 自动测试只注入 ScriptedLlmProvider，不读取这些凭据也不访问真实网络。
+    llm_provider: Literal["disabled", "openai_compatible"] = "disabled"
+    llm_base_url: str = ""
+    llm_api_key: SecretStr = SecretStr("")
+    llm_model: str = ""
+    llm_timeout_seconds: int = Field(default=30, ge=1, le=120)
+    llm_validation_retries: int = Field(default=1, ge=0, le=2)
+    investigation_max_steps: int = Field(default=6, ge=1, le=12)
+    pii_tokenization_key: SecretStr = SecretStr("")
+    pii_tokenization_version: int = Field(default=1, ge=1, le=99)
 
     # —— 可观测 ——
     # Phase 1 默认关闭：此阶段无 LLM 调用，trace 消费者为 0。

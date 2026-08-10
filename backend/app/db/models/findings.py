@@ -8,7 +8,6 @@ from typing import Any
 from sqlalchemy import (
     CheckConstraint,
     DateTime,
-    ForeignKey,
     ForeignKeyConstraint,
     Index,
     Integer,
@@ -23,6 +22,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, TimestampMixin
 from app.db.models.detection import DetectorKind
+from app.db.models.investigation import InvestigationActionKind, investigation_run_fk
 from app.db.models.mixins import TenantScopedMixin, file_version_fk, str_enum, uuid_pk
 
 
@@ -221,27 +221,76 @@ class CorrelationFinding(Base, TenantScopedMixin, TimestampMixin):
 
 
 class EvidenceStep(Base, TenantScopedMixin, TimestampMixin):
-    """ReAct 取证 agent 的单步记录。
-
-    每一步的工具选择、输入、输出全部落库。这既是审计要求，
-    也是教学项目的可视化数据源。
-
-    `unique(finding_id, step_no)`:ReAct 循环同样可能被重放，
-    步骤记录也需要幂等。
-    """
+    """Immutable, redacted record of one completed F7 ReAct action."""
 
     __tablename__ = "evidence_step"
     __table_args__ = (
-        UniqueConstraint("finding_id", "step_no"),
-        Index("ix_evidence_step_finding_id_step_no", "finding_id", "step_no"),
+        UniqueConstraint(
+            "investigation_run_id",
+            "step_no",
+            name="uq_evidence_step_run_step_no",
+        ),
+        investigation_run_fk("fk_evidence_step_run_identity"),
+        CheckConstraint("step_no > 0", name="step_no_positive"),
+        CheckConstraint(
+            "action_kind IN ('tool_call', 'terminate')",
+            name="action_kind_values",
+        ),
+        CheckConstraint("action_schema_version = 1", name="action_schema_version_value"),
+        CheckConstraint("jsonb_typeof(model_action) = 'object'", name="model_action_object"),
+        CheckConstraint(
+            "octet_length(convert_to(model_action::text, 'UTF8')) <= 65536",
+            name="model_action_size",
+        ),
+        CheckConstraint(
+            "(action_kind = 'tool_call' AND tool_name IN "
+            "('get_correlation_rows', 'get_employee_history', "
+            "'get_supplier_history', 'search_policy_clauses') "
+            "AND tool_input IS NOT NULL AND tool_output IS NOT NULL) OR "
+            "(action_kind = 'terminate' AND tool_name IS NULL "
+            "AND tool_input IS NULL AND tool_output IS NULL)",
+            name="action_tool_consistent",
+        ),
+        CheckConstraint(
+            "tool_input IS NULL OR jsonb_typeof(tool_input) = 'object'",
+            name="tool_input_object",
+        ),
+        CheckConstraint(
+            "tool_output IS NULL OR jsonb_typeof(tool_output) = 'object'",
+            name="tool_output_object",
+        ),
+        CheckConstraint(
+            "tool_input IS NULL OR octet_length(convert_to(tool_input::text, 'UTF8')) <= 32768",
+            name="tool_input_size",
+        ),
+        CheckConstraint(
+            "tool_output IS NULL OR octet_length(convert_to(tool_output::text, 'UTF8')) <= 262144",
+            name="tool_output_size",
+        ),
+        CheckConstraint(
+            "char_length(decision_summary) BETWEEN 1 AND 1000 "
+            "AND decision_summary !~ '[[:cntrl:]]'",
+            name="decision_summary_valid",
+        ),
+        CheckConstraint(
+            "payload_fingerprint ~ '^[0-9a-f]{64}$'",
+            name="payload_fingerprint_format",
+        ),
+        Index("ix_evidence_step_run_step_no", "investigation_run_id", "step_no"),
     )
 
     id: Mapped[uuid.UUID] = uuid_pk()
-    finding_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("finding.id", ondelete="CASCADE"), nullable=False
-    )
+    investigation_run_id: Mapped[uuid.UUID] = mapped_column(nullable=False)
+    correlation_finding_id: Mapped[uuid.UUID] = mapped_column(nullable=False)
+    detection_run_id: Mapped[uuid.UUID] = mapped_column(nullable=False)
+    file_version_id: Mapped[uuid.UUID] = mapped_column(nullable=False)
     step_no: Mapped[int] = mapped_column(Integer, nullable=False)
-    tool_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    action_kind: Mapped[InvestigationActionKind] = mapped_column(String(32), nullable=False)
+    action_schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    model_action: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    decision_summary: Mapped[str] = mapped_column(Text, nullable=False)
+    payload_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    tool_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
     tool_input: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     tool_output: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 

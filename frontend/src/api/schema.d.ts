@@ -771,6 +771,75 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/detection-runs/{detection_run_id}/findings/{correlation_finding_id}/investigations": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** History */
+    get: operations["investigations_history"];
+    put?: never;
+    /** Run */
+    post: operations["investigations_run"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/investigations/capability": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Capability */
+    get: operations["investigations_capability"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/investigations/{investigation_run_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Detail */
+    get: operations["investigations_detail"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/investigations/{investigation_run_id}/steps": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Steps */
+    get: operations["investigations_steps"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1599,6 +1668,55 @@ export interface components {
     ErrorResponse: {
       error: components["schemas"]["ErrorDetail"];
     };
+    /** EvidenceStepPageResponse */
+    EvidenceStepPageResponse: {
+      /** Items */
+      items: components["schemas"]["EvidenceStepResponse"][];
+      /** Limit */
+      limit: number;
+      /** Offset */
+      offset: number;
+      /** Total */
+      total: number;
+    };
+    /** EvidenceStepResponse */
+    EvidenceStepResponse: {
+      /** Action Kind */
+      action_kind: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Decision Summary */
+      decision_summary: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Investigation Run Id
+       * Format: uuid
+       */
+      investigation_run_id: string;
+      /** Model Action */
+      model_action: {
+        [key: string]: unknown;
+      };
+      /** Step No */
+      step_no: number;
+      /** Tool Input */
+      tool_input: {
+        [key: string]: unknown;
+      } | null;
+      /** Tool Name */
+      tool_name: string | null;
+      /** Tool Output */
+      tool_output: {
+        [key: string]: unknown;
+      } | null;
+    };
     /** ExclusionCount */
     ExclusionCount: {
       /** Count */
@@ -2050,6 +2168,126 @@ export interface components {
       success_rate: string;
       /** Threshold */
       threshold: string;
+    };
+    /** InvestigationCapability */
+    InvestigationCapability: {
+      /** Max Steps */
+      max_steps: number;
+      /**
+       * Policy Retrieval Status
+       * @enum {string}
+       */
+      policy_retrieval_status: "enabled" | "unavailable";
+      /**
+       * Provider Kind
+       * @enum {string}
+       */
+      provider_kind: "disabled" | "openai_compatible";
+      /** Provider Model */
+      provider_model?: string | null;
+      /** Reason */
+      reason: string;
+      /** Reason Code */
+      reason_code: string;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "enabled" | "unavailable";
+    };
+    /** InvestigationHistoryResponse */
+    InvestigationHistoryResponse: {
+      /** Items */
+      items: components["schemas"]["InvestigationResponse"][];
+      /** Limit */
+      limit: number;
+      /** Offset */
+      offset: number;
+      /** Total */
+      total: number;
+    };
+    /** InvestigationResponse */
+    InvestigationResponse: {
+      result: components["schemas"]["InvestigationResultResponse"] | null;
+      /** Reused Existing */
+      reused_existing: boolean;
+      run: components["schemas"]["InvestigationRunResponse"];
+      /** Steps */
+      steps: components["schemas"]["EvidenceStepResponse"][];
+    };
+    /** InvestigationResultResponse */
+    InvestigationResultResponse: {
+      /** Citations */
+      citations: {
+        [key: string]: unknown;
+      }[];
+      /**
+       * Completed At
+       * Format: date-time
+       */
+      completed_at: string;
+      /** Evidence Sufficient */
+      evidence_sufficient: boolean | null;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Investigation Run Id
+       * Format: uuid
+       */
+      investigation_run_id: string;
+      /** Outcome */
+      outcome: string;
+      /** Reason Code */
+      reason_code: string;
+      /** Summary */
+      summary: string;
+    };
+    /** InvestigationRunResponse */
+    InvestigationRunResponse: {
+      /** Action Schema Version */
+      action_schema_version: number;
+      /** Agent Version */
+      agent_version: string;
+      /**
+       * Correlation Finding Id
+       * Format: uuid
+       */
+      correlation_finding_id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Detection Run Id
+       * Format: uuid
+       */
+      detection_run_id: string;
+      /**
+       * File Version Id
+       * Format: uuid
+       */
+      file_version_id: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Max Steps */
+      max_steps: number;
+      /** Prompt Template Version */
+      prompt_template_version: string;
+      /** Provider Kind */
+      provider_kind: string;
+      /** Provider Model */
+      provider_model: string;
+      /** Redaction Version */
+      redaction_version: string;
+      /** Timeout Seconds */
+      timeout_seconds: number;
     };
     /** InvoiceDuplicateEvidence */
     InvoiceDuplicateEvidence: {
@@ -7440,6 +7678,458 @@ export interface operations {
       };
       /** @description Unprocessable Content */
       422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  investigations_history: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path: {
+        detection_run_id: string;
+        correlation_finding_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvestigationHistoryResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  investigations_run: {
+    parameters: {
+      query?: never;
+      header: {
+        "Idempotency-Key": string;
+      };
+      path: {
+        detection_run_id: string;
+        correlation_finding_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvestigationResponse"];
+        };
+      };
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvestigationResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  investigations_capability: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvestigationCapability"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  investigations_detail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        investigation_run_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvestigationResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  investigations_steps: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path: {
+        investigation_run_id: string;
+      };
+      cookie?: {
+        eg_session?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EvidenceStepPageResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
         headers: {
           [name: string]: unknown;
         };
