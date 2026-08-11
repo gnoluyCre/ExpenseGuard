@@ -6411,6 +6411,11 @@
             "title": "Dependencies",
             "type": "array"
           },
+          "draining": {
+            "default": false,
+            "title": "Draining",
+            "type": "boolean"
+          },
           "ready": {
             "title": "Ready",
             "type": "boolean"

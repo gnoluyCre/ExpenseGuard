@@ -41,6 +41,10 @@ dependencies = [
     # 合成数据生成器（app/synth）写 .xlsx 用它；F1 的导入侧也将复用，
     # 因此是运行时依赖而非 dev 依赖。纯 Python + wheel，无编译。
     "openpyxl>=3.1,<4",
+    # —— 可观测 ——
+    # 关闭时仅保留 no-op API，不创建 exporter，也不产生网络调用。
+    "opentelemetry-sdk>=1.44,<1.45",
+    "opentelemetry-exporter-otlp-proto-http>=1.44,<1.45",
 ]
 
 [dependency-groups]

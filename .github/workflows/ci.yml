@@ -240,3 +240,24 @@ jobs:
       - name: 评测门禁
         working-directory: backend
         run: uv run pytest -m eval
+
+  # =====================================================================
+  # Prompt 注入边界：只使用仓库内 deterministic provider。
+  # 不生成攻击、不调用云模型、不读取任何真实数据或凭据。
+  # =====================================================================
+  prompt-injection:
+    name: prompt-injection
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: security/promptfoo/package-lock.json
+      - name: 安装离线红队运行器
+        working-directory: security/promptfoo
+        run: npm ci
+      - name: 离线 prompt 注入门禁
+        working-directory: security/promptfoo
+        run: npm test

@@ -5,3 +5,7 @@
 34234befa58869be4a0123475ed3747e04578396:backend/tests/unit/test_agent_tools.py:generic-api-key:52
 34234befa58869be4a0123475ed3747e04578396:backend/tests/unit/test_agent_tools.py:generic-api-key:64
 34234befa58869be4a0123475ed3747e04578396:backend/tests/unit/test_agent_tools.py:generic-api-key:72
+# Exact false positives for F8 tests that prove scoped tokens never enter grading output.
+149cf215cbc97f018ff4e22da166fc587d151e49:backend/tests/integration/test_grading_run_service.py:generic-api-key:551
+149cf215cbc97f018ff4e22da166fc587d151e49:backend/tests/integration/test_grading_run_service.py:generic-api-key:575
+149cf215cbc97f018ff4e22da166fc587d151e49:backend/tests/integration/test_grading_run_service.py:generic-api-key:613

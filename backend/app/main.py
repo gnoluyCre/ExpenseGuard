@@ -18,6 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
 
 from app.api.errors import register_error_handlers
+from app.api.middleware import RuntimeBoundaryMiddleware
 from app.api.routes import (
     auth,
     batches,
@@ -32,7 +33,10 @@ from app.api.routes import (
     schema_mappings,
 )
 from app.core.agent.checkpoint_reconciler import LangGraphCheckpointReconciler
+from app.core.observability.logging import configure_json_logging
+from app.core.observability.tracing import configure_tracing
 from app.core.orchestration.checkpointer import checkpointer
+from app.core.runtime import DrainController, drain_controller
 from app.core.tenancy.scope import install_tenant_guard
 from app.db.engine import create_engine_from_settings, create_session_factory
 from app.settings import Settings, get_settings
@@ -58,6 +62,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     （比如导出 OpenAPI 的脚本）就会尝试连数据库。
     """
     settings = get_settings()
+    configure_json_logging(settings.log_level)
+    tracer_provider = configure_tracing(settings)
 
     # 装上租户过滤守卫。必须在任何查询发生之前。
     install_tenant_guard()
@@ -74,14 +80,24 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             )
             yield
     finally:
+        runtime_drain = getattr(app.state, "drain_controller", None)
+        if isinstance(runtime_drain, DrainController):
+            runtime_drain.request_drain()
         # 优雅退出:释放连接池
         await engine.dispose()
+        if tracer_provider is not None:
+            tracer_provider.shutdown()
         logger.info("应用已退出")
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(
+    settings: Settings | None = None,
+    *,
+    drain: DrainController | None = None,
+) -> FastAPI:
     """构建应用实例。"""
     settings = settings or get_settings()
+    runtime_drain = drain or DrainController()
 
     app = FastAPI(
         title="ExpenseGuard API",
@@ -93,6 +109,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         separate_input_output_schemas=False,
         generate_unique_id_function=_operation_id,
     )
+    app.state.drain_controller = runtime_drain
 
     app.add_middleware(
         CORSMiddleware,
@@ -102,6 +119,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
         allow_headers=["Content-Type", "Idempotency-Key"],
+    )
+    app.add_middleware(
+        RuntimeBoundaryMiddleware,
+        settings=settings,
+        drain=runtime_drain,
     )
 
     register_error_handlers(app)
@@ -119,4 +141,4 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     return app
 
 
-app = create_app()
+app = create_app(drain=drain_controller)

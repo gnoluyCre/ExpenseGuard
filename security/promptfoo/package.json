@@ -1,0 +1,9 @@
+{
+  "name": "expenseguard-prompt-injection-gate",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "test": "node run-container.mjs"
+  },
+  "devDependencies": {}
+}

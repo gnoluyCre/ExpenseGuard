@@ -3697,6 +3697,11 @@ export interface components {
     ReadinessResponse: {
       /** Dependencies */
       dependencies: components["schemas"]["DependencyHealth"][];
+      /**
+       * Draining
+       * @default false
+       */
+      draining: boolean;
       /** Ready */
       ready: boolean;
     };

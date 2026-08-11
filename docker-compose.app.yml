@@ -1,0 +1,77 @@
+# ExpenseGuard 应用层覆盖文件。
+# 使用：docker compose -f docker-compose.yml -f docker-compose.app.yml up -d --build
+# 真实本地模型另叠加 docker-compose.models.yml；可观测面板另叠加 observability 文件。
+
+services:
+  postgres:
+    restart: unless-stopped
+
+  qdrant:
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    volumes:
+      - private_data:/data/private
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    environment:
+      APP_ENV: prod
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      GRACEFUL_SHUTDOWN_TIMEOUT_SECONDS: ${GRACEFUL_SHUTDOWN_TIMEOUT_SECONDS:-300}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?请配置 POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-expenseguard}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-true}
+      CORS_ALLOWED_ORIGINS: ${PUBLIC_ORIGIN:-https://expenseguard.local}
+      QDRANT_URL: http://qdrant:6333
+      QDRANT_ALLOWED_HOSTS: qdrant
+      POLICY_EMBEDDING_PROVIDER: http
+      POLICY_LOCAL_MODEL_URL: ${POLICY_LOCAL_MODEL_URL:-http://embedding:7997}
+      POLICY_LOCAL_MODEL_ALLOWED_HOSTS: ${POLICY_LOCAL_MODEL_ALLOWED_HOSTS:-embedding}
+      LLM_PROVIDER: ${LLM_PROVIDER:-disabled}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+      PII_TOKENIZATION_KEY: ${PII_TOKENIZATION_KEY:-}
+      LLM_INPUT_PRICE_PER_MILLION_USD: ${LLM_INPUT_PRICE_PER_MILLION_USD:-}
+      LLM_OUTPUT_PRICE_PER_MILLION_USD: ${LLM_OUTPUT_PRICE_PER_MILLION_USD:-}
+      TRACING_ENABLED: ${TRACING_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+    stop_grace_period: 5m30s
+    ports:
+      - "127.0.0.1:8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NODE_IMAGE: ${FRONTEND_NODE_IMAGE:-node:24.13.0-alpine}
+        NGINX_IMAGE: ${FRONTEND_NGINX_IMAGE:-nginx:1.28.0-alpine}
+    restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+      - /var/cache/nginx:size=32m,mode=0755,uid=101,gid=101
+      - /var/run:size=8m,mode=0755,uid=101,gid=101
+    depends_on:
+      api:
+        condition: service_healthy
+    stop_grace_period: 30s
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-8080}:8080"
+
+volumes:
+  private_data:

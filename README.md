@@ -55,6 +55,14 @@ docker compose -f docker-compose.yml -f docker-compose.models.yml up -d         
 docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d   # Langfuse trace 面板
 ```
 
+生产式单机运行使用应用叠加文件；它会执行迁移、以非 root/只读文件系统启动 API 和前端，并由前端同源代理 `/api`：
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.app.yml up -d --build
+```
+
+首次部署、必要环境变量、健康检查、备份、升级、回滚和外部验收步骤见 [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)。代码就绪不等于生产验收完成；真实云 API、本地模型、客户月度批次与生产发布必须在获批环境中另行验证。
+
 > 这两个文件都必须与 `docker-compose.yml` **叠加**使用（它们不自带
 > postgres，也不重复声明网络）。可观测栈还要求 `.env` 里有
 > `LANGFUSE_NEXTAUTH_SECRET` 与 `LANGFUSE_SALT`，缺了会直接拒绝启动。

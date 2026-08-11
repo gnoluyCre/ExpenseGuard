@@ -13,16 +13,32 @@ Linux/macOS 上 `loop_factory()` 返回 None，沿用 uvicorn 默认，无任何
 """
 
 import asyncio
+import logging
+from types import FrameType
 
 import uvicorn
 
 from app.asyncio_compat import loop_factory
+from app.core.observability.logging import configure_json_logging
+from app.core.runtime import drain_controller
 from app.settings import get_settings
+
+logger = logging.getLogger(__name__)
+
+
+class DrainAwareServer(uvicorn.Server):
+    """Enter application drain mode before Uvicorn waits for in-flight requests."""
+
+    def handle_exit(self, sig: int, frame: FrameType | None) -> None:
+        if drain_controller.request_drain():
+            logger.info("runtime.drain_requested", extra={"phase": "shutdown"})
+        super().handle_exit(sig, frame)
 
 
 def main() -> None:
     """启动服务器。"""
     settings = get_settings()
+    configure_json_logging(settings.log_level)
     reload_enabled = settings.app_env == "dev"
 
     config = uvicorn.Config(
@@ -31,19 +47,22 @@ def main() -> None:
         port=settings.api_port,
         reload=reload_enabled,
         log_level=settings.log_level.lower(),
+        log_config=None,
+        access_log=False,
+        timeout_graceful_shutdown=settings.graceful_shutdown_timeout_seconds,
     )
 
     if reload_enabled:
         # reload 模式需要 uvicorn 的 supervisor 管理子进程，无法自己驱动循环。
         # 好在子进程模式（use_subprocess=True）本身就会选 SelectorEventLoop，
         # 所以这条路径不需要额外处理。
-        uvicorn.Server(config).run()
+        DrainAwareServer(config).run()
         return
 
     # 非 reload 模式:自己驱动事件循环，显式指定工厂。
     # 这是绕开 uvicorn 硬编码 ProactorEventLoop 的唯一可靠方式——
     # 事件循环策略在 asyncio.run(loop_factory=...) 路径下会被忽略。
-    asyncio.run(uvicorn.Server(config).serve(), loop_factory=loop_factory())
+    asyncio.run(DrainAwareServer(config).serve(), loop_factory=loop_factory())
 
 
 if __name__ == "__main__":

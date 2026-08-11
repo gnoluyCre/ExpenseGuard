@@ -5,6 +5,7 @@
 而不是静默回退到默认值——后者在生产环境中极难排查。
 """
 
+from decimal import Decimal
 from functools import lru_cache
 from pathlib import Path
 from typing import Annotated, Literal, Self
@@ -35,6 +36,11 @@ class Settings(BaseSettings):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     api_host: str = "127.0.0.1"
     api_port: int = 8000
+    graceful_shutdown_timeout_seconds: int = Field(default=300, ge=10, le=900)
+    rate_limit_enabled: bool = True
+    rate_limit_window_seconds: int = Field(default=60, ge=1, le=3600)
+    login_rate_limit: int = Field(default=10, ge=1, le=1000)
+    write_rate_limit: int = Field(default=120, ge=1, le=10_000)
 
     # —— 数据库 ——
     # 业务表 + 审计日志走 public schema；LangGraph checkpoint 走 langgraph schema。
@@ -109,6 +115,8 @@ class Settings(BaseSettings):
     investigation_max_steps: int = Field(default=6, ge=1, le=12)
     pii_tokenization_key: SecretStr = SecretStr("")
     pii_tokenization_version: int = Field(default=1, ge=1, le=99)
+    llm_input_price_per_million_usd: Decimal | None = Field(default=None, ge=0)
+    llm_output_price_per_million_usd: Decimal | None = Field(default=None, ge=0)
 
     # —— 可观测 ——
     # Phase 1 默认关闭：此阶段无 LLM 调用，trace 消费者为 0。
@@ -130,12 +138,25 @@ class Settings(BaseSettings):
             return [item.strip() for item in v.split(",") if item.strip()]
         return v
 
+    @field_validator(
+        "llm_input_price_per_million_usd",
+        "llm_output_price_per_million_usd",
+        mode="before",
+    )
+    @classmethod
+    def _empty_optional_decimal(cls, value: object) -> object:
+        return None if value == "" else value
+
     @model_validator(mode="after")
     def _production_requires_real_local_models(self) -> Self:
         if self.app_env == "prod" and self.policy_embedding_provider == "fake":
             raise ValueError("prod 环境禁止使用确定性伪 embedding/rerank provider")
+        if self.app_env == "prod" and not self.session_cookie_secure:
+            raise ValueError("prod 环境必须启用 Secure session cookie")
         if not self.policy_local_model_allowed_hosts or not self.qdrant_allowed_hosts:
             raise ValueError("本地模型与 Qdrant 必须配置非空主机白名单")
+        if self.tracing_enabled and not self.otel_exporter_otlp_endpoint.strip():
+            raise ValueError("启用 tracing 时必须配置 OTLP endpoint")
         return self
 
     @field_validator("policy_private_storage_root")

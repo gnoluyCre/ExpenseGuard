@@ -35,6 +35,7 @@ from app.core.agent.service_models import (
 from app.core.agent.step_runner import StepExecution, execute_agent_step
 from app.core.agent.tools import ReadOnlyToolBackend, ToolExecutionError
 from app.core.detection.canonical import canonical_sha256
+from app.core.observability.model_usage import ModelPricing, record_model_usage
 from app.core.policies.citations import CitationVerificationError, verify_exact_quote
 from app.core.security.auth_service import write_audit
 from app.core.tenancy.scope import bind_tenant
@@ -49,6 +50,7 @@ from app.db.models.policy import PolicyClause
 from app.db.models.tenancy import AppUser
 
 FaultHook = Callable[[str], None]
+StopRequested = Callable[[], bool]
 
 
 async def run_investigation(
@@ -67,6 +69,8 @@ async def run_investigation(
     reconciler: CheckpointReconciler | None = None,
     unavailable_reason_code: str = "PROVIDER_UNAVAILABLE",
     fault_hook: FaultHook | None = None,
+    stop_requested: StopRequested | None = None,
+    model_pricing: ModelPricing | None = None,
 ) -> InvestigationDetail:
     """Create, resume, or replay one explicit F6-candidate investigation.
 
@@ -180,6 +184,19 @@ async def run_investigation(
             fault_hook=fault_hook,
         )
 
+    if stop_requested is not None and stop_requested():
+        return await _finish(
+            session_factory,
+            run=run,
+            actor_id=actor_id,
+            outcome="failed",
+            evidence_sufficient=None,
+            summary="服务正在安全退出，调查已在持久化步骤边界转人工处理",
+            reason_code="SHUTDOWN_REQUESTED",
+            citations=(),
+            fault_hook=fault_hook,
+        )
+
     try:
         while True:
             detail = await _load_detail(session_factory, tenant_id=tenant_id, run_id=run.id)
@@ -220,7 +237,29 @@ async def run_investigation(
                     terminal=False,
                 )
             )
+            record_model_usage(
+                investigation_run_id=run.id,
+                file_version_id=run.file_version_id,
+                step_no=persisted.step_no,
+                provider=run.provider_kind,
+                model=run.provider_model,
+                duration_ms=execution.provider_duration_ms,
+                usage=execution.provider_response.usage,
+                pricing=model_pricing or ModelPricing(),
+            )
             if execution.terminal is None:
+                if stop_requested is not None and stop_requested():
+                    return await _finish(
+                        session_factory,
+                        run=run,
+                        actor_id=actor_id,
+                        outcome="failed",
+                        evidence_sufficient=None,
+                        summary="服务正在安全退出，调查已在持久化步骤边界转人工处理",
+                        reason_code="SHUTDOWN_REQUESTED",
+                        citations=(),
+                        fault_hook=fault_hook,
+                    )
                 continue
             terminal = execution.terminal
             citations = await _verify_citations(

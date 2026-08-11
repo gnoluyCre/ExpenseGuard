@@ -88,6 +88,22 @@ async def _handle_request_validation_error(request: Request, exc: Exception) -> 
     )
 
 
+async def _handle_unexpected_error(request: Request, exc: Exception) -> JSONResponse:
+    """Fail closed without exposing stack traces, SQL, paths or request content."""
+    logger.error(
+        "unexpected error",
+        extra={"path": request.url.path, "code": "INTERNAL_ERROR"},
+        exc_info=(type(exc), exc, exc.__traceback__),
+    )
+    return JSONResponse(
+        status_code=500,
+        content=ErrorResponse(
+            error=ErrorDetail(code="INTERNAL_ERROR", message="服务遇到内部错误")
+        ).model_dump(),
+        headers=_grading_no_store_headers(request),
+    )
+
+
 def _has_body_error(exc: RequestValidationError) -> bool:
     return any(error.get("loc", (None,))[0] == "body" for error in exc.errors())
 
@@ -105,3 +121,4 @@ def register_error_handlers(app: FastAPI) -> None:
     """挂上领域错误处理器。"""
     app.add_exception_handler(ExpenseGuardError, _handle_domain_error)
     app.add_exception_handler(RequestValidationError, _handle_request_validation_error)
+    app.add_exception_handler(Exception, _handle_unexpected_error)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -48,6 +49,7 @@ class StepExecution(BaseModel):
     draft: StepDraft
     provider_response: ProviderResponse
     terminal: TerminateAction | None = None
+    provider_duration_ms: float = Field(ge=0)
 
 
 async def execute_agent_step(
@@ -65,6 +67,7 @@ async def execute_agent_step(
     assert_safe_outbound_text(
         f"{evidence_json}\n{prior_steps_json}", forbidden_values=forbidden_values
     )
+    provider_started = time.perf_counter()
     response = await provider.complete(
         InvestigationPrompt(
             system_instruction=SYSTEM_INSTRUCTION,
@@ -72,6 +75,7 @@ async def execute_agent_step(
             prior_steps_json=prior_steps_json,
         )
     )
+    provider_duration_ms = (time.perf_counter() - provider_started) * 1000
     action = response.action
     if isinstance(action, ToolCallAction):
         observation = await dispatch_read_only_tool(
@@ -95,7 +99,11 @@ async def execute_agent_step(
             tool_output=observation.model_dump(mode="json"),
             payload_fingerprint=canonical_sha256(payload),
         )
-        return StepExecution(draft=draft, provider_response=response)
+        return StepExecution(
+            draft=draft,
+            provider_response=response,
+            provider_duration_ms=provider_duration_ms,
+        )
     payload = {
         "schema_version": 1,
         "step_no": step_no,
@@ -108,7 +116,12 @@ async def execute_agent_step(
         decision_summary=action.summary[:500],
         payload_fingerprint=canonical_sha256(payload),
     )
-    return StepExecution(draft=draft, provider_response=response, terminal=action)
+    return StepExecution(
+        draft=draft,
+        provider_response=response,
+        terminal=action,
+        provider_duration_ms=provider_duration_ms,
+    )
 
 
 def _canonical_json(value: object) -> str:

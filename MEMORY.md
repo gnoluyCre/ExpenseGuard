@@ -5,7 +5,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 -->
 
 ## 🏗️ 当前阶段与目标
-**当前任务:一次授权完成 ExpenseGuard 代码就绪 MVP。** F7/F8 均已闭包；当前自动推进阶段 3 全局错误/性能/优雅退出与阶段 4 安全、部署、日志、健康检查和回滚文档收尾，不再逐 checkpoint 等待人工确认。
+**当前任务:ExpenseGuard 代码就绪 MVP 已闭包。** F1–F8 与 CP-MVP.0–CP-MVP.5 均已完成；下一阶段是需要真实环境、真实模型/API 和客户数据授权的外部生产验收，不自动发布生产。
 
 - CP0 仓库重置(干净历史、`.gitignore` 脱敏排除)
 - CP1 后端地基(uv + 18 张表 + Alembic 三层隔离)
@@ -13,7 +13,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - CP3 认证、RBAC、租户隔离(含反向验证)
 - CP4 前端垂直切片 + OpenAPI 契约门禁 + pre-commit/CI + 合成数据生成器(含反向验证)
 
-**下一步:** 以 `REVIEW-CHECKLIST.md` 和路线图剩余项为准完成阶段 3/4 代码就绪收尾；优先审计全局错误映射、SIGTERM/checkpoint 与当前主机 F6 HTTP 性能回归，再闭合安全红队、Compose 实跑、结构化日志/健康检查、trace 归因和回滚文档。真实模型、客户批次与生产部署继续标为 `external_validation_pending`。
+**下一步:** 按 `docs/DEPLOYMENT.md` 的外部验收清单准备目标主机、真实 OpenAI-compatible API、客户离线 embedding/rerank 权重、PII 审批、备份介质和告警接收人，再执行真实月度批次与正式发布评审。上述项目均为 `external_validation_pending`。
 `process_row_once` 的首个生产调用方现为 `app.core.validation.batch_service.validate_batch`；行内 finding 与 `row_result` 使用同一 session/事务，`row_result.rule_version` 固定保存规则集指纹。
 
 **开工前必读的两件事:**
@@ -26,6 +26,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 
 ## 📂 架构决策
 *(把构建过程中做出的具体选择记录在此,便于后续 agent 遵循)*
+- 2026-08-11 — **CP-MVP.0–CP-MVP.5 代码就绪收尾完成。** 后端新增安全请求边界、稳定公开 500/429/503、请求 ID、安全头、按身份有界限流与 drain readiness；SIGTERM 先停止新写入，F7 在已提交 evidence step 并 reconcile PostgreSQL checkpoint 后以 `SHUTDOWN_REQUESTED` 显式转人工，不再调用下一模型。运行日志统一为安全字段白名单 JSON；F7 模型步骤以 OTLP 记录 task/file/run/step/provider/model、token、延迟和可选估算成本，tracing 关闭时无 exporter。离线 promptfoo `0.122.0` 在 `--network none`、只读容器中完成 8 类注入门禁（8/8 通过），避免把 promptfoo 依赖引入应用供应链；gitleaks 全历史的 3 个既有 F8 测试假阳性使用精确指纹忽略。固定 seed=3500 的 5000 行 F1→F8 总耗时 `144.984006s`，F7 为 `12.075655s`、130 次 scripted/零真实模型/零外部 HTTP，F8 产出 1180 item/1916 row；F8 run/config/detail/list/replay/rows p95 为 `0.110630/0.037162/0.006338/0.051872/0.126245/0.010018s`。旧 F6 harness 关闭额外探针后 initial 为 `2.068160s`，仅比历史 2 秒门槛高约 3.4%，总链路远低于 900 秒，未发现可归因代码热点，未改动 F6 事务语义。后端全量 `600 passed, 1 skipped`、Ruff/246 format/strict mypy 165 source、双库 `0010` 与 Alembic 零漂移；前端 17 文件/92 passed、typecheck/oxlint/Prettier/build；OpenAPI/client 二次 SHA-256 稳定，pip/npm audit 归零。生产镜像、非 root/只读 Compose、同源 `/api`、健康探针、JSON 日志和真实 SIGTERM smoke 通过；默认 Node 24/Nginx 1.28 因 Docker Hub 认证端点不可达未拉取，已用缓存 Node 22/Nginx 1.27 验证同一构建逻辑。真实云 API、本地模型、客户 PII/月度批次、目标主机默认镜像构建、备份恢复和正式发布均为 `external_validation_pending`。
 - 2026-08-11 — **F8 CP-F8.0–CP-F8.5 二维分级闭包完成。** 新增 `0010` 和独立不可变 grading config/run/request/item/row；三份 authoritative F3/F6/F7 manifest、复合租户身份、deferred snapshot constraint、整数 4×4 代价矩阵、保守覆盖、alias/replay/drift 与 hard-kill/fresh-process 恢复均落地，不回填 legacy severity 或修改 F4/F5。9 个强类型 endpoint、配置页和批次综合分级页通过三角色/跨租户/no-store/Zod/Chrome 10 状态门禁。固定 seed=3500 的 5000 行 F1→F8 为 `230.203843s`，130 次 F7 使用 scripted provider，F8 产出 1180 item/1916 row；F8 replay/list/detail/rows p95 为 `0.228635/0.086100/0.021453/0.019709s`，真实模型与外部 HTTP 为 0。后端全量 `594 passed, 1 skipped`，前端 17 文件/92 passed，Ruff/237 format/strict mypy 159 source、双库 `0010`/Alembic、OpenAPI/client 二次稳定、pip-audit、完整/生产 npm audit 与 gitleaks 37 commit 全绿。审计发现旧 package override 仍强制有公告的 js-yaml 4.3.0；Redocly 1.34.19 已支持 4.3.1，移除过时 override 后完整 audit 归零。同机重跑旧 F6 HTTP initial/replay 为 `3.763388/3.541288s`，作为阶段 3 全局性能收尾项显式保留。真实云 API、本地模型、客户批次、PII 审批和生产部署均为 `external_validation_pending`。
 - 2026-08-10 — **F7 CP-F7.0–CP-F7.5 异常取证闭包完成。** 新增 `0009` 不可变 investigation run/request/step/result/PII-token 事实、稳定 tenant HMAC token、OpenAI-compatible + scripted provider、四个 tenant-bound 只读工具、五终态与业务库权威的 LangGraph/PostgreSQL 恢复；API/UI、权限、租户隔离、恶意文本、hard-kill、并发和 completed replay 零外部调用均通过。后端全量 `506 passed, 1 skipped`，前端 14 文件 `57 passed`，两端静态/构建、OpenAPI 二次稳定、pre-commit/gitleaks、`pip-audit` 和生产依赖 npm audit 通过。5000 行 F1→F7 总耗时 `115.321029s`，130 次调查用时 `8.167681s`，真实模型调用为 0。完整 npm audit 尚有 2 条仅开发期 `openapi-typescript -> Redocly 1.x -> js-yaml` 高危公告；无兼容升级路径且只解析仓库生成的 OpenAPI，已窄化接受并持续跟踪。真实云 API、本地模型、客户批次与生产部署均为 `external_validation_pending`。
 - 2026-08-01 — **F6 CP-F6.5 契约与交付门禁闭包完成。** 固定 seed=3500 的 5000 行夹具在标签与 XLSX 物理分离前提下嵌入拆单/连号/频次/时空四类确定性模式，F1→F6 含交互采样总耗时 `102.931691s`，四类真值全部机械命中；F6 纯算法 `0.155957s`，初次 detect `1.973916s`/21 SQL（SQL 累计 `0.395481s`），replay/list/detail p95 分别为 `1.687987s`/`0.014404s`/`0.012844s`，响应体上限分别为 737/19457/5007 bytes。首测 detect `3.066590s` 暴露逐 finding/参与行 flush 热点；改为声明单批、finding/row-link 每 250 条有界批量 flush，并把 input snapshot 查询收窄为 normalized/parse-error/availability 必需列后通过门禁，事务、六故障点与 hard-kill 恢复语义保持不变。F6 定向 112 passed、优化后恢复/API 16 passed，后端全量 `453 passed, 1 skipped`；Ruff/180 文件 format、strict mypy（128 源文件）、前端 13 文件/53 passed、typecheck/oxlint/Prettier/build、默认/测试双库 `0008` 与 Alembic 零漂移、OpenAPI/client 二次稳定、pre-commit/gitleaks 及两端依赖审计全绿。Chrome 1440×1000 共 15 个状态指标/19 张截图覆盖 config/run/finding/三角色/恶意文本，全部页面溢出、脚本/图片执行与浏览器持久化为 0；私有证据位于 `data/private/cp-f6.5/`。未新增依赖/迁移，未修改基础设施、F4/F5 语义或进入 F7/F8。

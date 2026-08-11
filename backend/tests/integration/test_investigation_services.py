@@ -254,6 +254,7 @@ async def _run(
     seed: InvestigationSeed | None = None,
     reconciler: CheckpointReconciler | None = None,
     fault_hook: Callable[[str], None] | None = None,
+    stop_requested: Callable[[], bool] | None = None,
 ) -> InvestigationDetail:
     return await run_investigation(
         session_factory,
@@ -269,7 +270,44 @@ async def _run(
         tools=tools,
         reconciler=reconciler,
         fault_hook=fault_hook,
+        stop_requested=stop_requested,
     )
+
+
+async def test_shutdown_finishes_committed_step_without_another_provider_call(
+    engine: AsyncEngine,
+    session_factory: async_sessionmaker[AsyncSession],
+    clean_db: None,
+) -> None:
+    del clean_db
+    async with engine.begin() as conn:
+        ids = await _seed_candidate(conn)
+    provider = ScriptedLlmProvider([_tool_call(), _terminate(sufficient=True)])
+    tools = CountingTools()
+    reconciler = RecordingReconciler()
+    checks = 0
+
+    def stop_after_first_boundary() -> bool:
+        nonlocal checks
+        checks += 1
+        return checks > 1
+
+    detail = await _run(
+        session_factory,
+        ids,
+        key="f7-shutdown-boundary-0001",
+        provider=provider,
+        tools=tools,
+        reconciler=reconciler,
+        stop_requested=stop_after_first_boundary,
+    )
+    assert provider.call_count == 1
+    assert tools.call_count == 1
+    assert len(detail.steps) == 1
+    assert detail.result is not None
+    assert detail.result.outcome == "failed"
+    assert detail.result.reason_code == "SHUTDOWN_REQUESTED"
+    assert reconciler.snapshots[-1].committed_steps[-1].step_no == 1
 
 
 async def test_sufficient_replay_is_zero_provider_tool_and_queries_are_stable(

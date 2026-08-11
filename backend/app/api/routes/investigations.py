@@ -32,6 +32,8 @@ from app.core.agent.service_models import (
     InvestigationRunOptions,
     InvestigationUnavailableError,
 )
+from app.core.observability.model_usage import ModelPricing
+from app.core.runtime import DrainController
 from app.core.security.permissions import Permission
 
 router = APIRouter(tags=["investigations"])
@@ -146,6 +148,13 @@ def _reconciler(request: Request) -> CheckpointReconciler:
     return value  # type: ignore[no-any-return]
 
 
+def _drain(request: Request) -> DrainController:
+    value = getattr(request.app.state, "drain_controller", None)
+    if not isinstance(value, DrainController):  # pragma: no cover - lifespan invariant
+        raise RuntimeError("drain controller is not configured")
+    return value
+
+
 @router.get(
     "/api/v1/investigations/capability",
     response_model=InvestigationCapability,
@@ -219,6 +228,11 @@ async def run_investigation_endpoint(
             tools=tools,
             reconciler=_reconciler(request),
             unavailable_reason_code=capability.reason_code,
+            stop_requested=lambda: _drain(request).is_draining,
+            model_pricing=ModelPricing(
+                input_per_million_usd=settings.llm_input_price_per_million_usd,
+                output_per_million_usd=settings.llm_output_price_per_million_usd,
+            ),
         )
     finally:
         if provider is not None:

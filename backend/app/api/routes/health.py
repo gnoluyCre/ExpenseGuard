@@ -21,6 +21,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 
 from app.api.deps import SettingsDep
+from app.core.runtime import DrainController
 from app.settings import Settings
 
 router = APIRouter(prefix="/api/health", tags=["health"])
@@ -56,6 +57,7 @@ class ReadinessResponse(BaseModel):
 
     ready: bool
     dependencies: list[DependencyHealth]
+    draining: bool = False
 
 
 @router.get("", response_model=LivenessResponse, name="liveness")
@@ -106,7 +108,9 @@ async def readiness(
         _probe_postgres(request),
         _probe_qdrant(settings),
     )
-    ready = all(c.status is DependencyStatus.UP for c in checks)
+    drain = getattr(request.app.state, "drain_controller", None)
+    draining = isinstance(drain, DrainController) and drain.is_draining
+    ready = all(c.status is DependencyStatus.UP for c in checks) and not draining
     # 未就绪返回 503，使负载均衡器/编排器能据状态码摘流量
     response.status_code = 200 if ready else 503
-    return ReadinessResponse(ready=ready, dependencies=list(checks))
+    return ReadinessResponse(ready=ready, dependencies=list(checks), draining=draining)
