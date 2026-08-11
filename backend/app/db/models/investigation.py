@@ -209,6 +209,17 @@ class InvestigationResult(Base, TenantScopedMixin, TimestampMixin):
             "investigation_run_id",
             name="uq_investigation_result_run_id",
         ),
+        UniqueConstraint(
+            "id",
+            "investigation_run_id",
+            "correlation_finding_id",
+            "detection_run_id",
+            "file_version_id",
+            "tenant_id",
+            "outcome",
+            "result_fingerprint",
+            name="uq_investigation_result_f8_snapshot",
+        ),
         investigation_run_fk("fk_investigation_result_run_identity"),
         CheckConstraint(
             "outcome IN ('sufficient', 'insufficient', 'unavailable', 'max_steps', 'failed')",

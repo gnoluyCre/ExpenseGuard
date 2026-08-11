@@ -262,20 +262,40 @@ async def test_detection_run_findings_capability_filter_cache_and_tenant_scope(
 
 def test_detection_openapi_has_discriminators_and_no_severity(app: FastAPI) -> None:
     document = app.openapi()
-    assert {
+    detection_paths = {
         "/api/detection/configs",
         "/api/batches/{file_version_id}/detect",
         "/api/batches/{file_version_id}/detection",
         "/api/detection-runs/{run_id}",
         "/api/detection-runs/{run_id}/findings",
         "/api/correlation-findings/{finding_id}",
-    } <= set(document["paths"])
+    }
+    assert detection_paths <= set(document["paths"])
     serialized = str(document)
     assert "discriminator" in serialized
     assert "split_invoice" in serialized
     assert "spatiotemporal_tier0" in serialized
-    assert "severity_impact" not in serialized
-    assert "severity_confidence" not in serialized
+    f6_surface = {
+        "paths": {path: document["paths"][path] for path in detection_paths},
+        "schemas": {
+            name: document["components"]["schemas"][name]
+            for name in (
+                "BatchDetectionResponse",
+                "CapabilityDetails",
+                "CapabilityReason",
+                "CapabilityResponse",
+                "DetectionConfigCreateRequest",
+                "DetectionConfigHistoryResponse",
+                "DetectionConfigResponse",
+                "DetectionProfileDefinition",
+                "DetectionRunResponse",
+                "FindingDetailResponse",
+                "FindingSummaryResponse",
+            )
+        },
+    }
+    assert "severity_impact" not in str(f6_surface)
+    assert "severity_confidence" not in str(f6_surface)
     route_source = getsource(detection_routes)
     assert "sqlalchemy" not in route_source
     assert "select(" not in route_source

@@ -92,14 +92,15 @@
 - **流程纪律:** pre-commit 钩子(format / lint / secret 扫描)必须通过方可提交(或先询问再绕过)。CI 评测门禁:召回率低于基线阈值即阻断合并。
 
 ## 当前状态 📍
-**最近更新:** 2026-08-10
-**正在进行:** 已完成 F7 CP-F7.0–CP-F7.5；MVP 自动闭环现进入 F8 CP-F8.1，随后继续阶段 3/4 代码就绪收尾。
-**最近完成:** CP0 仓库重置 / CP1 后端地基 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离 / **CP4 前端垂直切片 + OpenAPI 契约 + CI** / **F1 Excel 导入** / **F2 CP-F2.0–CP-F2.5** / **F3 CP-F3.0–CP-F3.5** / **F4 CP-F4.0–CP-F4.5 报告生成闭包** / **F5 CP-F5.0–CP-F5.5 人工复核闭包** / **F6 CP-F6.0–CP-F6.5 跨行关联检测闭包** / **F7 CP-F7.0–CP-F7.5 异常取证闭包**（OpenAI-compatible provider、稳定 PII token、四只读工具、LangGraph/PostgreSQL 恢复、五终态、强类型 API/UI、零真实模型 5000 行及安全门禁）
+**最近更新:** 2026-08-11
+**正在进行:** F7/F8 均已代码就绪闭包；MVP 自动循环进入阶段 3 全局错误/性能/优雅退出与阶段 4 安全、部署、日志、健康检查和回滚文档收尾。
+**最近完成:** CP0 仓库重置 / CP1 后端地基 / CP2 幂等原语与恢复测试 / CP3 认证、RBAC 与租户隔离 / **CP4 前端垂直切片 + OpenAPI 契约 + CI** / **F1 Excel 导入** / **F2 CP-F2.0–CP-F2.5** / **F3 CP-F3.0–CP-F3.5** / **F4 CP-F4.0–CP-F4.5 报告生成闭包** / **F5 CP-F5.0–CP-F5.5 人工复核闭包** / **F6 CP-F6.0–CP-F6.5 跨行关联检测闭包** / **F7 CP-F7.0–CP-F7.5 异常取证闭包** / **F8 CP-F8.0–CP-F8.5 二维分级闭包**（独立不可变 snapshot、整数代价矩阵、显式 F3/F6/F7 manifest、原子恢复、强类型 API/UI、零真实模型 5000 行及安全门禁）
 **受阻于:** 无（W0 与真实云 API 均为 `external_validation_pending`，不阻塞离线代码闭环）
-**已知缺口 / 状态(三项):**
+**已知缺口 / 状态(四项):**
 1. **W0 运行态未闭环** —— 代码侧本地模型/Qdrant 私有化边界与真实 Qdrant 已验证；但 pinned Infinity 镜像在 registry layer 拉取无进展且 manifest 查询超时，实际 embed/rerank、资源占用及客户离线权重包仍待外部输入后验证。
 2. **CI 远端闭环** —— 2026-07-29 已由 F4/F5 PR 实测 backend / frontend / contract / secrets / eval-gate 全绿；backend job 显式启动 PostgreSQL 与 pinned Qdrant，并验证测试库创建、gitleaks 镜像及 setup-uv/setup-node 缓存路径可用。
 3. **开发工具接管完成** —— 已退役 ClaudeCode 专用入口;后续 Codex 以本文件 + `MEMORY.md` + 当前 `specs/` 为上下文入口。
+4. **全局性能复核中** —— F8 固定 seed 5000 行总耗时 230.204 秒且 F8 replay/list/detail/rows p95 均 <2 秒；同机重跑旧 F6 HTTP harness 时 detect initial/replay 为 3.763/3.541 秒，高于 F6 交付基线，留给阶段 3 全局性能收尾定位，不改写既有证据。
 
 细节见 `specs/001-phase1-foundation.md` 的「已知问题」与「待办」。
 
@@ -123,7 +124,7 @@
 ### 阶段 3:差异化能力(P1)与打磨
 - [x] **F6 · 跨行关联检测(统计层)** —— CP-F6.0–CP-F6.5 已完成；四类 detector、能力声明、幂等恢复、契约、安全、5000 行性能与桌面交付门禁全部通过
 - [x] **F7 · 异常取证 Agent(ReAct)** —— CP-F7.0–CP-F7.5 已完成；只读工具、最大步数、追加证据步骤、五种显式终态、PII 出站边界、幂等恢复与桌面调查视图均已落地
-- [ ] **F8 · 二维分级** —— severity_impact / severity_confidence 分列;代价敏感阈值参数化
+- [x] **F8 · 二维分级** —— CP-F8.0–CP-F8.5 已完成；impact/confidence 分列、整数代价矩阵、显式 F3/F6/F7 manifest、原子不可变 snapshot、权限驱动桌面工作流、5000 行与安全门禁均已落地
 - [ ] 错误处理完善、性能达标(5000 行 ≤ 15 分钟)、优雅退出(SIGTERM 后完成当前行 + 写 checkpoint 再退出)
 
 ### 阶段 4:上线

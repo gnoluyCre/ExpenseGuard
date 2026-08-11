@@ -38,6 +38,16 @@ from app.db.models.findings import (
     SamplingReview,
     SamplingReviewDecision,
 )
+from app.db.models.grading import (
+    GradingConfig,
+    GradingDisposition,
+    GradingItem,
+    GradingItemRow,
+    GradingRequest,
+    GradingRun,
+    GradingRunStatus,
+    GradingSourceKind,
+)
 from app.db.models.investigation import (
     InvestigationActionKind,
     InvestigationOutcome,
@@ -96,6 +106,14 @@ __all__ = [
     "FieldStatus",
     "FileVersion",
     "Finding",
+    "GradingConfig",
+    "GradingDisposition",
+    "GradingItem",
+    "GradingItemRow",
+    "GradingRequest",
+    "GradingRun",
+    "GradingRunStatus",
+    "GradingSourceKind",
     "InvestigationActionKind",
     "InvestigationOutcome",
     "InvestigationProviderKind",

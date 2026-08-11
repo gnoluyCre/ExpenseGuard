@@ -234,6 +234,7 @@ async def test_validation_summary_findings_pagination_sort_and_tenant_boundary(
     await _login(client, "validation-api", Role.VIEWER)
     summary = await client.get(f"/api/batches/{batch_id}/validation")
     assert summary.status_code == 200
+    assert summary.json()["validation_run_id"] == str(run.id)
     page = await client.get(f"/api/batches/{batch_id}/findings?page=1&page_size=1&verdict=flagged")
     assert page.status_code == 200
     assert page.json()["total"] == 2

@@ -19,6 +19,7 @@ function json(body: unknown, status = 200): Response {
 
 function summary(reusedExisting = false): ValidationSummary {
   return {
+    validation_run_id: "44444444-4444-4444-4444-444444444444",
     file_version_id: BATCH_ID,
     mapping_version_id: MAPPING_ID,
     ruleset_fingerprint: "f".repeat(64),

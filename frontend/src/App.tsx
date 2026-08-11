@@ -5,6 +5,7 @@ import { useCurrentUser } from "@/auth/useAuth";
 import { AppShell } from "@/components/AppShell";
 import { BatchesPage } from "@/pages/BatchesPage";
 import { DetectionConfigPage } from "@/pages/DetectionConfigPage";
+import { GradingConfigPage } from "@/pages/GradingConfigPage";
 import { HealthPage } from "@/pages/HealthPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { PoliciesPage } from "@/pages/PoliciesPage";
@@ -37,6 +38,7 @@ export function App() {
         <Route path="rules" element={<RulesPage />} />
         <Route path="policies" element={<PoliciesPage />} />
         <Route path="detection-config" element={<DetectionConfigPage />} />
+        <Route path="grading-config" element={<GradingConfigPage />} />
         {/* 兜底也放在受保护区内:未登录访问任意未知路径应先走登录，
             而不是先看到 404 再被踢走 */}
         <Route path="*" element={<Navigate to="/health" replace />} />

@@ -45,6 +45,7 @@ async def _handle_domain_error(request: Request, exc: Exception) -> JSONResponse
     return JSONResponse(
         status_code=exc.status_code,
         content=ErrorResponse(error=ErrorDetail(code=exc.code, message=exc.message)).model_dump(),
+        headers=_grading_no_store_headers(request),
     )
 
 
@@ -53,7 +54,13 @@ async def _handle_request_validation_error(request: Request, exc: Exception) -> 
     if not isinstance(exc, RequestValidationError):  # pragma: no cover
         raise exc
     logger.info("request validation error", extra={"path": request.url.path})
-    if request.method == "PUT" and request.url.path == "/api/detection/configs":
+    if request.url.path == "/api/v1/grading-configs" and request.method == "POST":
+        code = "GRADING_CONFIG_INVALID"
+        message = "二维分级配置无效"
+    elif "/grading-runs" in request.url.path and request.method == "POST":
+        code = "GRADING_RUN_INVALID"
+        message = "二维分级运行请求无效"
+    elif request.method == "PUT" and request.url.path == "/api/detection/configs":
         code = "DETECTION_CONFIG_INVALID"
         message = "关联检测配置无效"
     elif request.method == "PUT" and request.url.path == "/api/rules":
@@ -77,11 +84,21 @@ async def _handle_request_validation_error(request: Request, exc: Exception) -> 
     return JSONResponse(
         status_code=422,
         content=ErrorResponse(error=ErrorDetail(code=code, message=message)).model_dump(),
+        headers=_grading_no_store_headers(request),
     )
 
 
 def _has_body_error(exc: RequestValidationError) -> bool:
     return any(error.get("loc", (None,))[0] == "body" for error in exc.errors())
+
+
+def _grading_no_store_headers(request: Request) -> dict[str, str] | None:
+    path = request.url.path
+    if path.startswith("/api/v1/grading-") or (
+        path.startswith("/api/v1/files/") and "/grading-runs" in path
+    ):
+        return {"Cache-Control": "private, no-store"}
+    return None
 
 
 def register_error_handlers(app: FastAPI) -> None:

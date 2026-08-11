@@ -131,8 +131,11 @@ async def test_unavailable_run_replay_history_detail_steps_and_tenant_scope(
     assert created.status_code == 201
     assert created.headers["cache-control"] == "private, no-store"
     payload = created.json()
+    assert len(payload["run"]["input_fingerprint"]) == 64
+    assert len(payload["run"]["config_fingerprint"]) == 64
     assert payload["result"]["outcome"] == "unavailable"
     assert payload["result"]["reason_code"] == "PROVIDER_DISABLED"
+    assert len(payload["result"]["result_fingerprint"]) == 64
     assert payload["steps"] == []
     assert "source_hmac" not in created.text
     investigation_id = payload["run"]["id"]

@@ -66,6 +66,7 @@ class BatchValidationInternalError(BatchValidationError):
 class ValidationSummary:
     """一次已完成校验的稳定摘要。"""
 
+    validation_run_id: uuid.UUID
     file_version_id: uuid.UUID
     mapping_version_id: uuid.UUID
     ruleset_fingerprint: str
@@ -606,6 +607,7 @@ async def _persist_finding(
 
 def _summary(run: ValidationRun, *, reused_existing: bool) -> ValidationSummary:
     return ValidationSummary(
+        validation_run_id=run.id,
         file_version_id=run.file_version_id,
         mapping_version_id=run.mapping_version_id,
         ruleset_fingerprint=run.ruleset_fingerprint,

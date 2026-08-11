@@ -22,6 +22,7 @@ from app.api.routes import (
     auth,
     batches,
     detection,
+    grading,
     health,
     investigations,
     policies,
@@ -114,6 +115,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(reports.router)
     app.include_router(reviews.router)
     app.include_router(investigations.router)
+    app.include_router(grading.router)
     return app
 
 

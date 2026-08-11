@@ -49,11 +49,9 @@
   },
   "_overrides_note": [
     "brace-expansion is overridden beyond its published high-severity DoS range.",
-    "openapi-typescript 7.13.0 requires @redocly/openapi-core 1.x and js-yaml 4.x; the 2026 js-yaml advisory has no compatible upstream release yet.",
-    "The remaining advisory is dev-only and only parses the repository-generated OpenAPI file; production audit must remain zero while upstream remediation is tracked."
+    "openapi-typescript 7.13.0 now resolves @redocly/openapi-core 1.34.19 and the patched js-yaml 4.3.1; do not reintroduce the former 4.3.0 override."
   ],
   "overrides": {
-    "brace-expansion": "^5.0.8",
-    "js-yaml": "4.3.0"
+    "brace-expansion": "^5.0.8"
   }
 }

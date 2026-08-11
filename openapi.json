@@ -202,6 +202,86 @@
         "title": "BatchDetectionResponse",
         "type": "object"
       },
+      "BatchGradingView": {
+        "additionalProperties": false,
+        "properties": {
+          "config_stale": {
+            "title": "Config Stale",
+            "type": "boolean"
+          },
+          "current_config_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Config Id"
+          },
+          "current_detection_run_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Detection Run Id"
+          },
+          "current_validation_run_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Validation Run Id"
+          },
+          "detection_run_stale": {
+            "title": "Detection Run Stale",
+            "type": "boolean"
+          },
+          "file_version_id": {
+            "format": "uuid",
+            "title": "File Version Id",
+            "type": "string"
+          },
+          "run": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GradingRunView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "validation_run_stale": {
+            "title": "Validation Run Stale",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "file_version_id",
+          "run",
+          "current_config_id",
+          "current_validation_run_id",
+          "current_detection_run_id",
+          "config_stale",
+          "validation_run_stale",
+          "detection_run_stale"
+        ],
+        "title": "BatchGradingView",
+        "type": "object"
+      },
       "BatchImportResponse": {
         "description": "批次导入响应。",
         "properties": {
@@ -641,6 +721,27 @@
         "title": "Body_policies_upload_document",
         "type": "object"
       },
+      "CapabilityConfidenceCap": {
+        "additionalProperties": false,
+        "properties": {
+          "degraded": {
+            "$ref": "#/components/schemas/SeverityLevel"
+          },
+          "enabled": {
+            "$ref": "#/components/schemas/SeverityLevel"
+          },
+          "unavailable": {
+            "$ref": "#/components/schemas/SeverityLevel"
+          }
+        },
+        "required": [
+          "enabled",
+          "degraded",
+          "unavailable"
+        ],
+        "title": "CapabilityConfidenceCap",
+        "type": "object"
+      },
       "CapabilityDetails": {
         "additionalProperties": false,
         "properties": {
@@ -777,6 +878,46 @@
         ],
         "title": "CapabilityStatus",
         "type": "string"
+      },
+      "CitationManifestItem": {
+        "additionalProperties": false,
+        "properties": {
+          "clause_id": {
+            "format": "uuid",
+            "title": "Clause Id",
+            "type": "string"
+          },
+          "quote": {
+            "maxLength": 4096,
+            "minLength": 1,
+            "title": "Quote",
+            "type": "string"
+          },
+          "quote_end": {
+            "exclusiveMinimum": 0.0,
+            "title": "Quote End",
+            "type": "integer"
+          },
+          "quote_start": {
+            "minimum": 0.0,
+            "title": "Quote Start",
+            "type": "integer"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "clause_id",
+          "quote_start",
+          "quote_end",
+          "quote"
+        ],
+        "title": "CitationManifestItem",
+        "type": "object"
       },
       "CitationSnapshot": {
         "additionalProperties": false,
@@ -1207,6 +1348,84 @@
             "$ref": "#/components/schemas/SpatiotemporalTier0Evidence"
           }
         ]
+      },
+      "CorrelationEvidenceSnapshot": {
+        "additionalProperties": false,
+        "properties": {
+          "capability_status": {
+            "$ref": "#/components/schemas/CapabilityStatus"
+          },
+          "confidence_after_cap": {
+            "$ref": "#/components/schemas/SeverityLevel"
+          },
+          "confidence_before_cap": {
+            "$ref": "#/components/schemas/SeverityLevel"
+          },
+          "detector": {
+            "$ref": "#/components/schemas/DetectorKind"
+          },
+          "losses": {
+            "$ref": "#/components/schemas/CostLosses"
+          },
+          "mapped_impact": {
+            "$ref": "#/components/schemas/SeverityLevel"
+          },
+          "matrix_disposition": {
+            "$ref": "#/components/schemas/Disposition"
+          },
+          "rule_kind": {
+            "title": "Rule Kind",
+            "type": "null"
+          },
+          "source_kind": {
+            "const": "correlation",
+            "default": "correlation",
+            "title": "Source Kind",
+            "type": "string"
+          },
+          "source_outcome": {
+            "$ref": "#/components/schemas/InvestigationGradingOutcome"
+          }
+        },
+        "required": [
+          "mapped_impact",
+          "confidence_before_cap",
+          "confidence_after_cap",
+          "losses",
+          "matrix_disposition",
+          "detector",
+          "source_outcome",
+          "capability_status"
+        ],
+        "title": "CorrelationEvidenceSnapshot",
+        "type": "object"
+      },
+      "CostLosses": {
+        "additionalProperties": false,
+        "properties": {
+          "clear_loss": {
+            "ge": 0,
+            "title": "Clear Loss",
+            "type": "integer"
+          },
+          "flag_loss": {
+            "ge": 0,
+            "title": "Flag Loss",
+            "type": "integer"
+          },
+          "review_loss": {
+            "ge": 0,
+            "title": "Review Loss",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "clear_loss",
+          "flag_loss",
+          "review_loss"
+        ],
+        "title": "CostLosses",
+        "type": "object"
       },
       "CreatePolicyFamilyRequest": {
         "additionalProperties": false,
@@ -1695,6 +1914,31 @@
           }
         ]
       },
+      "DetectorImpactMap": {
+        "additionalProperties": false,
+        "properties": {
+          "frequency_anomaly": {
+            "$ref": "#/components/schemas/SeverityLevel"
+          },
+          "sequential_invoice": {
+            "$ref": "#/components/schemas/SeverityLevel"
+          },
+          "spatiotemporal_tier0": {
+            "$ref": "#/components/schemas/SeverityLevel"
+          },
+          "split_invoice": {
+            "$ref": "#/components/schemas/SeverityLevel"
+          }
+        },
+        "required": [
+          "split_invoice",
+          "sequential_invoice",
+          "frequency_anomaly",
+          "spatiotemporal_tier0"
+        ],
+        "title": "DetectorImpactMap",
+        "type": "object"
+      },
       "DetectorKind": {
         "enum": [
           "split_invoice",
@@ -1729,6 +1973,62 @@
             "$ref": "#/components/schemas/SpatiotemporalRuntimeFacts"
           }
         ]
+      },
+      "DeterministicEvidenceSnapshot": {
+        "additionalProperties": false,
+        "properties": {
+          "capability_status": {
+            "title": "Capability Status",
+            "type": "null"
+          },
+          "confidence_after_cap": {
+            "$ref": "#/components/schemas/SeverityLevel"
+          },
+          "confidence_before_cap": {
+            "$ref": "#/components/schemas/SeverityLevel"
+          },
+          "detector": {
+            "title": "Detector",
+            "type": "null"
+          },
+          "losses": {
+            "$ref": "#/components/schemas/CostLosses"
+          },
+          "mapped_impact": {
+            "$ref": "#/components/schemas/SeverityLevel"
+          },
+          "matrix_disposition": {
+            "$ref": "#/components/schemas/Disposition"
+          },
+          "rule_kind": {
+            "$ref": "#/components/schemas/RuleKind"
+          },
+          "source_kind": {
+            "const": "deterministic",
+            "default": "deterministic",
+            "title": "Source Kind",
+            "type": "string"
+          },
+          "source_outcome": {
+            "enum": [
+              "flagged",
+              "unavailable"
+            ],
+            "title": "Source Outcome",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mapped_impact",
+          "confidence_before_cap",
+          "confidence_after_cap",
+          "losses",
+          "matrix_disposition",
+          "rule_kind",
+          "source_outcome"
+        ],
+        "title": "DeterministicEvidenceSnapshot",
+        "type": "object"
       },
       "DirectAvailabilityEvidence": {
         "additionalProperties": false,
@@ -1770,6 +2070,34 @@
         ],
         "title": "DirectAvailabilityEvidence",
         "type": "object"
+      },
+      "Disposition": {
+        "enum": [
+          "high_attention",
+          "manual_attention",
+          "cleared"
+        ],
+        "title": "Disposition",
+        "type": "string"
+      },
+      "DispositionMatrix": {
+        "maxItems": 4,
+        "minItems": 4,
+        "prefixItems": [
+          {
+            "$ref": "#/components/schemas/MatrixRow"
+          },
+          {
+            "$ref": "#/components/schemas/MatrixRow"
+          },
+          {
+            "$ref": "#/components/schemas/MatrixRow"
+          },
+          {
+            "$ref": "#/components/schemas/MatrixRow"
+          }
+        ],
+        "type": "array"
       },
       "ErrorDetail": {
         "description": "错误详情。",
@@ -2046,6 +2374,126 @@
           "parse_error"
         ],
         "title": "ExpenseRowResponse",
+        "type": "object"
+      },
+      "F7ManifestRequest": {
+        "discriminator": {
+          "mapping": {
+            "not_run": "#/components/schemas/F7NotRunManifestRequest",
+            "run": "#/components/schemas/F7RunManifestRequest"
+          },
+          "propertyName": "kind"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/F7RunManifestRequest"
+          },
+          {
+            "$ref": "#/components/schemas/F7NotRunManifestRequest"
+          }
+        ]
+      },
+      "F7NotRunManifestRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "correlation_finding_id": {
+            "format": "uuid",
+            "title": "Correlation Finding Id",
+            "type": "string"
+          },
+          "kind": {
+            "const": "not_run",
+            "default": "not_run",
+            "title": "Kind",
+            "type": "string"
+          },
+          "reason_code": {
+            "const": "INVESTIGATION_NOT_RUN",
+            "default": "INVESTIGATION_NOT_RUN",
+            "title": "Reason Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "correlation_finding_id"
+        ],
+        "title": "F7NotRunManifestRequest",
+        "type": "object"
+      },
+      "F7RunManifestRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/CitationManifestItem"
+            },
+            "maxItems": 100,
+            "title": "Citations",
+            "type": "array"
+          },
+          "config_fingerprint": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Config Fingerprint",
+            "type": "string"
+          },
+          "correlation_finding_id": {
+            "format": "uuid",
+            "title": "Correlation Finding Id",
+            "type": "string"
+          },
+          "evidence_sufficient": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Sufficient"
+          },
+          "input_fingerprint": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Input Fingerprint",
+            "type": "string"
+          },
+          "investigation_result_id": {
+            "format": "uuid",
+            "title": "Investigation Result Id",
+            "type": "string"
+          },
+          "investigation_run_id": {
+            "format": "uuid",
+            "title": "Investigation Run Id",
+            "type": "string"
+          },
+          "kind": {
+            "const": "run",
+            "default": "run",
+            "title": "Kind",
+            "type": "string"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/InvestigationGradingOutcome"
+          },
+          "result_fingerprint": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Result Fingerprint",
+            "type": "string"
+          }
+        },
+        "required": [
+          "correlation_finding_id",
+          "investigation_run_id",
+          "investigation_result_id",
+          "input_fingerprint",
+          "config_fingerprint",
+          "result_fingerprint",
+          "outcome",
+          "evidence_sufficient",
+          "citations"
+        ],
+        "title": "F7RunManifestRequest",
         "type": "object"
       },
       "FieldAvailabilityItemResponse": {
@@ -2912,6 +3360,737 @@
         "title": "FrequencyRuntimeFacts",
         "type": "object"
       },
+      "GradingConfigCreateRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "change_reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Change Reason",
+            "type": "string"
+          },
+          "definition": {
+            "$ref": "#/components/schemas/GradingConfigV1"
+          },
+          "expected_current_version": {
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Expected Current Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_current_version",
+          "definition",
+          "change_reason"
+        ],
+        "title": "GradingConfigCreateRequest",
+        "type": "object"
+      },
+      "GradingConfigPage": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/GradingConfigView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "minimum": 1.0,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "minimum": 0.0,
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "minimum": 0.0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "GradingConfigPage",
+        "type": "object"
+      },
+      "GradingConfigV1": {
+        "additionalProperties": false,
+        "properties": {
+          "algorithm_version": {
+            "const": "cost-matrix-v1",
+            "default": "cost-matrix-v1",
+            "title": "Algorithm Version",
+            "type": "string"
+          },
+          "capability_confidence_cap": {
+            "$ref": "#/components/schemas/CapabilityConfidenceCap"
+          },
+          "confidence_by_investigation_outcome": {
+            "$ref": "#/components/schemas/InvestigationConfidenceMap"
+          },
+          "confidence_issue_probability_bps": {
+            "$ref": "#/components/schemas/ProbabilityVector"
+          },
+          "disposition_matrix": {
+            "$ref": "#/components/schemas/DispositionMatrix"
+          },
+          "false_negative_multiplier_bps": {
+            "ge": 1,
+            "le": 1000000,
+            "title": "False Negative Multiplier Bps",
+            "type": "integer"
+          },
+          "false_positive_cost_units": {
+            "ge": 1,
+            "le": 1000000,
+            "title": "False Positive Cost Units",
+            "type": "integer"
+          },
+          "impact_by_detector": {
+            "$ref": "#/components/schemas/DetectorImpactMap"
+          },
+          "impact_by_rule_kind": {
+            "$ref": "#/components/schemas/RuleImpactMap"
+          },
+          "impact_cost_units": {
+            "$ref": "#/components/schemas/LevelVector"
+          },
+          "manual_review_cost_units": {
+            "ge": 1,
+            "le": 1000000,
+            "title": "Manual Review Cost Units",
+            "type": "integer"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "impact_by_rule_kind",
+          "impact_by_detector",
+          "confidence_by_investigation_outcome",
+          "capability_confidence_cap",
+          "impact_cost_units",
+          "confidence_issue_probability_bps",
+          "false_negative_multiplier_bps",
+          "false_positive_cost_units",
+          "manual_review_cost_units",
+          "disposition_matrix"
+        ],
+        "title": "GradingConfigV1",
+        "type": "object"
+      },
+      "GradingConfigView": {
+        "additionalProperties": false,
+        "properties": {
+          "algorithm_version": {
+            "title": "Algorithm Version",
+            "type": "string"
+          },
+          "change_reason": {
+            "title": "Change Reason",
+            "type": "string"
+          },
+          "config_fingerprint": {
+            "title": "Config Fingerprint",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "format": "uuid",
+            "title": "Created By",
+            "type": "string"
+          },
+          "definition": {
+            "$ref": "#/components/schemas/GradingConfigV1"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "reused_existing": {
+            "title": "Reused Existing",
+            "type": "boolean"
+          },
+          "schema_version": {
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "tenant_id": {
+            "format": "uuid",
+            "title": "Tenant Id",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "tenant_id",
+          "version",
+          "schema_version",
+          "definition",
+          "config_fingerprint",
+          "algorithm_version",
+          "created_by",
+          "change_reason",
+          "created_at",
+          "reused_existing"
+        ],
+        "title": "GradingConfigView",
+        "type": "object"
+      },
+      "GradingEvidenceSnapshot": {
+        "discriminator": {
+          "mapping": {
+            "correlation": "#/components/schemas/CorrelationEvidenceSnapshot",
+            "deterministic": "#/components/schemas/DeterministicEvidenceSnapshot"
+          },
+          "propertyName": "source_kind"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/DeterministicEvidenceSnapshot"
+          },
+          {
+            "$ref": "#/components/schemas/CorrelationEvidenceSnapshot"
+          }
+        ]
+      },
+      "GradingItemPage": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/GradingItemView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "minimum": 1.0,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "minimum": 0.0,
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "minimum": 0.0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "GradingItemPage",
+        "type": "object"
+      },
+      "GradingItemView": {
+        "additionalProperties": false,
+        "properties": {
+          "correlation_finding_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correlation Finding Id"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "detector": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DetectorKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "disposition": {
+            "$ref": "#/components/schemas/Disposition"
+          },
+          "evidence_snapshot": {
+            "$ref": "#/components/schemas/GradingEvidenceSnapshot"
+          },
+          "f3_outcome": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RuleOutcome"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "f6_capability_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CapabilityStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "f7_outcome": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InvestigationGradingOutcome"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file_version_id": {
+            "format": "uuid",
+            "title": "File Version Id",
+            "type": "string"
+          },
+          "finding_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finding Id"
+          },
+          "first_row_no": {
+            "title": "First Row No",
+            "type": "integer"
+          },
+          "grading_run_id": {
+            "format": "uuid",
+            "title": "Grading Run Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "investigation_run_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Investigation Run Id"
+          },
+          "item_fingerprint": {
+            "title": "Item Fingerprint",
+            "type": "string"
+          },
+          "reason_codes": {
+            "items": {
+              "$ref": "#/components/schemas/GradingReasonCode"
+            },
+            "title": "Reason Codes",
+            "type": "array"
+          },
+          "rule_kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RuleKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "severity_confidence": {
+            "maximum": 3.0,
+            "minimum": 0.0,
+            "title": "Severity Confidence",
+            "type": "integer"
+          },
+          "severity_impact": {
+            "maximum": 3.0,
+            "minimum": 0.0,
+            "title": "Severity Impact",
+            "type": "integer"
+          },
+          "source_kind": {
+            "enum": [
+              "deterministic",
+              "correlation"
+            ],
+            "title": "Source Kind",
+            "type": "string"
+          },
+          "tenant_id": {
+            "format": "uuid",
+            "title": "Tenant Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tenant_id",
+          "grading_run_id",
+          "file_version_id",
+          "source_kind",
+          "finding_id",
+          "correlation_finding_id",
+          "investigation_run_id",
+          "rule_kind",
+          "detector",
+          "f3_outcome",
+          "f6_capability_status",
+          "f7_outcome",
+          "severity_impact",
+          "severity_confidence",
+          "disposition",
+          "reason_codes",
+          "evidence_snapshot",
+          "item_fingerprint",
+          "first_row_no",
+          "created_at"
+        ],
+        "title": "GradingItemView",
+        "type": "object"
+      },
+      "GradingReasonCode": {
+        "enum": [
+          "IMPACT_RULE_MAPPING",
+          "IMPACT_DETECTOR_MAPPING",
+          "CONFIDENCE_F3_FLAGGED",
+          "CONFIDENCE_F3_UNAVAILABLE",
+          "CONFIDENCE_F7_SUFFICIENT",
+          "CONFIDENCE_F7_INSUFFICIENT",
+          "CONFIDENCE_F7_UNAVAILABLE",
+          "CONFIDENCE_F7_MAX_STEPS",
+          "CONFIDENCE_F7_FAILED",
+          "CONFIDENCE_F7_NOT_RUN",
+          "CAPABILITY_ENABLED",
+          "CAPABILITY_DEGRADED",
+          "CAPABILITY_UNAVAILABLE",
+          "CONFIDENCE_CAP_APPLIED",
+          "COST_MATRIX_SELECTED",
+          "OVERRIDE_IMPACT_3",
+          "OVERRIDE_CONFIDENCE_0",
+          "OVERRIDE_F3_UNAVAILABLE",
+          "OVERRIDE_F7_NON_SUFFICIENT",
+          "OVERRIDE_CAPABILITY_UNAVAILABLE",
+          "FINAL_HIGH_ATTENTION",
+          "FINAL_MANUAL_ATTENTION",
+          "FINAL_CLEARED"
+        ],
+        "title": "GradingReasonCode",
+        "type": "string"
+      },
+      "GradingRowPage": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/GradingRowView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "minimum": 1.0,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "minimum": 0.0,
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "minimum": 0.0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "GradingRowPage",
+        "type": "object"
+      },
+      "GradingRowView": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "file_version_id": {
+            "format": "uuid",
+            "title": "File Version Id",
+            "type": "string"
+          },
+          "grading_item_id": {
+            "format": "uuid",
+            "title": "Grading Item Id",
+            "type": "string"
+          },
+          "grading_run_id": {
+            "format": "uuid",
+            "title": "Grading Run Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "normalized": {
+            "$ref": "#/components/schemas/NormalizedExpenseRecord"
+          },
+          "ordinal": {
+            "title": "Ordinal",
+            "type": "integer"
+          },
+          "raw": {
+            "additionalProperties": true,
+            "title": "Raw",
+            "type": "object"
+          },
+          "row_no": {
+            "title": "Row No",
+            "type": "integer"
+          },
+          "source_row_fingerprint": {
+            "title": "Source Row Fingerprint",
+            "type": "string"
+          },
+          "tenant_id": {
+            "format": "uuid",
+            "title": "Tenant Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tenant_id",
+          "grading_run_id",
+          "grading_item_id",
+          "file_version_id",
+          "row_no",
+          "ordinal",
+          "source_row_fingerprint",
+          "raw",
+          "normalized",
+          "created_at"
+        ],
+        "title": "GradingRowView",
+        "type": "object"
+      },
+      "GradingRunCreateRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "detection_run_id": {
+            "format": "uuid",
+            "title": "Detection Run Id",
+            "type": "string"
+          },
+          "f7_manifest": {
+            "items": {
+              "$ref": "#/components/schemas/F7ManifestRequest"
+            },
+            "maxItems": 20000,
+            "title": "F7 Manifest",
+            "type": "array"
+          },
+          "grading_config_id": {
+            "format": "uuid",
+            "title": "Grading Config Id",
+            "type": "string"
+          },
+          "validation_run_id": {
+            "format": "uuid",
+            "title": "Validation Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "validation_run_id",
+          "detection_run_id",
+          "grading_config_id",
+          "f7_manifest"
+        ],
+        "title": "GradingRunCreateRequest",
+        "type": "object"
+      },
+      "GradingRunView": {
+        "additionalProperties": false,
+        "properties": {
+          "algorithm_version": {
+            "title": "Algorithm Version",
+            "type": "string"
+          },
+          "cleared_count": {
+            "title": "Cleared Count",
+            "type": "integer"
+          },
+          "completed_at": {
+            "format": "date-time",
+            "title": "Completed At",
+            "type": "string"
+          },
+          "config_fingerprint": {
+            "title": "Config Fingerprint",
+            "type": "string"
+          },
+          "config_version": {
+            "title": "Config Version",
+            "type": "integer"
+          },
+          "correlation_item_count": {
+            "title": "Correlation Item Count",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "format": "uuid",
+            "title": "Created By",
+            "type": "string"
+          },
+          "detection_run_id": {
+            "format": "uuid",
+            "title": "Detection Run Id",
+            "type": "string"
+          },
+          "deterministic_item_count": {
+            "title": "Deterministic Item Count",
+            "type": "integer"
+          },
+          "f3_manifest_fingerprint": {
+            "title": "F3 Manifest Fingerprint",
+            "type": "string"
+          },
+          "f6_manifest_fingerprint": {
+            "title": "F6 Manifest Fingerprint",
+            "type": "string"
+          },
+          "f7_manifest_fingerprint": {
+            "title": "F7 Manifest Fingerprint",
+            "type": "string"
+          },
+          "file_version_id": {
+            "format": "uuid",
+            "title": "File Version Id",
+            "type": "string"
+          },
+          "grading_config_id": {
+            "format": "uuid",
+            "title": "Grading Config Id",
+            "type": "string"
+          },
+          "high_attention_count": {
+            "title": "High Attention Count",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "input_fingerprint": {
+            "title": "Input Fingerprint",
+            "type": "string"
+          },
+          "manual_attention_count": {
+            "title": "Manual Attention Count",
+            "type": "integer"
+          },
+          "reused_existing": {
+            "title": "Reused Existing",
+            "type": "boolean"
+          },
+          "tenant_id": {
+            "format": "uuid",
+            "title": "Tenant Id",
+            "type": "string"
+          },
+          "validation_run_id": {
+            "format": "uuid",
+            "title": "Validation Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tenant_id",
+          "file_version_id",
+          "validation_run_id",
+          "detection_run_id",
+          "grading_config_id",
+          "created_by",
+          "config_version",
+          "config_fingerprint",
+          "algorithm_version",
+          "f3_manifest_fingerprint",
+          "f6_manifest_fingerprint",
+          "f7_manifest_fingerprint",
+          "input_fingerprint",
+          "deterministic_item_count",
+          "correlation_item_count",
+          "high_attention_count",
+          "manual_attention_count",
+          "cleared_count",
+          "created_at",
+          "completed_at",
+          "reused_existing"
+        ],
+        "title": "GradingRunView",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -3034,6 +4213,91 @@
         "title": "InvestigationCapability",
         "type": "object"
       },
+      "InvestigationCitationResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "clause_id": {
+            "format": "uuid",
+            "title": "Clause Id",
+            "type": "string"
+          },
+          "quote": {
+            "maxLength": 4096,
+            "minLength": 1,
+            "title": "Quote",
+            "type": "string"
+          },
+          "quote_end": {
+            "exclusiveMinimum": 0.0,
+            "title": "Quote End",
+            "type": "integer"
+          },
+          "quote_start": {
+            "minimum": 0.0,
+            "title": "Quote Start",
+            "type": "integer"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "clause_id",
+          "quote_start",
+          "quote_end",
+          "quote"
+        ],
+        "title": "InvestigationCitationResponse",
+        "type": "object"
+      },
+      "InvestigationConfidenceMap": {
+        "additionalProperties": false,
+        "properties": {
+          "failed": {
+            "$ref": "#/components/schemas/SeverityLevel"
+          },
+          "insufficient": {
+            "$ref": "#/components/schemas/SeverityLevel"
+          },
+          "max_steps": {
+            "$ref": "#/components/schemas/SeverityLevel"
+          },
+          "not_run": {
+            "$ref": "#/components/schemas/SeverityLevel"
+          },
+          "sufficient": {
+            "$ref": "#/components/schemas/SeverityLevel"
+          },
+          "unavailable": {
+            "$ref": "#/components/schemas/SeverityLevel"
+          }
+        },
+        "required": [
+          "sufficient",
+          "insufficient",
+          "unavailable",
+          "max_steps",
+          "failed",
+          "not_run"
+        ],
+        "title": "InvestigationConfidenceMap",
+        "type": "object"
+      },
+      "InvestigationGradingOutcome": {
+        "enum": [
+          "sufficient",
+          "insufficient",
+          "unavailable",
+          "max_steps",
+          "failed",
+          "not_run"
+        ],
+        "title": "InvestigationGradingOutcome",
+        "type": "string"
+      },
       "InvestigationHistoryResponse": {
         "additionalProperties": false,
         "properties": {
@@ -3112,9 +4376,9 @@
         "properties": {
           "citations": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/InvestigationCitationResponse"
             },
+            "maxItems": 100,
             "title": "Citations",
             "type": "array"
           },
@@ -3152,6 +4416,11 @@
             "title": "Reason Code",
             "type": "string"
           },
+          "result_fingerprint": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Result Fingerprint",
+            "type": "string"
+          },
           "summary": {
             "title": "Summary",
             "type": "string"
@@ -3165,6 +4434,7 @@
           "summary",
           "reason_code",
           "citations",
+          "result_fingerprint",
           "completed_at"
         ],
         "title": "InvestigationResultResponse",
@@ -3179,6 +4449,11 @@
           },
           "agent_version": {
             "title": "Agent Version",
+            "type": "string"
+          },
+          "config_fingerprint": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Config Fingerprint",
             "type": "string"
           },
           "correlation_finding_id": {
@@ -3204,6 +4479,11 @@
           "id": {
             "format": "uuid",
             "title": "Id",
+            "type": "string"
+          },
+          "input_fingerprint": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Input Fingerprint",
             "type": "string"
           },
           "max_steps": {
@@ -3248,6 +4528,8 @@
           "agent_version",
           "action_schema_version",
           "prompt_template_version",
+          "input_fingerprint",
+          "config_fingerprint",
           "created_at"
         ],
         "title": "InvestigationRunResponse",
@@ -3739,6 +5021,33 @@
         "title": "LegacySamplingPlanResponse",
         "type": "object"
       },
+      "LevelVector": {
+        "maxItems": 4,
+        "minItems": 4,
+        "prefixItems": [
+          {
+            "ge": 0,
+            "le": 1000000,
+            "type": "integer"
+          },
+          {
+            "ge": 0,
+            "le": 1000000,
+            "type": "integer"
+          },
+          {
+            "ge": 0,
+            "le": 1000000,
+            "type": "integer"
+          },
+          {
+            "ge": 0,
+            "le": 1000000,
+            "type": "integer"
+          }
+        ],
+        "type": "array"
+      },
       "LimitEvidence": {
         "additionalProperties": false,
         "properties": {
@@ -4161,6 +5470,25 @@
         ],
         "title": "MappingVersionResponse",
         "type": "object"
+      },
+      "MatrixRow": {
+        "maxItems": 4,
+        "minItems": 4,
+        "prefixItems": [
+          {
+            "$ref": "#/components/schemas/Disposition"
+          },
+          {
+            "$ref": "#/components/schemas/Disposition"
+          },
+          {
+            "$ref": "#/components/schemas/Disposition"
+          },
+          {
+            "$ref": "#/components/schemas/Disposition"
+          }
+        ],
+        "type": "array"
       },
       "NormalizedExpenseRecord": {
         "additionalProperties": false,
@@ -4992,6 +6320,33 @@
         ],
         "title": "PolicyFamilyListItem",
         "type": "object"
+      },
+      "ProbabilityVector": {
+        "maxItems": 4,
+        "minItems": 4,
+        "prefixItems": [
+          {
+            "ge": 0,
+            "le": 10000,
+            "type": "integer"
+          },
+          {
+            "ge": 0,
+            "le": 10000,
+            "type": "integer"
+          },
+          {
+            "ge": 0,
+            "le": 10000,
+            "type": "integer"
+          },
+          {
+            "ge": 0,
+            "le": 10000,
+            "type": "integer"
+          }
+        ],
+        "type": "array"
       },
       "ProvenanceMode": {
         "description": "规范化字段的取值来源。",
@@ -6025,6 +7380,35 @@
           }
         ]
       },
+      "RuleImpactMap": {
+        "additionalProperties": false,
+        "properties": {
+          "invoice_duplicate": {
+            "$ref": "#/components/schemas/SeverityLevel"
+          },
+          "invoice_title": {
+            "$ref": "#/components/schemas/SeverityLevel"
+          },
+          "invoice_type": {
+            "$ref": "#/components/schemas/SeverityLevel"
+          },
+          "limit": {
+            "$ref": "#/components/schemas/SeverityLevel"
+          },
+          "timeliness": {
+            "$ref": "#/components/schemas/SeverityLevel"
+          }
+        },
+        "required": [
+          "limit",
+          "invoice_type",
+          "timeliness",
+          "invoice_title",
+          "invoice_duplicate"
+        ],
+        "title": "RuleImpactMap",
+        "type": "object"
+      },
       "RuleKind": {
         "enum": [
           "limit",
@@ -7004,12 +8388,30 @@
         "title": "SequentialRuntimeFacts",
         "type": "object"
       },
+      "SeverityLevel": {
+        "enum": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "title": "SeverityLevel",
+        "type": "integer"
+      },
       "SortDirection": {
         "enum": [
           "asc",
           "desc"
         ],
         "title": "SortDirection",
+        "type": "string"
+      },
+      "SourceKind": {
+        "enum": [
+          "deterministic",
+          "correlation"
+        ],
+        "title": "SourceKind",
         "type": "string"
       },
       "SpatiotemporalRuntimeFacts": {
@@ -7779,9 +9181,15 @@
           "total_row_count": {
             "title": "Total Row Count",
             "type": "integer"
+          },
+          "validation_run_id": {
+            "format": "uuid",
+            "title": "Validation Run Id",
+            "type": "string"
           }
         },
         "required": [
+          "validation_run_id",
           "file_version_id",
           "mapping_version_id",
           "ruleset_fingerprint",
@@ -13472,6 +14880,1303 @@
         "summary": "Run",
         "tags": [
           "investigations"
+        ]
+      }
+    },
+    "/api/v1/files/{file_version_id}/grading-runs": {
+      "post": {
+        "operationId": "grading_create_run",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_version_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "File Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 8,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GradingRunCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GradingRunView"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GradingRunView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Create Run",
+        "tags": [
+          "grading"
+        ]
+      }
+    },
+    "/api/v1/files/{file_version_id}/grading-runs/current": {
+      "get": {
+        "operationId": "grading_get_current_run",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_version_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "File Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchGradingView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Get Current Run",
+        "tags": [
+          "grading"
+        ]
+      }
+    },
+    "/api/v1/grading-configs": {
+      "get": {
+        "operationId": "grading_list_configs",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GradingConfigPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "List Configs",
+        "tags": [
+          "grading"
+        ]
+      },
+      "post": {
+        "operationId": "grading_create_config",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 8,
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GradingConfigCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GradingConfigView"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GradingConfigView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Create Config",
+        "tags": [
+          "grading"
+        ]
+      }
+    },
+    "/api/v1/grading-configs/current": {
+      "get": {
+        "operationId": "grading_get_current_config",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GradingConfigView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Get Current Config",
+        "tags": [
+          "grading"
+        ]
+      }
+    },
+    "/api/v1/grading-items/{grading_item_id}": {
+      "get": {
+        "operationId": "grading_get_item",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "grading_item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Grading Item Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GradingItemView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Get Item",
+        "tags": [
+          "grading"
+        ]
+      }
+    },
+    "/api/v1/grading-items/{grading_item_id}/rows": {
+      "get": {
+        "operationId": "grading_list_item_rows",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "grading_item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Grading Item Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GradingRowPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "List Item Rows",
+        "tags": [
+          "grading"
+        ]
+      }
+    },
+    "/api/v1/grading-runs/{grading_run_id}": {
+      "get": {
+        "operationId": "grading_get_run",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "grading_run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Grading Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GradingRunView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Get Run",
+        "tags": [
+          "grading"
+        ]
+      }
+    },
+    "/api/v1/grading-runs/{grading_run_id}/items": {
+      "get": {
+        "operationId": "grading_list_items",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "grading_run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Grading Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "source_kind",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SourceKind"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source Kind"
+            }
+          },
+          {
+            "in": "query",
+            "name": "rule_kind",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/RuleKind"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rule Kind"
+            }
+          },
+          {
+            "in": "query",
+            "name": "detector",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/DetectorKind"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Detector"
+            }
+          },
+          {
+            "in": "query",
+            "name": "severity_impact",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 3,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Severity Impact"
+            }
+          },
+          {
+            "in": "query",
+            "name": "severity_confidence",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 3,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Severity Confidence"
+            }
+          },
+          {
+            "in": "query",
+            "name": "disposition",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Disposition"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Disposition"
+            }
+          },
+          {
+            "in": "query",
+            "name": "f7_outcome",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/InvestigationGradingOutcome"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "F7 Outcome"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort_by",
+            "required": false,
+            "schema": {
+              "const": "default",
+              "default": "default",
+              "title": "Sort By",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "eg_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eg Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GradingItemPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "List Items",
+        "tags": [
+          "grading"
         ]
       }
     },

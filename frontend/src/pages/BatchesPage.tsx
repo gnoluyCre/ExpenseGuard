@@ -19,6 +19,7 @@ import {
 import { BatchValidationView } from "@/batches/BatchValidationView";
 import { BatchReportView } from "@/batches/BatchReportView";
 import { BatchDetectionView } from "@/batches/BatchDetectionView";
+import { BatchGradingView } from "@/grading/BatchGradingView";
 import { useBatchDetail, useBatches, useImportBatch } from "@/batches/useBatches";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -57,7 +58,7 @@ const FIELD_LABELS: Record<UnifiedField, string> = {
 };
 
 type WorkspaceTab =
-  "raw" | "mapping" | "errors" | "availability" | "validation" | "detection" | "report";
+  "raw" | "mapping" | "errors" | "availability" | "validation" | "detection" | "grading" | "report";
 type MappingDraft = Record<string, UnifiedField | "">;
 
 function formatDateTime(value: string): string {
@@ -373,6 +374,7 @@ function BatchWorkspace({
     { id: "availability", label: "字段可用性", count: availability.data?.items.length },
     { id: "validation", label: "确定性校验", count: undefined },
     { id: "detection", label: "关联检测", count: undefined },
+    { id: "grading", label: "综合分级", count: undefined },
     { id: "report", label: "报告", count: undefined },
   ];
 
@@ -487,6 +489,9 @@ function BatchWorkspace({
         ) : null}
         {activeTab === "detection" ? (
           <BatchDetectionView fileVersionId={batch.file_version_id} user={user} />
+        ) : null}
+        {activeTab === "grading" ? (
+          <BatchGradingView fileVersionId={batch.file_version_id} user={user} />
         ) : null}
         {activeTab === "report" ? (
           <BatchReportView

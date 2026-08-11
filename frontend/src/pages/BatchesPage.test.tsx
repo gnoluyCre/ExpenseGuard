@@ -280,7 +280,7 @@ describe("BatchesPage", () => {
     await waitFor(() => expect(screen.getByText("2026-07.xlsx")).toBeInTheDocument());
   });
 
-  it("点击批次后加载原始行详情与七个视图", async () => {
+  it("点击批次后加载原始行详情与八个视图", async () => {
     const user = userEvent.setup();
     stubBatchFetch();
     renderBatchesPage();
@@ -294,6 +294,7 @@ describe("BatchesPage", () => {
       "字段可用性",
       "确定性校验",
       "关联检测",
+      "综合分级",
       "报告",
     ]);
   });

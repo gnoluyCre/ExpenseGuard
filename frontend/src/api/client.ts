@@ -148,6 +148,25 @@ export type Investigation = components["schemas"]["InvestigationResponse"];
 export type InvestigationHistory = components["schemas"]["InvestigationHistoryResponse"];
 export type InvestigationStepPage = components["schemas"]["EvidenceStepPageResponse"];
 
+/** F8 二维分级配置、显式 manifest、不可变运行与证据行契约。 */
+export type GradingConfigDefinition = components["schemas"]["GradingConfigV1"];
+export type GradingConfigCreateRequest = components["schemas"]["GradingConfigCreateRequest"];
+export type GradingConfig = components["schemas"]["GradingConfigView"];
+export type GradingConfigPage = components["schemas"]["GradingConfigPage"];
+export type F7ManifestRequest = components["schemas"]["F7ManifestRequest"];
+export type F7RunManifestRequest = components["schemas"]["F7RunManifestRequest"];
+export type F7NotRunManifestRequest = components["schemas"]["F7NotRunManifestRequest"];
+export type GradingRunCreateRequest = components["schemas"]["GradingRunCreateRequest"];
+export type GradingRun = components["schemas"]["GradingRunView"];
+export type BatchGrading = components["schemas"]["BatchGradingView"];
+export type GradingItemPage = components["schemas"]["GradingItemPage"];
+export type GradingItem = components["schemas"]["GradingItemView"];
+export type GradingRowPage = components["schemas"]["GradingRowPage"];
+export type GradingRow = components["schemas"]["GradingRowView"];
+export type GradingDisposition = components["schemas"]["Disposition"];
+export type InvestigationGradingOutcome = components["schemas"]["InvestigationGradingOutcome"];
+export type GradingSourceKind = components["schemas"]["SourceKind"];
+
 /**
  * 后端权限标识。
  *

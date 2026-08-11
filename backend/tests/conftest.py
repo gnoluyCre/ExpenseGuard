@@ -85,6 +85,7 @@ def pytest_asyncio_loop_factories(
 _TRUNCATE_SQL = text(
     """
     TRUNCATE TABLE
+        grading_item_row, grading_item, grading_request, grading_run, grading_config,
         audit_log, investigation_result, evidence_step, investigation_request,
         pii_token, investigation_run, correlation_finding_row, detection_request,
         capability_declaration, correlation_finding, detection_run, detection_config,

@@ -1,0 +1,7 @@
+# Exact false-positive fingerprints for F7's synthetic scoped-token fixtures.
+# These values exercise rejection/capping behavior and are not credentials.
+34234befa58869be4a0123475ed3747e04578396:backend/tests/integration/test_agent_db_tools.py:generic-api-key:335
+34234befa58869be4a0123475ed3747e04578396:backend/tests/integration/test_investigation_services.py:generic-api-key:492
+34234befa58869be4a0123475ed3747e04578396:backend/tests/unit/test_agent_tools.py:generic-api-key:52
+34234befa58869be4a0123475ed3747e04578396:backend/tests/unit/test_agent_tools.py:generic-api-key:64
+34234befa58869be4a0123475ed3747e04578396:backend/tests/unit/test_agent_tools.py:generic-api-key:72

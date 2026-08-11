@@ -5,7 +5,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 -->
 
 ## 🏗️ 当前阶段与目标
-**当前任务:一次授权完成 ExpenseGuard 代码就绪 MVP。** F7 已闭包；当前进入 F8 CP-F8.1 持久化，完成后自动推进阶段 3/4 收尾，不再逐 checkpoint 等待人工确认。
+**当前任务:一次授权完成 ExpenseGuard 代码就绪 MVP。** F7/F8 均已闭包；当前自动推进阶段 3 全局错误/性能/优雅退出与阶段 4 安全、部署、日志、健康检查和回滚文档收尾，不再逐 checkpoint 等待人工确认。
 
 - CP0 仓库重置(干净历史、`.gitignore` 脱敏排除)
 - CP1 后端地基(uv + 18 张表 + Alembic 三层隔离)
@@ -13,7 +13,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 - CP3 认证、RBAC、租户隔离(含反向验证)
 - CP4 前端垂直切片 + OpenAPI 契约门禁 + pre-commit/CI + 合成数据生成器(含反向验证)
 
-**下一步:** 按 Spec 009 执行 F8 CP-F8.1：先备份默认库，再新增 `0010` 与独立不可变 grading snapshot；不得回填 legacy severity、改写 F4/F5/F6/F7 事实或调用任何模型。
+**下一步:** 以 `REVIEW-CHECKLIST.md` 和路线图剩余项为准完成阶段 3/4 代码就绪收尾；优先审计全局错误映射、SIGTERM/checkpoint 与当前主机 F6 HTTP 性能回归，再闭合安全红队、Compose 实跑、结构化日志/健康检查、trace 归因和回滚文档。真实模型、客户批次与生产部署继续标为 `external_validation_pending`。
 `process_row_once` 的首个生产调用方现为 `app.core.validation.batch_service.validate_batch`；行内 finding 与 `row_result` 使用同一 session/事务，`row_result.rule_version` 固定保存规则集指纹。
 
 **开工前必读的两件事:**
@@ -26,6 +26,7 @@ AGENTS:在每个重要里程碑、结构性变更或修复 bug 后更新本文�
 
 ## 📂 架构决策
 *(把构建过程中做出的具体选择记录在此,便于后续 agent 遵循)*
+- 2026-08-11 — **F8 CP-F8.0–CP-F8.5 二维分级闭包完成。** 新增 `0010` 和独立不可变 grading config/run/request/item/row；三份 authoritative F3/F6/F7 manifest、复合租户身份、deferred snapshot constraint、整数 4×4 代价矩阵、保守覆盖、alias/replay/drift 与 hard-kill/fresh-process 恢复均落地，不回填 legacy severity 或修改 F4/F5。9 个强类型 endpoint、配置页和批次综合分级页通过三角色/跨租户/no-store/Zod/Chrome 10 状态门禁。固定 seed=3500 的 5000 行 F1→F8 为 `230.203843s`，130 次 F7 使用 scripted provider，F8 产出 1180 item/1916 row；F8 replay/list/detail/rows p95 为 `0.228635/0.086100/0.021453/0.019709s`，真实模型与外部 HTTP 为 0。后端全量 `594 passed, 1 skipped`，前端 17 文件/92 passed，Ruff/237 format/strict mypy 159 source、双库 `0010`/Alembic、OpenAPI/client 二次稳定、pip-audit、完整/生产 npm audit 与 gitleaks 37 commit 全绿。审计发现旧 package override 仍强制有公告的 js-yaml 4.3.0；Redocly 1.34.19 已支持 4.3.1，移除过时 override 后完整 audit 归零。同机重跑旧 F6 HTTP initial/replay 为 `3.763388/3.541288s`，作为阶段 3 全局性能收尾项显式保留。真实云 API、本地模型、客户批次、PII 审批和生产部署均为 `external_validation_pending`。
 - 2026-08-10 — **F7 CP-F7.0–CP-F7.5 异常取证闭包完成。** 新增 `0009` 不可变 investigation run/request/step/result/PII-token 事实、稳定 tenant HMAC token、OpenAI-compatible + scripted provider、四个 tenant-bound 只读工具、五终态与业务库权威的 LangGraph/PostgreSQL 恢复；API/UI、权限、租户隔离、恶意文本、hard-kill、并发和 completed replay 零外部调用均通过。后端全量 `506 passed, 1 skipped`，前端 14 文件 `57 passed`，两端静态/构建、OpenAPI 二次稳定、pre-commit/gitleaks、`pip-audit` 和生产依赖 npm audit 通过。5000 行 F1→F7 总耗时 `115.321029s`，130 次调查用时 `8.167681s`，真实模型调用为 0。完整 npm audit 尚有 2 条仅开发期 `openapi-typescript -> Redocly 1.x -> js-yaml` 高危公告；无兼容升级路径且只解析仓库生成的 OpenAPI，已窄化接受并持续跟踪。真实云 API、本地模型、客户批次与生产部署均为 `external_validation_pending`。
 - 2026-08-01 — **F6 CP-F6.5 契约与交付门禁闭包完成。** 固定 seed=3500 的 5000 行夹具在标签与 XLSX 物理分离前提下嵌入拆单/连号/频次/时空四类确定性模式，F1→F6 含交互采样总耗时 `102.931691s`，四类真值全部机械命中；F6 纯算法 `0.155957s`，初次 detect `1.973916s`/21 SQL（SQL 累计 `0.395481s`），replay/list/detail p95 分别为 `1.687987s`/`0.014404s`/`0.012844s`，响应体上限分别为 737/19457/5007 bytes。首测 detect `3.066590s` 暴露逐 finding/参与行 flush 热点；改为声明单批、finding/row-link 每 250 条有界批量 flush，并把 input snapshot 查询收窄为 normalized/parse-error/availability 必需列后通过门禁，事务、六故障点与 hard-kill 恢复语义保持不变。F6 定向 112 passed、优化后恢复/API 16 passed，后端全量 `453 passed, 1 skipped`；Ruff/180 文件 format、strict mypy（128 源文件）、前端 13 文件/53 passed、typecheck/oxlint/Prettier/build、默认/测试双库 `0008` 与 Alembic 零漂移、OpenAPI/client 二次稳定、pre-commit/gitleaks 及两端依赖审计全绿。Chrome 1440×1000 共 15 个状态指标/19 张截图覆盖 config/run/finding/三角色/恶意文本，全部页面溢出、脚本/图片执行与浏览器持久化为 0；私有证据位于 `data/private/cp-f6.5/`。未新增依赖/迁移，未修改基础设施、F4/F5 语义或进入 F7/F8。
 - 2026-08-01 — **F6 CP-F6.4 强类型 API、契约与桌面补充工作流闭包完成。** 新增 7 个 config/run/finding endpoint，全部经 CP-F6.3 service 且路由零 SQL；config history 增精确 total/limit/offset，finding list 增 `capability_status` EXISTS 过滤，profile/evidence/runtime 由 Pydantic discriminator 单源约束，所有 F6 数据响应 `private, no-store`，RBAC 沿用 permission 数据且跨租户稳定 404。前端新增权限驱动的关联检测配置页与批次独立补充页签，Zod 对 exact Unicode/控制字符/正 Decimal/四 detector/partition 重复 fail closed；明确区分 enabled 零候选、degraded、unavailable 与 config stale，统计候选不进入 F5 queue、不展示 legacy severity。后端定向 16 passed、全量 453 passed/1 skipped，Ruff/180 文件 format、strict mypy（128 源文件）通过；前端 13 文件/53 passed、typecheck/oxlint/Prettier/build 全绿。OpenAPI/client 连续二次 SHA-256 稳定；pre-commit/gitleaks、两端依赖审计零漏洞。Chrome 1440×1000 覆盖配置/history、auditor stale/detail、viewer 只读与错误态，均零页面溢出、零恶意脚本/图片执行、零浏览器持久化；私有证据位于 `data/private/cp-f6.4/`。未新增依赖/迁移，未修改 F4 XLSX/F5 queue，未执行 CP-F6.5 的 5000 行/p95/SQL 门禁或 F7/F8。

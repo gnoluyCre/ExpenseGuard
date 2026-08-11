@@ -133,6 +133,7 @@ class FieldAvailabilityResponse(BaseModel):
 
 
 class ValidationSummaryResponse(BaseModel):
+    validation_run_id: uuid.UUID
     file_version_id: uuid.UUID
     mapping_version_id: uuid.UUID
     ruleset_fingerprint: str
@@ -432,6 +433,7 @@ async def validation_endpoint(
 ) -> ValidationSummaryResponse:
     run = await get_validation_summary(db, file_version_id)
     return ValidationSummaryResponse(
+        validation_run_id=run.id,
         file_version_id=run.file_version_id,
         mapping_version_id=run.mapping_version_id,
         ruleset_fingerprint=run.ruleset_fingerprint,

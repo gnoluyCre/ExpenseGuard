@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, Header, Query, Request, Response, status
 from pydantic import BaseModel, ConfigDict, Field
@@ -64,6 +64,8 @@ class InvestigationRunResponse(_ApiModel):
     agent_version: str
     action_schema_version: int
     prompt_template_version: str
+    input_fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
+    config_fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
     created_at: datetime
 
 
@@ -80,6 +82,14 @@ class EvidenceStepResponse(_ApiModel):
     created_at: datetime
 
 
+class InvestigationCitationResponse(_ApiModel):
+    schema_version: Literal[1] = 1
+    clause_id: uuid.UUID
+    quote_start: int = Field(ge=0)
+    quote_end: int = Field(gt=0)
+    quote: str = Field(min_length=1, max_length=4096)
+
+
 class InvestigationResultResponse(_ApiModel):
     id: uuid.UUID
     investigation_run_id: uuid.UUID
@@ -87,7 +97,8 @@ class InvestigationResultResponse(_ApiModel):
     evidence_sufficient: bool | None
     summary: str
     reason_code: str
-    citations: tuple[dict[str, Any], ...]
+    citations: tuple[InvestigationCitationResponse, ...] = Field(max_length=100)
+    result_fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
     completed_at: datetime
 
 
